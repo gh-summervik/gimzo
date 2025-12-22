@@ -27,17 +27,13 @@ public class MultipleMovingAverageTrend : PriceTrendBase, ITrend
         // Ensure unique keys and order by period (fastest to slowest)
         var uniqueKeys = movingAverageKeys.Distinct().OrderBy(k => k.Period).ToArray();
         if (uniqueKeys.Length < 2)
-        {
             throw new ArgumentException("At least two unique moving average keys are required.");
-        }
 
         // Initialize moving averages
         _movingAverages = new List<MovingAverage>();
         foreach (var key in uniqueKeys)
-        {
             _movingAverages.Add(new MovingAverage(key,
                 prices.Select(p => p.GetPricePoint(key.PricePoint)).ToArray()));
-        }
 
         _lookbackPeriod = lookbackPeriod;
         _gamma = gamma;
@@ -125,9 +121,8 @@ public class MultipleMovingAverageTrend : PriceTrendBase, ITrend
     private double CalculateAverageVolume(int endIndex)
     {
         if (endIndex < _lookbackPeriod - 1)
-        {
             return (double)_prices.Take(endIndex + 1).Average(p => p.Volume);
-        }
+        
         return (double)_prices.Skip(endIndex - _lookbackPeriod + 1)
                              .Take(_lookbackPeriod)
                              .Average(p => p.Volume);

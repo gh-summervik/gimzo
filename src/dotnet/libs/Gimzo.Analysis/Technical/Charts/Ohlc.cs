@@ -5,7 +5,7 @@ namespace Gimzo.Analysis.Technical.Charts;
 public record class Ohlc : PriceRange
 {
     public Ohlc(string symbol, DateTime start, DateTime end,
-        decimal open, decimal high, decimal low, decimal close, long volume)
+        decimal open, decimal high, decimal low, decimal close, double volume)
     : base(high, low)
     {
         Symbol = symbol;
@@ -17,7 +17,7 @@ public record class Ohlc : PriceRange
         Volume = volume;
     }
 
-    public Ohlc(string symbol, DateOnly date, decimal open, decimal high, decimal low, decimal close, long volume)
+    public Ohlc(string symbol, DateOnly date, decimal open, decimal high, decimal low, decimal close, double volume)
         : this(symbol, date.ToDateTime(TimeOnly.MinValue), date.ToDateTime(TimeOnly.MaxValue),
               open, high, low, close, volume)
     {
@@ -29,9 +29,9 @@ public record class Ohlc : PriceRange
     public DateTime End { get; }
     public decimal Open { get; }
     public decimal Close { get; }
-    public long Volume { get; }
+    public double Volume { get; }
     public decimal AveragePrice => (Open + High + Low + Close) / 4M;
-    public decimal Liquidity => Close * Volume;
+    public decimal Liquidity => Close * (decimal)Volume;
     public bool IsLight => Close > Open;
     public bool IsDark => Open > Close;
     public bool IsFlat => Open == Close;

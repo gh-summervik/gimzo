@@ -23,8 +23,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Gimzo.Common", "libs\Gimzo.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Gimzo.Analysis", "libs\Gimzo.Analysis\Gimzo.Analysis.csproj", "{D0631106-6314-42FC-81CC-EA10CB007E5F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Gimzo.Fdn.Cli", "apps\Gimzo.Fdn.Cli\Gimzo.Fdn.Cli.csproj", "{A447AAAE-C2A1-4407-A04D-30887DC005D6}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -119,18 +117,6 @@ Global
 		{D0631106-6314-42FC-81CC-EA10CB007E5F}.Release|x64.Build.0 = Release|Any CPU
 		{D0631106-6314-42FC-81CC-EA10CB007E5F}.Release|x86.ActiveCfg = Release|Any CPU
 		{D0631106-6314-42FC-81CC-EA10CB007E5F}.Release|x86.Build.0 = Release|Any CPU
-		{A447AAAE-C2A1-4407-A04D-30887DC005D6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A447AAAE-C2A1-4407-A04D-30887DC005D6}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A447AAAE-C2A1-4407-A04D-30887DC005D6}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{A447AAAE-C2A1-4407-A04D-30887DC005D6}.Debug|x64.Build.0 = Debug|Any CPU
-		{A447AAAE-C2A1-4407-A04D-30887DC005D6}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{A447AAAE-C2A1-4407-A04D-30887DC005D6}.Debug|x86.Build.0 = Debug|Any CPU
-		{A447AAAE-C2A1-4407-A04D-30887DC005D6}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A447AAAE-C2A1-4407-A04D-30887DC005D6}.Release|Any CPU.Build.0 = Release|Any CPU
-		{A447AAAE-C2A1-4407-A04D-30887DC005D6}.Release|x64.ActiveCfg = Release|Any CPU
-		{A447AAAE-C2A1-4407-A04D-30887DC005D6}.Release|x64.Build.0 = Release|Any CPU
-		{A447AAAE-C2A1-4407-A04D-30887DC005D6}.Release|x86.ActiveCfg = Release|Any CPU
-		{A447AAAE-C2A1-4407-A04D-30887DC005D6}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -143,7 +129,6 @@ Global
 		{486B3D93-205A-4C65-8E34-36E2C1DC52B3} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{49681991-E543-4A6C-9759-27FA549DF5CF} = {6C4D298B-81FB-2B6B-5AB6-46205EDDC72C}
 		{D0631106-6314-42FC-81CC-EA10CB007E5F} = {6C4D298B-81FB-2B6B-5AB6-46205EDDC72C}
-		{A447AAAE-C2A1-4407-A04D-30887DC005D6} = {1787FE1D-075E-9E68-7218-25F1BD1BBEAB}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {34C9794A-BB36-40C9-8709-B486FD95FD47}

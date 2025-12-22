@@ -293,7 +293,7 @@ public static class ChartFactory
             public decimal High { get; set; }
             public decimal Low { get; set; }
             public decimal Close { get; set; }
-            public long Volume { get; set; }
+            public double Volume { get; set; }
 
             public Ohlc ToOhlc() => new(Symbol, Start.ToDateTime(TimeOnly.MinValue),
                 End.ToDateTime(TimeOnly.MaxValue), Open, High, Low, Close, Volume);

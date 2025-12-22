@@ -8,7 +8,7 @@ public class Chart : IEquatable<Chart?>
     private readonly HashSet<MovingAverageKey> _movingAverageKeys = new(3);
     private decimal[] _averageHeights = [];
     private decimal[] _averageBodyHeights = [];
-    private decimal[] _averageVolumes = [];
+    private double[] _averageVolumes = [];
     private TrendSentiment[] _lookbackSentiment = [];
     private readonly int _lookbackLength = 15;
 
@@ -97,7 +97,7 @@ public class Chart : IEquatable<Chart?>
 
         _averageHeights = new decimal[PriceActions.Length];
         _averageBodyHeights = new decimal[PriceActions.Length];
-        _averageVolumes = new decimal[PriceActions.Length];
+        _averageVolumes = new double[PriceActions.Length];
         _lookbackSentiment = new TrendSentiment[PriceActions.Length];
 
         for (int p = 0; p < PriceActions.Length; p++)

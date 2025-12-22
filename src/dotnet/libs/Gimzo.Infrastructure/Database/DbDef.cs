@@ -75,15 +75,10 @@ public sealed class DbDef
     }
 }
 
-public sealed class DbDefPair
+public sealed class DbDefPair(DbDef command, DbDef query)
 {
-    public DbDefPair(DbDef command, DbDef query)
-    {
-        Command = command ?? throw new ArgumentNullException(nameof(command));
-        Query = query ?? throw new ArgumentNullException(nameof(query));
-    }
-    public DbDef Command { get; init; }
-    public DbDef Query { get; init; }
+    public DbDef Command { get; init; } = command ?? throw new ArgumentNullException(nameof(command));
+    public DbDef Query { get; init; } = query ?? throw new ArgumentNullException(nameof(query));
     public string[] GetNames => [Command.Name, Query.Name];
     public IDbConnection GetCommandConnection() => Command.GetConnection();
     public IDbConnection GetQueryConnection() => Query.GetConnection();
