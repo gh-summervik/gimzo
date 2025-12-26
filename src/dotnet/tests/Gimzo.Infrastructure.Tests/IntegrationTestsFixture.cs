@@ -1,7 +1,9 @@
-﻿using Gimzo.Infrastructure.DataProviders;
+﻿using Dapper;
+using Gimzo.Infrastructure.Database;
 using Gimzo.Infrastructure.DataProviders.FinancialDataNet;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
+using System.Data;
 
 namespace Gimzo.Infrastructure.Tests;
 
@@ -9,6 +11,7 @@ public class IntegrationTestsFixture : IDisposable
 {
     public string ApiKey { get; }
     private readonly FinancialDataApiClient _client;
+    private readonly DbDefPair _dbDefPair;
 
     public IntegrationTestsFixture()
     {
@@ -24,7 +27,20 @@ public class IntegrationTestsFixture : IDisposable
 
         var logger = NullLogger<FinancialDataApiClient>.Instance;
         _client = new FinancialDataApiClient(ApiKey, logger);
+
+        SqlMapper.AddTypeHandler(new DateOnlyTypeHandler());
+        SqlMapper.AddTypeHandler(new NullableDateOnlyTypeHandler());
+
+        var dbDefs = DbDefPair.GetPairsFromConfiguration(configuration).ToArray();
+
+        if (dbDefs.Length == 0)
+            throw new Exception($"Could not extract {nameof(DbDefPair)} from configuration.");
+
+        _dbDefPair = dbDefs.FirstOrDefault()!;
     }
+
+    public (IDbConnection? CommandConn, IDbConnection? QueryConn) GetConnectionPairForDb() =>
+        (_dbDefPair.GetCommandConnection(), _dbDefPair.GetQueryConnection());
 
     public FinancialDataApiClient Client => _client;
 

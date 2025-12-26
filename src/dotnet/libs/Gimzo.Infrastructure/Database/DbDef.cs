@@ -75,6 +75,11 @@ public sealed class DbDef
     }
 }
 
+/// <summary>
+/// Represents a pair of <see cref="DbDef"/> objects, one for commands and another for queries.
+/// </summary>
+/// <param name="command">The <see cref="DbDef"/> object with write permissions.</param>
+/// <param name="query">The <see cref="DbDef"/> object with read-only permissions.</param>
 public sealed class DbDefPair(DbDef command, DbDef query)
 {
     public DbDef Command { get; init; } = command ?? throw new ArgumentNullException(nameof(command));
@@ -84,7 +89,7 @@ public sealed class DbDefPair(DbDef command, DbDef query)
     public IDbConnection GetQueryConnection() => Query.GetConnection();
     public bool ConnectionStringsMatch => Command.ConnectionString.Equals(Query.ConnectionString);
     public bool HasName(string name) => Command.Name.Equals(name) || Query.Name.Equals(name);
-    public static IEnumerable<DbDefPair> GetPairs(IConfiguration configuration)
+    public static IEnumerable<DbDefPair> GetPairsFromConfiguration(IConfiguration configuration)
     {
         var dbDefs = DbDef.GetDbDefs(configuration).ToArray();
 

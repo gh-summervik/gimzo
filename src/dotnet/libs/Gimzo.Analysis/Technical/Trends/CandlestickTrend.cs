@@ -1,5 +1,4 @@
 ﻿using Gimzo.Analysis.Technical.Charts;
-using System.Diagnostics;
 
 namespace Gimzo.Analysis.Technical.Trends;
 

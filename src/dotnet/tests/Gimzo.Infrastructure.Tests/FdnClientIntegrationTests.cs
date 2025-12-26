@@ -15,8 +15,8 @@ public class FdnClientIntegrationTests(IntegrationTestsFixture fixture) : IClass
 
         Assert.NotNull(symbols);
         Assert.NotEmpty(symbols);
-        //var msft = symbols.FirstOrDefault(k => k.Symbol.Equals("MSFT"));
-        Assert.Contains("MSFT", symbols.Select(k => k.Symbol));
+        //var msft = symbols.FirstOrDefault(k => k.Symbol.Equals("A"));
+        Assert.Contains("A", symbols.Select(k => k.Symbol));
     }
 
     [Fact]
@@ -182,12 +182,15 @@ public class FdnClientIntegrationTests(IntegrationTestsFixture fixture) : IClass
         Assert.NotEmpty(prices);
     }
 
+    /// <summary>
+    /// This test fails - I think it's a defect in the API, but not 100% sure.
+    /// </summary>
     [Fact]
     public async Task GetCryptoInformationAsync()
     {
         var client = _fixture.Client;
 
-        var info = await client.GetCryptoInformationAsync("ZRXUSD");
+        var info = await client.GetCryptoInformationAsync("BTC");
 
         Assert.NotNull(info);
     }
@@ -218,7 +221,7 @@ public class FdnClientIntegrationTests(IntegrationTestsFixture fixture) : IClass
     public async Task GetOptionChainAsync()
     {
         var client = _fixture.Client;
-        var chain = (await client.GetOptionChainAsync("MSFT")).ToArray();
+        var chain = (await client.GetOptionChainAsync("A")).ToArray();
         Assert.NotNull(chain);
         Assert.NotNull(chain);
     }
@@ -227,7 +230,7 @@ public class FdnClientIntegrationTests(IntegrationTestsFixture fixture) : IClass
     public async Task GetOptionPricesAsync()
     {
         var client = _fixture.Client;
-        var prices = (await client.GetOptionPricesAsync("MSFT")).ToArray();
+        var prices = (await client.GetOptionPricesAsync("A")).ToArray();
         Assert.NotNull(prices);
         Assert.NotNull(prices);
     }
@@ -236,7 +239,7 @@ public class FdnClientIntegrationTests(IntegrationTestsFixture fixture) : IClass
     public async Task GetOptionGreeksAsync()
     {
         var client = _fixture.Client;
-        var greeks = (await client.GetOptionGreeksAsync("MSFT")).ToArray();
+        var greeks = (await client.GetOptionGreeksAsync("A")).ToArray();
         Assert.NotNull(greeks);
         Assert.NotNull(greeks);
     }
@@ -245,7 +248,7 @@ public class FdnClientIntegrationTests(IntegrationTestsFixture fixture) : IClass
     public async Task GetCompanyInformationAsync()
     {
         var client = _fixture.Client;
-        var info = await client.GetCompanyInformationAsync("MSFT");
+        var info = await client.GetCompanyInformationAsync("A");
         Assert.NotNull(info);
     }
 
@@ -261,7 +264,7 @@ public class FdnClientIntegrationTests(IntegrationTestsFixture fixture) : IClass
     public async Task GetKeyMetricsAsync()
     {
         var client = _fixture.Client;
-        var metrics = (await client.GetKeyMetricsAsync("MSFT")).ToArray();
+        var metrics = (await client.GetKeyMetricsAsync("A")).ToArray();
         Assert.NotNull(metrics);
         Assert.NotEmpty(metrics);
     }
@@ -270,7 +273,7 @@ public class FdnClientIntegrationTests(IntegrationTestsFixture fixture) : IClass
     public async Task GetMarketCapAsync()
     {
         var client = _fixture.Client;
-        var cap = (await client.GetMarketCapAsync("MSFT")).ToArray();
+        var cap = (await client.GetMarketCapAsync("A")).ToArray();
         Assert.NotNull(cap);
         Assert.NotEmpty(cap);
     }
@@ -279,7 +282,7 @@ public class FdnClientIntegrationTests(IntegrationTestsFixture fixture) : IClass
     public async Task GetEmployeeCountAsync()
     {
         var client = _fixture.Client;
-        var counts = (await client.GetEmployeeCountAsync("MSFT")).ToArray();
+        var counts = (await client.GetEmployeeCountAsync("A")).ToArray();
         Assert.NotNull(counts);
         Assert.NotEmpty(counts);
     }
@@ -288,7 +291,7 @@ public class FdnClientIntegrationTests(IntegrationTestsFixture fixture) : IClass
     public async Task GetExecutiveCompensationAsync()
     {
         var client = _fixture.Client;
-        var comps = (await client.GetExecutiveCompensationAsync("MSFT")).ToArray();
+        var comps = (await client.GetExecutiveCompensationAsync("A")).ToArray();
         Assert.NotNull(comps);
         Assert.NotEmpty(comps);
     }
@@ -297,7 +300,7 @@ public class FdnClientIntegrationTests(IntegrationTestsFixture fixture) : IClass
     public async Task GetSecurityInformationAsync()
     {
         var client = _fixture.Client;
-        var info = await client.GetSecurityInformationAsync("MSFT");
+        var info = await client.GetSecurityInformationAsync("A");
         Assert.NotNull(info);
     }
 
@@ -305,7 +308,7 @@ public class FdnClientIntegrationTests(IntegrationTestsFixture fixture) : IClass
     public async Task GetIncomeStatementsAsync()
     {
         var client = _fixture.Client;
-        var statements = (await client.GetIncomeStatementsAsync("MSFT")).ToArray();
+        var statements = (await client.GetIncomeStatementsAsync("A")).ToArray();
         Assert.NotNull(statements);
         Assert.NotEmpty(statements);
     }
@@ -314,7 +317,7 @@ public class FdnClientIntegrationTests(IntegrationTestsFixture fixture) : IClass
     public async Task GetBalanceSheetStatementsAsync()
     {
         var client = _fixture.Client;
-        var statements = (await client.GetBalanceSheetStatementsAsync("MSFT")).ToArray();
+        var statements = (await client.GetBalanceSheetStatementsAsync("A")).ToArray();
         Assert.NotNull(statements);
         Assert.NotEmpty(statements);
     }
@@ -323,7 +326,7 @@ public class FdnClientIntegrationTests(IntegrationTestsFixture fixture) : IClass
     public async Task GetCashFlowStatementsAsync()
     {
         var client = _fixture.Client;
-        var statements = (await client.GetCashFlowStatementsAsync("MSFT")).ToArray();
+        var statements = (await client.GetCashFlowStatementsAsync("A")).ToArray();
         Assert.NotNull(statements);
         Assert.NotEmpty(statements);
     }
@@ -341,7 +344,7 @@ public class FdnClientIntegrationTests(IntegrationTestsFixture fixture) : IClass
     public async Task GetShortInterestAsync()
     {
         var client = _fixture.Client;
-        var shorts = (await client.GetShortInterestAsync("MSFT")).ToArray();
+        var shorts = (await client.GetShortInterestAsync("A")).ToArray();
         Assert.NotNull(shorts);
         Assert.NotEmpty(shorts);
     }
@@ -351,7 +354,7 @@ public class FdnClientIntegrationTests(IntegrationTestsFixture fixture) : IClass
     {
         var client = _fixture.Client;
 
-        var releases = await client.GetEarningsReleasesAsync("MSFT");
+        var releases = await client.GetEarningsReleasesAsync("A");
 
         Assert.NotNull(releases);
         Assert.NotEmpty(releases);
@@ -362,7 +365,7 @@ public class FdnClientIntegrationTests(IntegrationTestsFixture fixture) : IClass
     {
         var client = _fixture.Client;
 
-        var ratios = await client.GetEfficiencyRatiosAsync("MSFT");
+        var ratios = await client.GetEfficiencyRatiosAsync("A");
 
         Assert.NotNull(ratios);
         Assert.NotEmpty(ratios);
@@ -395,7 +398,7 @@ public class FdnClientIntegrationTests(IntegrationTestsFixture fixture) : IClass
     {
         var client = _fixture.Client;
 
-        var ratios = await client.GetLiquidityRatiosAsync("MSFT");
+        var ratios = await client.GetLiquidityRatiosAsync("A");
 
         Assert.NotNull(ratios);
         Assert.NotEmpty(ratios);
@@ -406,7 +409,7 @@ public class FdnClientIntegrationTests(IntegrationTestsFixture fixture) : IClass
     {
         var client = _fixture.Client;
 
-        var ratios = await client.GetProfitabilityRatiosAsync("MSFT");
+        var ratios = await client.GetProfitabilityRatiosAsync("A");
 
         Assert.NotNull(ratios);
         Assert.NotEmpty(ratios);
@@ -417,7 +420,7 @@ public class FdnClientIntegrationTests(IntegrationTestsFixture fixture) : IClass
     {
         var client = _fixture.Client;
 
-        var ratios = await client.GetSolvencyRatiosAsync("MSFT");
+        var ratios = await client.GetSolvencyRatiosAsync("A");
 
         Assert.NotNull(ratios);
         Assert.NotEmpty(ratios);
@@ -428,7 +431,7 @@ public class FdnClientIntegrationTests(IntegrationTestsFixture fixture) : IClass
     {
         var client = _fixture.Client;
 
-        var splits = await client.GetStockSplitsAsync("MSFT");
+        var splits = await client.GetStockSplitsAsync("A");
 
         Assert.NotNull(splits);
         Assert.NotEmpty(splits);
@@ -439,7 +442,7 @@ public class FdnClientIntegrationTests(IntegrationTestsFixture fixture) : IClass
     {
         var client = _fixture.Client;
 
-        var ratios = await client.GetValuationRatiosAsync("MSFT");
+        var ratios = await client.GetValuationRatiosAsync("A");
 
         Assert.NotNull(ratios);
         Assert.NotEmpty(ratios);

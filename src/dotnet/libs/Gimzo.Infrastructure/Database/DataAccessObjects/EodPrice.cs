@@ -30,7 +30,8 @@ internal sealed record EodPrice : DaoBase
     public decimal Close { get => _close; init => _close = Math.Round(value, Common.Constants.MoneyPrecision); }
     public double Volume { get; init; }
     public Ohlc ToOhlc() => new(Symbol, Date, Open, High, Low, Close, Volume);
-    public override bool IsValid() => base.IsValid() && !string.IsNullOrWhiteSpace(Symbol) &&
+    public override bool IsValid() => base.IsValid() &&
+        !string.IsNullOrWhiteSpace(Symbol) &&
         Date > new DateOnly(1900, 1, 1);
 }
 

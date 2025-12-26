@@ -2,19 +2,17 @@
 using Npgsql;
 using System.Data;
 
-namespace Gimzo.Infrastructure.Database;
-
 public class DateOnlyTypeHandler : SqlMapper.TypeHandler<DateOnly>
 {
     public override DateOnly Parse(object value)
     {
         return value switch
         {
+            DateOnly dateOnly => dateOnly,
             DateTime dateTime => DateOnly.FromDateTime(dateTime),
             _ => throw new InvalidCastException($"Unable to convert {value?.GetType()} to DateOnly")
         };
     }
-
     public override void SetValue(IDbDataParameter parameter, DateOnly value)
     {
         parameter.Value = value.ToDateTime(TimeOnly.MinValue);
@@ -36,11 +34,11 @@ public class NullableDateOnlyTypeHandler : SqlMapper.TypeHandler<DateOnly?>
         return value switch
         {
             null => null,
+            DateOnly dateOnly => dateOnly,
             DateTime dateTime => DateOnly.FromDateTime(dateTime),
             _ => throw new InvalidCastException($"Unable to convert {value?.GetType()} to DateOnly?")
         };
     }
-
     public override void SetValue(IDbDataParameter parameter, DateOnly? value)
     {
         if (value.HasValue)

@@ -2,8 +2,9 @@
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
-[assembly:InternalsVisibleTo("Gimzo.Infrastructure.Tests"),
+[assembly: InternalsVisibleTo("Gimzo.Infrastructure.Tests"),
     InternalsVisibleTo("Gimzo.AppServices")]
 namespace Gimzo.Infrastructure.DataProviders.FinancialDataNet;
 
@@ -98,7 +99,9 @@ public sealed class FinancialDataApiClient(string apiKey, ILogger<FinancialDataA
                             _logger.LogWarning("Empty response from {Url}. Returning empty array.", url);
                         return [];
                     }
-                    return JsonSerializer.Deserialize<JsonElement[]>(content);
+                    // fixes a defect in the financialdata.net API.
+                    var json = Regex.Replace(content, @"\:\s*NaN\b", ": null");
+                    return JsonSerializer.Deserialize<JsonElement[]>(json);
                 }
                 else
                 {
@@ -325,7 +328,7 @@ public sealed class FinancialDataApiClient(string apiKey, ILogger<FinancialDataA
                 reg.GetString() ?? "", con.GetString() ?? "",
                 exp.ValueKind == JsonValueKind.Null ? DateOnly.MinValue : DateOnly.FromDateTime(exp.GetDateTime()),
                 typ.GetString() ?? "",
-                prc.ValueKind == JsonValueKind.Null ? 0M : prc.GetDecimal());
+                prc.ValueKind == JsonValueKind.Null ? null : prc.GetDecimal());
         }).OrderBy(static k => k.Expiration).ThenBy(static k => k.StrikePrice)];
     }
 
@@ -369,11 +372,11 @@ public sealed class FinancialDataApiClient(string apiKey, ILogger<FinancialDataA
             var rho = k.GetProperty("rho");
             return new OptionGreeks(k.GetProperty("contract_name").GetString() ?? "",
                 DateOnly.FromDateTime(k.GetProperty("date").GetDateTime()),
-                delta.ValueKind == JsonValueKind.Null ? 0D : delta.GetDouble(),
-                gamma.ValueKind == JsonValueKind.Null ? 0D : gamma.GetDouble(),
-                theta.ValueKind == JsonValueKind.Null ? 0D : theta.GetDouble(),
-                vega.ValueKind == JsonValueKind.Null ? 0D : vega.GetDouble(),
-                rho.ValueKind == JsonValueKind.Null ? 0D : rho.GetDouble());
+                delta.ValueKind == JsonValueKind.Null ? null : delta.GetDouble(),
+                gamma.ValueKind == JsonValueKind.Null ? null : gamma.GetDouble(),
+                theta.ValueKind == JsonValueKind.Null ? null : theta.GetDouble(),
+                vega.ValueKind == JsonValueKind.Null ? null : vega.GetDouble(),
+                rho.ValueKind == JsonValueKind.Null ? null : rho.GetDouble());
         }).OrderBy(static k => k.Date)];
     }
 
@@ -386,8 +389,17 @@ public sealed class FinancialDataApiClient(string apiKey, ILogger<FinancialDataA
         var info = (await GetDataAsync(EndPoints.CompanyInformation, paramsDict)).FirstOrDefault();
         if (info.ValueKind == JsonValueKind.Undefined)
             return null;
+
+        var json = JsonSerializer.Serialize(info);
+
+        if (identifier.Equals("AAGH"))
+        {
+            string x = "";
+        }
         var sharesIssued = info.GetProperty("shares_issued");
         var sharesOutstanding = info.GetProperty("shares_outstanding");
+        var marketCap = info.GetProperty("market_cap");
+        var numemp = info.GetProperty("number_of_employees");
 
         return new CompanyInformation(info.GetProperty("trading_symbol").GetString() ?? "",
             info.GetProperty("central_index_key").GetString() ?? "",
@@ -405,11 +417,11 @@ public sealed class FinancialDataApiClient(string apiKey, ILogger<FinancialDataA
             info.GetProperty("business_address").GetString() ?? "",
             info.GetProperty("former_name").GetString(),
             info.GetProperty("industry").GetString() ?? "",
-            DateOnly.FromDateTime(info.GetProperty("founding_date").GetDateTime()),
+            info.GetProperty("founding_date").GetString() ?? "",
             info.GetProperty("chief_executive_officer").GetString() ?? "",
-            info.GetProperty("number_of_employees").GetInt32(),
+            numemp.ValueKind == JsonValueKind.Null ? 0 : numemp.GetInt32(),
             info.GetProperty("website").GetString() ?? "",
-            info.GetProperty("market_cap").GetDouble(),
+            marketCap.ValueKind == JsonValueKind.Null ? null : marketCap.GetDecimal(),
             sharesIssued.ValueKind == JsonValueKind.Null ? null : sharesIssued.GetDouble(),
             sharesOutstanding.ValueKind == JsonValueKind.Null ? null : sharesOutstanding.GetDouble(),
             info.GetProperty("description").GetString() ?? "");
@@ -423,6 +435,8 @@ public sealed class FinancialDataApiClient(string apiKey, ILogger<FinancialDataA
         var info = (await GetDataAsync(EndPoints.InternationalCompanyInformation, paramsDict)).FirstOrDefault();
         if (info.ValueKind == JsonValueKind.Undefined)
             return null;
+
+        var numemp = info.GetProperty("number_of_employees");
         return new InternationalCompanyInformation(
             info.GetProperty("trading_symbol").GetString() ?? "",
             info.GetProperty("registrant_name").GetString() ?? "",
@@ -431,7 +445,7 @@ public sealed class FinancialDataApiClient(string apiKey, ILogger<FinancialDataA
             info.GetProperty("industry").GetString() ?? "",
             info.GetProperty("founding_date").GetString() ?? "",
             info.GetProperty("chief_executive_officer").GetString() ?? "",
-            info.GetProperty("number_of_employees").GetInt32(),
+            numemp.ValueKind == JsonValueKind.Null ? 0 : numemp.GetInt32(),
             info.GetProperty("website").GetString() ?? "",
             info.GetProperty("description").GetString() ?? "");
     }
@@ -457,14 +471,14 @@ public sealed class FinancialDataApiClient(string apiKey, ILogger<FinancialDataA
 
         return new CryptoInformation(info.GetProperty("trading_symbol").GetString() ?? "",
             info.GetProperty("crypto_name").GetString() ?? "",
-            mc.ValueKind == JsonValueKind.Null ? 0M : mc.GetDecimal(),
-            fdv.ValueKind == JsonValueKind.Null ? 0M : fdv.GetDecimal(),
-            ts.ValueKind == JsonValueKind.Null ? 0M : ts.GetDecimal(),
-            ms.ValueKind == JsonValueKind.Null ? 0M : ms.GetDecimal(),
-            cs.ValueKind == JsonValueKind.Null ? 0M : cs.GetDecimal(),
-            hp.ValueKind == JsonValueKind.Null ? 0M : hp.GetDecimal(),
+            mc.ValueKind == JsonValueKind.Null ? null : mc.GetDecimal(),
+            fdv.ValueKind == JsonValueKind.Null ? null : fdv.GetDecimal(),
+            ts.ValueKind == JsonValueKind.Null ? null : ts.GetDecimal(),
+            ms.ValueKind == JsonValueKind.Null ? null : ms.GetDecimal(),
+            cs.ValueKind == JsonValueKind.Null ? null : cs.GetDecimal(),
+            hp.ValueKind == JsonValueKind.Null ? null : hp.GetDecimal(),
             DateOnly.FromDateTime(info.GetProperty("highest_price_date").GetDateTime()),
-            lp.ValueKind == JsonValueKind.Null ? 0M : lp.GetDecimal(),
+            lp.ValueKind == JsonValueKind.Null ? null : lp.GetDecimal(),
             DateOnly.FromDateTime(info.GetProperty("lowest_price_date").GetDateTime()),
             info.GetProperty("hash_function").GetString() ?? "",
             info.GetProperty("block_time").GetString() ?? "",
@@ -478,7 +492,10 @@ public sealed class FinancialDataApiClient(string apiKey, ILogger<FinancialDataA
         if (string.IsNullOrWhiteSpace(identifier))
             throw new ArgumentException("Identifier cannot be empty", nameof(identifier));
         var paramsDict = new Dictionary<string, string> { { "identifier", identifier } };
-        var metrics = await GetDataAsync(EndPoints.KeyMetrics, paramsDict);
+        var metrics = (await GetDataAsync(EndPoints.KeyMetrics, paramsDict)).ToArray();
+
+        var json = JsonSerializer.Serialize(metrics);
+
         return [.. metrics.Select(static k =>
         {
             var eps = k.GetProperty("earnings_per_share");
@@ -500,30 +517,31 @@ public sealed class FinancialDataApiClient(string apiKey, ILogger<FinancialDataA
             var beta1 = k.GetProperty("one_year_beta");
             var beta3 = k.GetProperty("three_year_beta");
             var beta5 = k.GetProperty("five_year_beta");
+            var ped = k.GetProperty("period_end_date");
             return new KeyMetrics(k.GetProperty("trading_symbol").GetString() ?? "",
                 k.GetProperty("central_index_key").GetString() ?? "",
                 k.GetProperty("registrant_name").GetString() ?? "",
                 k.GetProperty("fiscal_year").GetString() ?? "",
-                DateOnly.FromDateTime(k.GetProperty("period_end_date").GetDateTime()),
-                eps.ValueKind == JsonValueKind.Null ? 0M : eps.GetDecimal(),
-                epsf.ValueKind == JsonValueKind.Null ? 0M : epsf.GetDecimal(),
-                pe.ValueKind == JsonValueKind.Null ? 0D : pe.GetDouble(),
-                fpe.ValueKind == JsonValueKind.Null ? 0D : fpe.GetDouble(),
-                egr.ValueKind == JsonValueKind.Null ? 0D : egr.GetDouble(),
-                peg.ValueKind == JsonValueKind.Null ? 0D : peg.GetDouble(),
-                book.ValueKind == JsonValueKind.Null ? 0M : book.GetDecimal(),
-                ptbr.ValueKind == JsonValueKind.Null ? 0D : ptbr.GetDouble(),
-                ebitda.ValueKind == JsonValueKind.Null ? 0D : ebitda.GetDouble(),
-                entval.ValueKind == JsonValueKind.Null ? 0M : entval.GetDecimal(),
-                yield.ValueKind == JsonValueKind.Null ? 0D : yield.GetDouble(),
-                dpr.ValueKind == JsonValueKind.Null ? 0D : dpr.GetDouble(),
-                der.ValueKind == JsonValueKind.Null ? 0D : der.GetDouble(),
-                capex.ValueKind == JsonValueKind.Null ? 0M : capex.GetDecimal(),
-                fcf.ValueKind == JsonValueKind.Null ? 0M : fcf.GetDecimal(),
-                roe.ValueKind == JsonValueKind.Null ? 0M : roe.GetDecimal(),
-                beta1.ValueKind == JsonValueKind.Null ? 0D : beta1.GetDouble(),
-                beta3.ValueKind == JsonValueKind.Null ? 0D : beta3.GetDouble(),
-                beta5.ValueKind == JsonValueKind.Null ? 0D : beta5.GetDouble());
+                ped.ValueKind == JsonValueKind.Null ? null : DateOnly.FromDateTime(ped.GetDateTime()),
+                eps.ValueKind == JsonValueKind.Null ? null : eps.GetDecimal(),
+                epsf.ValueKind == JsonValueKind.Null ? null : epsf.GetDecimal(),
+                pe.ValueKind == JsonValueKind.Null ? null : pe.GetDouble(),
+                fpe.ValueKind == JsonValueKind.Null ? null : fpe.GetDouble(),
+                egr.ValueKind == JsonValueKind.Null ? null : egr.GetDouble(),
+                peg.ValueKind == JsonValueKind.Null ? null : peg.GetDouble(),
+                book.ValueKind == JsonValueKind.Null ? null : book.GetDecimal(),
+                ptbr.ValueKind == JsonValueKind.Null ? null : ptbr.GetDouble(),
+                ebitda.ValueKind == JsonValueKind.Null ? null : ebitda.GetDouble(),
+                entval.ValueKind == JsonValueKind.Null ? null : entval.GetDecimal(),
+                yield.ValueKind == JsonValueKind.Null ? null : yield.GetDouble(),
+                dpr.ValueKind == JsonValueKind.Null ? null : dpr.GetDouble(),
+                der.ValueKind == JsonValueKind.Null ? null : der.GetDouble(),
+                capex.ValueKind == JsonValueKind.Null ? null : capex.GetDecimal(),
+                fcf.ValueKind == JsonValueKind.Null ? null : fcf.GetDecimal(),
+                roe.ValueKind == JsonValueKind.Null ? null : roe.GetDecimal(),
+                beta1.ValueKind == JsonValueKind.Null ? null : beta1.GetDouble(),
+                beta3.ValueKind == JsonValueKind.Null ? null : beta3.GetDouble(),
+                beta5.ValueKind == JsonValueKind.Null ? null : beta5.GetDouble());
         }).OrderBy(static k => k.PeriodEndDate)];
     }
 
@@ -533,17 +551,25 @@ public sealed class FinancialDataApiClient(string apiKey, ILogger<FinancialDataA
             throw new ArgumentException("Identifier cannot be empty", nameof(identifier));
         var paramsDict = new Dictionary<string, string> { { "identifier", identifier } };
         var results = await GetDataAsync(EndPoints.MarketCap, paramsDict);
-        return [.. results.Select(static k =>
-            new MarketCap(k.GetProperty("trading_symbol").GetString() ?? "",
+        return [.. results.Select(static k => {
+            var mc = k.GetProperty("market_cap");
+            var cimc = k.GetProperty("change_in_market_cap");
+            var pcimc = k.GetProperty("percentage_change_in_market_cap");
+            var so = k.GetProperty("shares_outstanding");
+            var cso = k.GetProperty("change_in_shares_outstanding");
+            var pcso = k.GetProperty("percentage_change_in_shares_outstanding");
+
+            return new MarketCap(k.GetProperty("trading_symbol").GetString() ?? "",
                 k.GetProperty("central_index_key").GetString() ?? "",
                 k.GetProperty("registrant_name").GetString() ?? "",
                 k.GetProperty("fiscal_year").GetString() ?? "",
-                k.GetProperty("market_cap").GetDecimal(),
-                k.GetProperty("change_in_market_cap").GetDecimal(),
-                k.GetProperty("percentage_change_in_market_cap").GetDouble(),
-                k.GetProperty("shares_outstanding").GetInt64(),
-                k.GetProperty("change_in_shares_outstanding").GetInt64(),
-                k.GetProperty("percentage_change_in_shares_outstanding").GetDouble())
+                mc.ValueKind == JsonValueKind.Null ? null : mc.GetDecimal(),
+                cimc.ValueKind == JsonValueKind.Null ? null : cimc.GetDecimal(),
+                pcimc.ValueKind == JsonValueKind.Null ? null : pcimc.GetDouble(),
+                so.ValueKind == JsonValueKind.Null ? null : so.GetInt64(),
+                cso.ValueKind == JsonValueKind.Null ? null : cso.GetInt64(),
+                pcso.ValueKind == JsonValueKind.Null ? null : pcso.GetDouble());
+            }
         ).OrderBy(static k => k.FiscalYear)];
     }
 
@@ -553,12 +579,14 @@ public sealed class FinancialDataApiClient(string apiKey, ILogger<FinancialDataA
             throw new ArgumentException("Identifier cannot be empty", nameof(identifier));
         var paramsDict = new Dictionary<string, string> { { "identifier", identifier } };
         var counts = await GetDataAsync(EndPoints.EmployeeCount, paramsDict);
-        return [.. counts.Select(static k =>
-            new EmployeeCount(k.GetProperty("trading_symbol").GetString() ?? "",
+        return [.. counts.Select(static k => {
+            var empcnt = k.GetProperty("employee_count");
+            return new EmployeeCount(k.GetProperty("trading_symbol").GetString() ?? "",
                 k.GetProperty("central_index_key").GetString() ?? "",
                 k.GetProperty("registrant_name").GetString() ?? "",
                 k.GetProperty("fiscal_year").GetString() ?? "",
-                k.GetProperty("employee_count").GetInt32())
+                empcnt.ValueKind == JsonValueKind.Null ? 0 : empcnt.GetInt32());
+            }
         ).OrderBy(static k => k.FiscalYear)];
     }
 
@@ -582,12 +610,12 @@ public sealed class FinancialDataApiClient(string apiKey, ILogger<FinancialDataA
                 k.GetProperty("executive_name").GetString() ?? "",
                 k.GetProperty("executive_position").GetString() ?? "",
                 k.GetProperty("fiscal_year").GetString() ?? "",
-                salary.ValueKind == JsonValueKind.Null ? 0M : salary.GetDecimal(),
-                bonus.ValueKind == JsonValueKind.Null ? 0M : bonus.GetDecimal(),
-                awards.ValueKind == JsonValueKind.Null ? 0M : awards.GetDecimal(),
-                incentives.ValueKind == JsonValueKind.Null ? 0M : incentives.GetDecimal(),
-                other.ValueKind == JsonValueKind.Null ? 0M : other.GetDecimal(),
-                total.ValueKind == JsonValueKind.Null ? 0M : total.GetDecimal());
+                salary.ValueKind == JsonValueKind.Null ? null : salary.GetDecimal(),
+                bonus.ValueKind == JsonValueKind.Null ? null : bonus.GetDecimal(),
+                awards.ValueKind == JsonValueKind.Null ? null : awards.GetDecimal(),
+                incentives.ValueKind == JsonValueKind.Null ? null : incentives.GetDecimal(),
+                other.ValueKind == JsonValueKind.Null ? null : other.GetDecimal(),
+                total.ValueKind == JsonValueKind.Null ? null : total.GetDecimal());
         }).OrderBy(static k => k.Name).ThenBy(static k => k.FiscalYear)];
     }
 
@@ -632,26 +660,28 @@ public sealed class FinancialDataApiClient(string apiKey, ILogger<FinancialDataA
             var epsDil = k.GetProperty("earnings_per_share_diluted");
             var soBasic = k.GetProperty("weighted_average_shares_outstanding_basic");
             var soDil = k.GetProperty("weighted_average_shares_outstanding_diluted");
+            var ped = k.GetProperty("period_end_date");
+
             return new IncomeStatement(k.GetProperty("trading_symbol").GetString() ?? "",
                 k.GetProperty("central_index_key").GetString() ?? "",
                 k.GetProperty("registrant_name").GetString() ?? "",
                 k.GetProperty("fiscal_year").GetString() ?? "",
                 k.GetProperty("fiscal_period").GetString() ?? "",
-                DateOnly.FromDateTime(k.GetProperty("period_end_date").GetDateTime()),
-                r.ValueKind == JsonValueKind.Null ? 0M : r.GetDecimal(),
-                cr.ValueKind == JsonValueKind.Null ? 0M : cr.GetDecimal(),
-                gp.ValueKind == JsonValueKind.Null ? 0M : gp.GetDecimal(),
-                rd.ValueKind == JsonValueKind.Null ? 0M : rd.GetDecimal(),
-                gen.ValueKind == JsonValueKind.Null ? 0M : gen.GetDecimal(),
-                opex.ValueKind == JsonValueKind.Null ? 0M : opex.GetDecimal(),
-                opinc.ValueKind == JsonValueKind.Null ? 0M : opinc.GetDecimal(),
-                intex.ValueKind == JsonValueKind.Null ? 0M : intex.GetDecimal(),
-                intinc.ValueKind == JsonValueKind.Null ? 0M : intinc.GetDecimal(),
-                netinc.ValueKind == JsonValueKind.Null ? 0M : netinc.GetDecimal(),
-                epsBasic.ValueKind == JsonValueKind.Null ? 0M : epsBasic.GetDecimal(),
-                epsDil.ValueKind == JsonValueKind.Null ? 0M : epsDil.GetDecimal(),
-                soBasic.ValueKind == JsonValueKind.Null ? 0L : soBasic.GetInt64(),
-                soDil.ValueKind == JsonValueKind.Null ? 0L : soDil.GetInt64());
+                ped.ValueKind == JsonValueKind.Null ? null : DateOnly.FromDateTime(ped.GetDateTime()),
+                r.ValueKind == JsonValueKind.Null ? null : r.GetDecimal(),
+                cr.ValueKind == JsonValueKind.Null ? null : cr.GetDecimal(),
+                gp.ValueKind == JsonValueKind.Null ? null : gp.GetDecimal(),
+                rd.ValueKind == JsonValueKind.Null ? null : rd.GetDecimal(),
+                gen.ValueKind == JsonValueKind.Null ? null : gen.GetDecimal(),
+                opex.ValueKind == JsonValueKind.Null ? null : opex.GetDecimal(),
+                opinc.ValueKind == JsonValueKind.Null ? null : opinc.GetDecimal(),
+                intex.ValueKind == JsonValueKind.Null ? null : intex.GetDecimal(),
+                intinc.ValueKind == JsonValueKind.Null ? null : intinc.GetDecimal(),
+                netinc.ValueKind == JsonValueKind.Null ? null : netinc.GetDecimal(),
+                epsBasic.ValueKind == JsonValueKind.Null ? null : epsBasic.GetDecimal(),
+                epsDil.ValueKind == JsonValueKind.Null ? null : epsDil.GetDecimal(),
+                soBasic.ValueKind == JsonValueKind.Null ? null : soBasic.GetInt64(),
+                soDil.ValueKind == JsonValueKind.Null ? null : soDil.GetInt64());
         }).OrderBy(static k => k.FiscalYear).ThenBy(static k => k.FiscalPeriod)];
     }
 
@@ -663,6 +693,9 @@ public sealed class FinancialDataApiClient(string apiKey, ILogger<FinancialDataA
         if (!string.IsNullOrEmpty(period))
             paramsDict["period"] = period;
         var statements = await GetDataAsync(EndPoints.BalanceSheetStatements, paramsDict, 50);
+
+        var json = JsonSerializer.Serialize(statements);
+
         return [.. statements.Select(static k =>
         {
             var cash = k.GetProperty("cash_and_cash_equivalents");
@@ -690,37 +723,38 @@ public sealed class FinancialDataApiClient(string apiKey, ILogger<FinancialDataA
             var re = k.GetProperty("retained_earnings");
             var aoci = k.GetProperty("accumulated_other_comprehensive_income");
             var tse = k.GetProperty("total_shareholders_equity");
+            var ped = k.GetProperty("period_end_date");
             return new BalanceSheet(k.GetProperty("trading_symbol").GetString() ?? "",
                 k.GetProperty("central_index_key").GetString() ?? "",
                 k.GetProperty("registrant_name").GetString() ?? "",
                 k.GetProperty("fiscal_year").GetString() ?? "",
                 k.GetProperty("fiscal_period").GetString() ?? "",
-                DateOnly.FromDateTime(k.GetProperty("period_end_date").GetDateTime()),
-                cash.ValueKind == JsonValueKind.Null ? 0M : cash.GetDecimal(),
-                msc.ValueKind == JsonValueKind.Null ? 0M : msc.GetDecimal(),
-                ar.ValueKind == JsonValueKind.Null ? 0M : ar.GetDecimal(),
-                inv.ValueKind == JsonValueKind.Null ? 0M : inv.GetDecimal(),
-                ntr.ValueKind == JsonValueKind.Null ? 0M : ntr.GetDecimal(),
-                oac.ValueKind == JsonValueKind.Null ? 0M : oac.GetDecimal(),
-                tac.ValueKind == JsonValueKind.Null ? 0M : tac.GetDecimal(),
-                msnc.ValueKind == JsonValueKind.Null ? 0M : msnc.GetDecimal(),
-                ppe.ValueKind == JsonValueKind.Null ? 0M : ppe.GetDecimal(),
-                oanc.ValueKind == JsonValueKind.Null ? 0M : oanc.GetDecimal(),
-                tanc.ValueKind == JsonValueKind.Null ? 0M : tanc.GetDecimal(),
-                ta.ValueKind == JsonValueKind.Null ? 0M : ta.GetDecimal(),
-                ap.ValueKind == JsonValueKind.Null ? 0M : ap.GetDecimal(),
-                dr.ValueKind == JsonValueKind.Null ? 0M : dr.GetDecimal(),
-                std.ValueKind == JsonValueKind.Null ? 0M : std.GetDecimal(),
-                olc.ValueKind == JsonValueKind.Null ? 0M : olc.GetDecimal(),
-                tlc.ValueKind == JsonValueKind.Null ? 0M : tlc.GetDecimal(),
-                ltd.ValueKind == JsonValueKind.Null ? 0M : ltd.GetDecimal(),
-                olnc.ValueKind == JsonValueKind.Null ? 0M : olnc.GetDecimal(),
-                tlnc.ValueKind == JsonValueKind.Null ? 0M : tlnc.GetDecimal(),
-                tl.ValueKind == JsonValueKind.Null ? 0M : tl.GetDecimal(),
-                cs.ValueKind == JsonValueKind.Null ? 0M : cs.GetDecimal(),
-                re.ValueKind == JsonValueKind.Null ? 0M : re.GetDecimal(),
-                aoci.ValueKind == JsonValueKind.Null ? 0M : aoci.GetDecimal(),
-                tse.ValueKind == JsonValueKind.Null ? 0M : tse.GetDecimal());
+                ped.ValueKind == JsonValueKind.Null ? null : DateOnly.FromDateTime(ped.GetDateTime()),
+                cash.ValueKind == JsonValueKind.Null ? null : cash.GetDecimal(),
+                msc.ValueKind == JsonValueKind.Null ? null : msc.GetDecimal(),
+                ar.ValueKind == JsonValueKind.Null ? null : ar.GetDecimal(),
+                inv.ValueKind == JsonValueKind.Null ? null : inv.GetDecimal(),
+                ntr.ValueKind == JsonValueKind.Null ? null : ntr.GetDecimal(),
+                oac.ValueKind == JsonValueKind.Null ? null : oac.GetDecimal(),
+                tac.ValueKind == JsonValueKind.Null ? null : tac.GetDecimal(),
+                msnc.ValueKind == JsonValueKind.Null ? null : msnc.GetDecimal(),
+                ppe.ValueKind == JsonValueKind.Null ? null : ppe.GetDecimal(),
+                oanc.ValueKind == JsonValueKind.Null ? null : oanc.GetDecimal(),
+                tanc.ValueKind == JsonValueKind.Null ? null : tanc.GetDecimal(),
+                ta.ValueKind == JsonValueKind.Null ? null : ta.GetDecimal(),
+                ap.ValueKind == JsonValueKind.Null ? null : ap.GetDecimal(),
+                dr.ValueKind == JsonValueKind.Null ? null : dr.GetDecimal(),
+                std.ValueKind == JsonValueKind.Null ? null : std.GetDecimal(),
+                olc.ValueKind == JsonValueKind.Null ? null : olc.GetDecimal(),
+                tlc.ValueKind == JsonValueKind.Null ? null : tlc.GetDecimal(),
+                ltd.ValueKind == JsonValueKind.Null ? null : ltd.GetDecimal(),
+                olnc.ValueKind == JsonValueKind.Null ? null : olnc.GetDecimal(),
+                tlnc.ValueKind == JsonValueKind.Null ? null : tlnc.GetDecimal(),
+                tl.ValueKind == JsonValueKind.Null ? null : tl.GetDecimal(),
+                cs.ValueKind == JsonValueKind.Null ? null : cs.GetDecimal(),
+                re.ValueKind == JsonValueKind.Null ? null : re.GetDecimal(),
+                aoci.ValueKind == JsonValueKind.Null ? null : aoci.GetDecimal(),
+                tse.ValueKind == JsonValueKind.Null ? null : tse.GetDecimal());
         }).OrderBy(static k => k.FiscalYear).ThenBy(static k => k.FiscalPeriod)];
     }
 
@@ -764,42 +798,43 @@ public sealed class FinancialDataApiClient(string apiKey, ILogger<FinancialDataA
             var caeop = k.GetProperty("cash_at_end_of_period");
             var itp = k.GetProperty("income_taxes_paid");
             var ip = k.GetProperty("interest_paid");
+            var ped = k.GetProperty("period_end_date");
             return new CashFlowStatement(k.GetProperty("trading_symbol").GetString() ?? "",
                 k.GetProperty("central_index_key").GetString() ?? "",
                 k.GetProperty("registrant_name").GetString() ?? "",
                 k.GetProperty("fiscal_year").GetString() ?? "",
                 k.GetProperty("fiscal_period").GetString() ?? "",
-                DateOnly.FromDateTime(k.GetProperty("period_end_date").GetDateTime()),
-                da.ValueKind == JsonValueKind.Null ? 0M : da.GetDecimal(),
-                sbce.ValueKind == JsonValueKind.Null ? 0M : sbce.GetDecimal(),
-                dite.ValueKind == JsonValueKind.Null ? 0M : dite.GetDecimal(),
-                oncie.ValueKind == JsonValueKind.Null ? 0M : oncie.GetDecimal(),
-                ciar.ValueKind == JsonValueKind.Null ? 0M : ciar.GetDecimal(),
-                cii.ValueKind == JsonValueKind.Null ? 0M : cii.GetDecimal(),
-                cintr.ValueKind == JsonValueKind.Null ? 0M : cintr.GetDecimal(),
-                cioa.ValueKind == JsonValueKind.Null ? 0M : cioa.GetDecimal(),
-                ciap.ValueKind == JsonValueKind.Null ? 0M : ciap.GetDecimal(),
-                cidr.ValueKind == JsonValueKind.Null ? 0M : cidr.GetDecimal(),
-                ciol.ValueKind == JsonValueKind.Null ? 0M : ciol.GetDecimal(),
-                cfoa.ValueKind == JsonValueKind.Null ? 0M : cfoa.GetDecimal(),
-                poms.ValueKind == JsonValueKind.Null ? 0M : poms.GetDecimal(),
-                soms.ValueKind == JsonValueKind.Null ? 0M : soms.GetDecimal(),
-                aoppe.ValueKind == JsonValueKind.Null ? 0M : aoppe.GetDecimal(),
-                aob.ValueKind == JsonValueKind.Null ? 0M : aob.GetDecimal(),
-                oia.ValueKind == JsonValueKind.Null ? 0M : oia.GetDecimal(),
-                cfia.ValueKind == JsonValueKind.Null ? 0M : cfia.GetDecimal(),
-                twfsbc.ValueKind == JsonValueKind.Null ? 0M : twfsbc.GetDecimal(),
-                pod.ValueKind == JsonValueKind.Null ? 0M : pod.GetDecimal(),
-                iocs.ValueKind == JsonValueKind.Null ? 0M : iocs.GetDecimal(),
-                rocs.ValueKind == JsonValueKind.Null ? 0M : rocs.GetDecimal(),
-                ioltd.ValueKind == JsonValueKind.Null ? 0M : ioltd.GetDecimal(),
-                roltd.ValueKind == JsonValueKind.Null ? 0M : roltd.GetDecimal(),
-                ofa.ValueKind == JsonValueKind.Null ? 0M : ofa.GetDecimal(),
-                cffa.ValueKind == JsonValueKind.Null ? 0M : cffa.GetDecimal(),
-                cic.ValueKind == JsonValueKind.Null ? 0M : cic.GetDecimal(),
-                caeop.ValueKind == JsonValueKind.Null ? 0M : caeop.GetDecimal(),
-                itp.ValueKind == JsonValueKind.Null ? 0M : itp.GetDecimal(),
-                ip.ValueKind == JsonValueKind.Null ? 0M : ip.GetDecimal());
+                ped.ValueKind == JsonValueKind.Null ? null : DateOnly.FromDateTime(ped.GetDateTime()),
+                da.ValueKind == JsonValueKind.Null ? null : da.GetDecimal(),
+                sbce.ValueKind == JsonValueKind.Null ? null : sbce.GetDecimal(),
+                dite.ValueKind == JsonValueKind.Null ? null : dite.GetDecimal(),
+                oncie.ValueKind == JsonValueKind.Null ? null : oncie.GetDecimal(),
+                ciar.ValueKind == JsonValueKind.Null ? null : ciar.GetDecimal(),
+                cii.ValueKind == JsonValueKind.Null ? null : cii.GetDecimal(),
+                cintr.ValueKind == JsonValueKind.Null ? null : cintr.GetDecimal(),
+                cioa.ValueKind == JsonValueKind.Null ? null : cioa.GetDecimal(),
+                ciap.ValueKind == JsonValueKind.Null ? null : ciap.GetDecimal(),
+                cidr.ValueKind == JsonValueKind.Null ? null : cidr.GetDecimal(),
+                ciol.ValueKind == JsonValueKind.Null ? null : ciol.GetDecimal(),
+                cfoa.ValueKind == JsonValueKind.Null ? null : cfoa.GetDecimal(),
+                poms.ValueKind == JsonValueKind.Null ? null : poms.GetDecimal(),
+                soms.ValueKind == JsonValueKind.Null ? null : soms.GetDecimal(),
+                aoppe.ValueKind == JsonValueKind.Null ? null : aoppe.GetDecimal(),
+                aob.ValueKind == JsonValueKind.Null ? null : aob.GetDecimal(),
+                oia.ValueKind == JsonValueKind.Null ? null : oia.GetDecimal(),
+                cfia.ValueKind == JsonValueKind.Null ? null : cfia.GetDecimal(),
+                twfsbc.ValueKind == JsonValueKind.Null ? null : twfsbc.GetDecimal(),
+                pod.ValueKind == JsonValueKind.Null ? null : pod.GetDecimal(),
+                iocs.ValueKind == JsonValueKind.Null ? null : iocs.GetDecimal(),
+                rocs.ValueKind == JsonValueKind.Null ? null : rocs.GetDecimal(),
+                ioltd.ValueKind == JsonValueKind.Null ? null : ioltd.GetDecimal(),
+                roltd.ValueKind == JsonValueKind.Null ? null : roltd.GetDecimal(),
+                ofa.ValueKind == JsonValueKind.Null ? null : ofa.GetDecimal(),
+                cffa.ValueKind == JsonValueKind.Null ? null : cffa.GetDecimal(),
+                cic.ValueKind == JsonValueKind.Null ? null : cic.GetDecimal(),
+                caeop.ValueKind == JsonValueKind.Null ? null : caeop.GetDecimal(),
+                itp.ValueKind == JsonValueKind.Null ? null : itp.GetDecimal(),
+                ip.ValueKind == JsonValueKind.Null ? null : ip.GetDecimal());
         }).OrderBy(static k => k.FiscalYear).ThenBy(static k => k.FiscalPeriod)];
     }
 
@@ -809,18 +844,27 @@ public sealed class FinancialDataApiClient(string apiKey, ILogger<FinancialDataA
         if (string.IsNullOrWhiteSpace(identifier))
             throw new ArgumentException("Identifier cannot be empty", nameof(identifier));
         var paramsDict = new Dictionary<string, string> { { "identifier", identifier } };
-        var divs = await GetDataAsync(EndPoints.Dividends, paramsDict, 300);
+        var divs = (await GetDataAsync(EndPoints.Dividends, paramsDict, 300)).ToArray();
+
+        if (divs.Length == 0)
+            return [];
+
         return [.. divs.Select(static k =>
         {
             var amt = k.GetProperty("amount");
+            var dd = k.GetProperty("declaration_date");
+            var exd = k.GetProperty("ex_date");
+            var recd = k.GetProperty("record_date");
+            var pd = k.GetProperty("payment_date");
+
             return new Dividend(k.GetProperty("trading_symbol").GetString() ?? "",
                 k.GetProperty("registrant_name").GetString() ?? "",
                 k.GetProperty("type").GetString() ?? "",
-                amt.ValueKind == JsonValueKind.Null ? 0M : amt.GetDecimal(),
-                DateOnly.FromDateTime(k.GetProperty("declaration_date").GetDateTime()),
-                DateOnly.FromDateTime(k.GetProperty("ex_date").GetDateTime()),
-                DateOnly.FromDateTime(k.GetProperty("record_date").GetDateTime()),
-                DateOnly.FromDateTime(k.GetProperty("payment_date").GetDateTime()));
+                amt.ValueKind == JsonValueKind.Null ? null : amt.GetDecimal(),
+                dd.ValueKind == JsonValueKind.Null ? null : DateOnly.FromDateTime(dd.GetDateTime()),
+                exd.ValueKind == JsonValueKind.Null ? null : DateOnly.FromDateTime(exd.GetDateTime()),
+                recd.ValueKind == JsonValueKind.Null ? null : DateOnly.FromDateTime(recd.GetDateTime()),
+                pd.ValueKind == JsonValueKind.Null ? null : DateOnly.FromDateTime(pd.GetDateTime()));
         }).OrderBy(static k => k.DeclarationDate)];
     }
 
@@ -858,12 +902,12 @@ public sealed class FinancialDataApiClient(string apiKey, ILogger<FinancialDataA
                 k.GetProperty("title_of_security").GetString() ?? "",
                 k.GetProperty("market_code").GetString() ?? "",
                 DateOnly.FromDateTime(k.GetProperty("settlement_date").GetDateTime()),
-                ss.ValueKind == JsonValueKind.Null ? 0L : ss.GetInt64(),
-                pss.ValueKind == JsonValueKind.Null ? 0L : pss.GetInt64(),
-                css.ValueKind == JsonValueKind.Null ? 0L : css.GetInt64(),
-                pcss.ValueKind == JsonValueKind.Null ? 0D : pcss.GetDouble(),
-                adv.ValueKind == JsonValueKind.Null ? 0L : adv.GetInt64(),
-                dtc.ValueKind == JsonValueKind.Null ? 0D : dtc.GetDouble(),
+                ss.ValueKind == JsonValueKind.Null ? null : ss.GetInt64(),
+                pss.ValueKind == JsonValueKind.Null ? null : pss.GetInt64(),
+                css.ValueKind == JsonValueKind.Null ? null : css.GetInt64(),
+                pcss.ValueKind == JsonValueKind.Null ? null : pcss.GetDouble(),
+                adv.ValueKind == JsonValueKind.Null ? null : adv.GetInt64(),
+                dtc.ValueKind == JsonValueKind.Null ? null : dtc.GetDouble(),
                 k.GetProperty("is_stock_split").GetBoolean());
         }).OrderBy(static k => k.SettlementDate)];
     }
@@ -886,13 +930,13 @@ public sealed class FinancialDataApiClient(string apiKey, ILogger<FinancialDataA
             return new EarningsRelease(k.GetProperty("trading_symbol").GetString() ?? "",
                 k.GetProperty("central_index_key").GetString() ?? "",
                 k.GetProperty("registrant_name").GetString() ?? "",
-                mc.ValueKind == JsonValueKind.Null ? 0M : mc.GetDecimal(),
+                mc.ValueKind == JsonValueKind.Null ? null : mc.GetDecimal(),
                 k.GetProperty("fiscal_quarter_end_date").GetString() ?? "",
-                eps.ValueKind == JsonValueKind.Null ? 0M : eps.GetDecimal(),
-                epsForecast.ValueKind == JsonValueKind.Null ? 0M : epsForecast.GetDecimal(),
-                percentageSurprise.ValueKind == JsonValueKind.Null ? 0D : percentageSurprise.GetDouble(),
+                eps.ValueKind == JsonValueKind.Null ? null : eps.GetDecimal(),
+                epsForecast.ValueKind == JsonValueKind.Null ? null : epsForecast.GetDecimal(),
+                percentageSurprise.ValueKind == JsonValueKind.Null ? null : percentageSurprise.GetDouble(),
                 numberOfForecasts.ValueKind == JsonValueKind.Null ? 0 : numberOfForecasts.GetInt32(),
-                DateTime.Parse(k.GetProperty("conference_call_time").GetString() ?? throw new Exception("Conference call time is null")));
+                conferenceCallTime.ValueKind == JsonValueKind.Null ? null : DateTime.Parse(conferenceCallTime.GetString()!));
         }).OrderByDescending(static k => k.FiscalQuarterEndDate)];
     }
 
@@ -921,28 +965,29 @@ public sealed class FinancialDataApiClient(string apiKey, ILogger<FinancialDataA
             var inventoryToSales = k.GetProperty("inventory_to_sales_ratio");
             var investmentTurnover = k.GetProperty("investment_turnover_ratio");
             var salesToOperatingIncome = k.GetProperty("sales_to_operating_income_ratio");
+            var ped = k.GetProperty("period_end_date");
 
             return new EfficiencyRatios(k.GetProperty("trading_symbol").GetString() ?? "",
                 k.GetProperty("central_index_key").GetString() ?? "",
                 k.GetProperty("registrant_name").GetString() ?? "",
                 k.GetProperty("fiscal_year").GetString() ?? "",
                 k.GetProperty("fiscal_period").GetString() ?? "",
-                DateOnly.FromDateTime(k.GetProperty("period_end_date").GetDateTime()),
-                assetTurnover.ValueKind == JsonValueKind.Null ? 0D : assetTurnover.GetDouble(),
-                inventoryTurnover.ValueKind == JsonValueKind.Null ? 0D : inventoryTurnover.GetDouble(),
-                accountsReceivableTurnover.ValueKind == JsonValueKind.Null ? 0D : accountsReceivableTurnover.GetDouble(),
-                accountsPayableTurnover.ValueKind == JsonValueKind.Null ? 0D : accountsPayableTurnover.GetDouble(),
-                equityMultiplier.ValueKind == JsonValueKind.Null ? 0D : equityMultiplier.GetDouble(),
-                daysSalesInInventory.ValueKind == JsonValueKind.Null ? 0D : daysSalesInInventory.GetDouble(),
-                fixedAssetTurnover.ValueKind == JsonValueKind.Null ? 0D : fixedAssetTurnover.GetDouble(),
-                daysWorkingCapital.ValueKind == JsonValueKind.Null ? 0D : daysWorkingCapital.GetDouble(),
-                workingCapitalTurnover.ValueKind == JsonValueKind.Null ? 0D : workingCapitalTurnover.GetDouble(),
+                ped.ValueKind == JsonValueKind.Null ? null : DateOnly.FromDateTime(ped.GetDateTime()),
+                assetTurnover.ValueKind == JsonValueKind.Null ? null : assetTurnover.GetDouble(),
+                inventoryTurnover.ValueKind == JsonValueKind.Null ? null : inventoryTurnover.GetDouble(),
+                accountsReceivableTurnover.ValueKind == JsonValueKind.Null ? null : accountsReceivableTurnover.GetDouble(),
+                accountsPayableTurnover.ValueKind == JsonValueKind.Null ? null : accountsPayableTurnover.GetDouble(),
+                equityMultiplier.ValueKind == JsonValueKind.Null ? null : equityMultiplier.GetDouble(),
+                daysSalesInInventory.ValueKind == JsonValueKind.Null ? null : daysSalesInInventory.GetDouble(),
+                fixedAssetTurnover.ValueKind == JsonValueKind.Null ? null : fixedAssetTurnover.GetDouble(),
+                daysWorkingCapital.ValueKind == JsonValueKind.Null ? null : daysWorkingCapital.GetDouble(),
+                workingCapitalTurnover.ValueKind == JsonValueKind.Null ? null : workingCapitalTurnover.GetDouble(),
                 daysCashOnHand.ValueKind == JsonValueKind.Null ? null : daysCashOnHand.GetDouble(),
-                capitalIntensity.ValueKind == JsonValueKind.Null ? 0D : capitalIntensity.GetDouble(),
-                salesToEquity.ValueKind == JsonValueKind.Null ? 0D : salesToEquity.GetDouble(),
-                inventoryToSales.ValueKind == JsonValueKind.Null ? 0D : inventoryToSales.GetDouble(),
-                investmentTurnover.ValueKind == JsonValueKind.Null ? 0D : investmentTurnover.GetDouble(),
-                salesToOperatingIncome.ValueKind == JsonValueKind.Null ? 0D : salesToOperatingIncome.GetDouble());
+                capitalIntensity.ValueKind == JsonValueKind.Null ? null : capitalIntensity.GetDouble(),
+                salesToEquity.ValueKind == JsonValueKind.Null ? null : salesToEquity.GetDouble(),
+                inventoryToSales.ValueKind == JsonValueKind.Null ? null : inventoryToSales.GetDouble(),
+                investmentTurnover.ValueKind == JsonValueKind.Null ? null : investmentTurnover.GetDouble(),
+                salesToOperatingIncome.ValueKind == JsonValueKind.Null ? null : salesToOperatingIncome.GetDouble());
         }).OrderBy(static k => k.PeriodEndDate)];
     }
 
@@ -973,13 +1018,14 @@ public sealed class FinancialDataApiClient(string apiKey, ILogger<FinancialDataA
         {
             var sharePrice = k.GetProperty("share_price");
             var offeringValue = k.GetProperty("offering_value");
+            var sharesOff = k.GetProperty("shares_offered");
             return new InitialPublicOffering(k.GetProperty("trading_symbol").GetString() ?? "",
                 k.GetProperty("registrant_name").GetString() ?? "",
                 k.GetProperty("exchange").GetString() ?? "",
                 DateOnly.Parse(k.GetProperty("pricing_date").GetString() ?? DateOnly.MinValue.ToString()),
-                sharePrice.ValueKind == JsonValueKind.Null ? 0M : sharePrice.GetDecimal(),
-                k.GetProperty("shares_offered").GetInt64(),
-                offeringValue.ValueKind == JsonValueKind.Null ? 0M : offeringValue.GetDecimal());
+                sharePrice.ValueKind == JsonValueKind.Null ? null : sharePrice.GetDecimal(),
+                sharesOff.ValueKind == JsonValueKind.Null ? 0 : sharesOff.GetInt64(),
+                offeringValue.ValueKind == JsonValueKind.Null ? null : offeringValue.GetDecimal());
         }).OrderBy(static k => k.PricingDate)];
     }
 
@@ -1010,30 +1056,31 @@ public sealed class FinancialDataApiClient(string apiKey, ILogger<FinancialDataA
             var cwcr = k.GetProperty("cash_to_working_capital_ratio");
             var iwcr = k.GetProperty("inventory_to_working_capital_ratio");
             var nd = k.GetProperty("net_debt");
+            var ped = k.GetProperty("period_end_date");
 
             return new LiquidityRatios(k.GetProperty("trading_symbol").GetString() ?? "",
                 k.GetProperty("central_index_key").GetString() ?? "",
                 k.GetProperty("registrant_name").GetString() ?? "",
                 k.GetProperty("fiscal_year").GetString() ?? "",
                 k.GetProperty("fiscal_period").GetString() ?? "",
-                DateOnly.FromDateTime(k.GetProperty("period_end_date").GetDateTime()),
-                wc.ValueKind == JsonValueKind.Null ? 0M : wc.GetDecimal(),
-                cr.ValueKind == JsonValueKind.Null ? 0D : cr.GetDouble(),
-                cashr.ValueKind == JsonValueKind.Null ? 0D : cashr.GetDouble(),
-                qr.ValueKind == JsonValueKind.Null ? 0D : qr.GetDouble(),
-                dio.ValueKind == JsonValueKind.Null ? 0D : dio.GetDouble(),
-                dso.ValueKind == JsonValueKind.Null ? 0D : dso.GetDouble(),
-                dpo.ValueKind == JsonValueKind.Null ? 0D : dpo.GetDouble(),
-                ccc.ValueKind == JsonValueKind.Null ? 0D : ccc.GetDouble(),
-                swcr.ValueKind == JsonValueKind.Null ? 0D : swcr.GetDouble(),
-                cclr.ValueKind == JsonValueKind.Null ? 0D : cclr.GetDouble(),
-                wcdr.ValueKind == JsonValueKind.Null ? 0D : wcdr.GetDouble(),
-                cfar.ValueKind == JsonValueKind.Null ? 0D : cfar.GetDouble(),
-                scar.ValueKind == JsonValueKind.Null ? 0D : scar.GetDouble(),
-                ccar.ValueKind == JsonValueKind.Null ? 0D : ccar.GetDouble(),
-                cwcr.ValueKind == JsonValueKind.Null ? 0D : cwcr.GetDouble(),
-                iwcr.ValueKind == JsonValueKind.Null ? 0D : iwcr.GetDouble(),
-                nd.ValueKind == JsonValueKind.Null ? 0M : nd.GetDecimal());
+                ped.ValueKind == JsonValueKind.Null ? null : DateOnly.FromDateTime(ped.GetDateTime()),
+                wc.ValueKind == JsonValueKind.Null ? null : wc.GetDecimal(),
+                cr.ValueKind == JsonValueKind.Null ? null : cr.GetDouble(),
+                cashr.ValueKind == JsonValueKind.Null ? null : cashr.GetDouble(),
+                qr.ValueKind == JsonValueKind.Null ? null : qr.GetDouble(),
+                dio.ValueKind == JsonValueKind.Null ? null : dio.GetDouble(),
+                dso.ValueKind == JsonValueKind.Null ? null : dso.GetDouble(),
+                dpo.ValueKind == JsonValueKind.Null ? null : dpo.GetDouble(),
+                ccc.ValueKind == JsonValueKind.Null ? null : ccc.GetDouble(),
+                swcr.ValueKind == JsonValueKind.Null ? null : swcr.GetDouble(),
+                cclr.ValueKind == JsonValueKind.Null ? null : cclr.GetDouble(),
+                wcdr.ValueKind == JsonValueKind.Null ? null : wcdr.GetDouble(),
+                cfar.ValueKind == JsonValueKind.Null ? null : cfar.GetDouble(),
+                scar.ValueKind == JsonValueKind.Null ? null : scar.GetDouble(),
+                ccar.ValueKind == JsonValueKind.Null ? null : ccar.GetDouble(),
+                cwcr.ValueKind == JsonValueKind.Null ? null : cwcr.GetDouble(),
+                iwcr.ValueKind == JsonValueKind.Null ? null : iwcr.GetDouble(),
+                nd.ValueKind == JsonValueKind.Null ? null : nd.GetDecimal());
         }).OrderBy(static k => k.PeriodEndDate)];
     }
 
@@ -1058,23 +1105,24 @@ public sealed class FinancialDataApiClient(string apiKey, ILogger<FinancialDataA
             var returnOnDebt = k.GetProperty("return_on_debt");
             var cashReturnOnAssets = k.GetProperty("cash_return_on_assets");
             var cashTurnoverRatio = k.GetProperty("cash_turnover_ratio");
+            var ped = k.GetProperty("period_end_date");
             return new ProfitabilityRatios(k.GetProperty("trading_symbol").GetString() ?? "",
                 k.GetProperty("central_index_key").GetString() ?? "",
                 k.GetProperty("registrant_name").GetString() ?? "",
                 k.GetProperty("fiscal_year").GetString() ?? "",
                 k.GetProperty("fiscal_period").GetString() ?? "",
-                DateOnly.FromDateTime(k.GetProperty("period_end_date").GetDateTime()),
-                ebit.ValueKind == JsonValueKind.Null ? 0M : ebit.GetDecimal(),
-                ebitda.ValueKind == JsonValueKind.Null ? 0M : ebitda.GetDecimal(),
-                profitMargin.ValueKind == JsonValueKind.Null ? 0D : profitMargin.GetDouble(),
-                grossMargin.ValueKind == JsonValueKind.Null ? 0D : grossMargin.GetDouble(),
-                operatingMargin.ValueKind == JsonValueKind.Null ? 0D : operatingMargin.GetDouble(),
-                operatingCashFlowMargin.ValueKind == JsonValueKind.Null ? 0D : operatingCashFlowMargin.GetDouble(),
-                returnOnEquity.ValueKind == JsonValueKind.Null ? 0D : returnOnEquity.GetDouble(),
-                returnOnAssets.ValueKind == JsonValueKind.Null ? 0D : returnOnAssets.GetDouble(),
-                returnOnDebt.ValueKind == JsonValueKind.Null ? 0D : returnOnDebt.GetDouble(),
-                cashReturnOnAssets.ValueKind == JsonValueKind.Null ? 0D : cashReturnOnAssets.GetDouble(),
-                cashTurnoverRatio.ValueKind == JsonValueKind.Null ? 0D : cashTurnoverRatio.GetDouble());
+                ped.ValueKind == JsonValueKind.Null ? null : DateOnly.FromDateTime(ped.GetDateTime()),
+                ebit.ValueKind == JsonValueKind.Null ? null : ebit.GetDecimal(),
+                ebitda.ValueKind == JsonValueKind.Null ? null : ebitda.GetDecimal(),
+                profitMargin.ValueKind == JsonValueKind.Null ? null : profitMargin.GetDouble(),
+                grossMargin.ValueKind == JsonValueKind.Null ? null : grossMargin.GetDouble(),
+                operatingMargin.ValueKind == JsonValueKind.Null ? null : operatingMargin.GetDouble(),
+                operatingCashFlowMargin.ValueKind == JsonValueKind.Null ? null : operatingCashFlowMargin.GetDouble(),
+                returnOnEquity.ValueKind == JsonValueKind.Null ? null : returnOnEquity.GetDouble(),
+                returnOnAssets.ValueKind == JsonValueKind.Null ? null : returnOnAssets.GetDouble(),
+                returnOnDebt.ValueKind == JsonValueKind.Null ? null : returnOnDebt.GetDouble(),
+                cashReturnOnAssets.ValueKind == JsonValueKind.Null ? null : cashReturnOnAssets.GetDouble(),
+                cashTurnoverRatio.ValueKind == JsonValueKind.Null ? null : cashTurnoverRatio.GetDouble());
         }).OrderBy(static k => k.PeriodEndDate)];
     }
 
@@ -1097,21 +1145,22 @@ public sealed class FinancialDataApiClient(string apiKey, ILogger<FinancialDataA
             var debtToCapitalRatio = k.GetProperty("debt_to_capital_ratio");
             var debtToIncomeRatio = k.GetProperty("debt_to_income_ratio");
             var cashFlowToDebtRatio = k.GetProperty("cash_flow_to_debt_ratio");
+            var ped = k.GetProperty("period_end_date");
             return new SolvencyRatios(k.GetProperty("trading_symbol").GetString() ?? "",
                 k.GetProperty("central_index_key").GetString() ?? "",
                 k.GetProperty("registrant_name").GetString() ?? "",
                 k.GetProperty("fiscal_year").GetString() ?? "",
                 k.GetProperty("fiscal_period").GetString() ?? "",
-                DateOnly.FromDateTime(k.GetProperty("period_end_date").GetDateTime()),
-                equityRatio.ValueKind == JsonValueKind.Null ? 0D : equityRatio.GetDouble(),
+                ped.ValueKind == JsonValueKind.Null ? null : DateOnly.FromDateTime(ped.GetDateTime()),
+                equityRatio.ValueKind == JsonValueKind.Null ? null : equityRatio.GetDouble(),
                 debtCoverageRatio.ValueKind == JsonValueKind.Null ? null : debtCoverageRatio.GetDouble(),
-                assetCoverageRatio.ValueKind == JsonValueKind.Null ? 0D : assetCoverageRatio.GetDouble(),
+                assetCoverageRatio.ValueKind == JsonValueKind.Null ? null : assetCoverageRatio.GetDouble(),
                 interestCoverageRatio.ValueKind == JsonValueKind.Null ? null : interestCoverageRatio.GetDouble(),
-                debtToEquityRatio.ValueKind == JsonValueKind.Null ? 0D : debtToEquityRatio.GetDouble(),
-                debtToAssetsRatio.ValueKind == JsonValueKind.Null ? 0D : debtToAssetsRatio.GetDouble(),
-                debtToCapitalRatio.ValueKind == JsonValueKind.Null ? 0D : debtToCapitalRatio.GetDouble(),
+                debtToEquityRatio.ValueKind == JsonValueKind.Null ? null : debtToEquityRatio.GetDouble(),
+                debtToAssetsRatio.ValueKind == JsonValueKind.Null ? null : debtToAssetsRatio.GetDouble(),
+                debtToCapitalRatio.ValueKind == JsonValueKind.Null ? null : debtToCapitalRatio.GetDouble(),
                 debtToIncomeRatio.ValueKind == JsonValueKind.Null ? null : debtToIncomeRatio.GetDouble(),
-                cashFlowToDebtRatio.ValueKind == JsonValueKind.Null ? 0D : cashFlowToDebtRatio.GetDouble());
+                cashFlowToDebtRatio.ValueKind == JsonValueKind.Null ? null : cashFlowToDebtRatio.GetDouble());
         }).OrderBy(static k => k.PeriodEndDate)];
     }
 
@@ -1130,17 +1179,18 @@ public sealed class FinancialDataApiClient(string apiKey, ILogger<FinancialDataA
             var bookValuePerShare = k.GetProperty("book_value_per_share");
             var retentionRatio = k.GetProperty("retention_ratio");
             var netFixedAssets = k.GetProperty("net_fixed_assets");
+            var ped = k.GetProperty("period_end_date");
             return new ValuationRatios(k.GetProperty("trading_symbol").GetString() ?? "",
                 k.GetProperty("central_index_key").GetString() ?? "",
                 k.GetProperty("registrant_name").GetString() ?? "",
                 k.GetProperty("fiscal_year").GetString() ?? "",
                 k.GetProperty("fiscal_period").GetString() ?? "",
-                DateOnly.FromDateTime(k.GetProperty("period_end_date").GetDateTime()),
-                dividendsPerShare.ValueKind == JsonValueKind.Null ? 0M : dividendsPerShare.GetDecimal(),
-                dividendPayoutRatio.ValueKind == JsonValueKind.Null ? 0D : dividendPayoutRatio.GetDouble(),
-                bookValuePerShare.ValueKind == JsonValueKind.Null ? 0M : bookValuePerShare.GetDecimal(),
-                retentionRatio.ValueKind == JsonValueKind.Null ? 0D : retentionRatio.GetDouble(),
-                netFixedAssets.ValueKind == JsonValueKind.Null ? 0M : netFixedAssets.GetDecimal());
+                ped.ValueKind == JsonValueKind.Null ? null : DateOnly.FromDateTime(ped.GetDateTime()),
+                dividendsPerShare.ValueKind == JsonValueKind.Null ? null : dividendsPerShare.GetDecimal(),
+                dividendPayoutRatio.ValueKind == JsonValueKind.Null ? null : dividendPayoutRatio.GetDouble(),
+                bookValuePerShare.ValueKind == JsonValueKind.Null ? null : bookValuePerShare.GetDecimal(),
+                retentionRatio.ValueKind == JsonValueKind.Null ? null : retentionRatio.GetDouble(),
+                netFixedAssets.ValueKind == JsonValueKind.Null ? null : netFixedAssets.GetDecimal());
         }).OrderBy(static k => k.PeriodEndDate)];
     }
 
@@ -1157,11 +1207,11 @@ public sealed class FinancialDataApiClient(string apiKey, ILogger<FinancialDataA
             var volume = k.GetProperty("volume");
             return new EodPrice(k.GetProperty("trading_symbol").GetString() ?? throw new Exception("Trading symbol is null"),
                 DateOnly.FromDateTime(k.GetProperty("date").GetDateTime()),
-                open.ValueKind == JsonValueKind.Null ? 0M : open.GetDecimal(),
-                high.ValueKind == JsonValueKind.Null ? 0M : high.GetDecimal(),
-                low.ValueKind == JsonValueKind.Null ? 0M : low.GetDecimal(),
-                close.ValueKind == JsonValueKind.Null ? 0M : close.GetDecimal(),
-                volume.ValueKind == JsonValueKind.Null ? 0D : volume.GetDouble());
+                open.ValueKind == JsonValueKind.Null ? null : open.GetDecimal(),
+                high.ValueKind == JsonValueKind.Null ? null : high.GetDecimal(),
+                low.ValueKind == JsonValueKind.Null ? null : low.GetDecimal(),
+                close.ValueKind == JsonValueKind.Null ? null : close.GetDecimal(),
+                volume.ValueKind == JsonValueKind.Null ? null : volume.GetDouble());
         }).OrderBy(static k => k.Date)];
     }
 
@@ -1178,11 +1228,11 @@ public sealed class FinancialDataApiClient(string apiKey, ILogger<FinancialDataA
             var volume = k.GetProperty("volume");
             return new MinutePrice(k.GetProperty("trading_symbol").GetString() ?? throw new Exception("Trading symbol is null"),
                 DateTime.Parse(k.GetProperty("time").GetString() ?? throw new Exception("Time is null")),
-                open.ValueKind == JsonValueKind.Null ? 0M : open.GetDecimal(),
-                high.ValueKind == JsonValueKind.Null ? 0M : high.GetDecimal(),
-                low.ValueKind == JsonValueKind.Null ? 0M : low.GetDecimal(),
-                close.ValueKind == JsonValueKind.Null ? 0M : close.GetDecimal(),
-                volume.ValueKind == JsonValueKind.Null ? 0D : volume.GetDouble());
+                open.ValueKind == JsonValueKind.Null ? null : open.GetDecimal(),
+                high.ValueKind == JsonValueKind.Null ? null : high.GetDecimal(),
+                low.ValueKind == JsonValueKind.Null ? null : low.GetDecimal(),
+                close.ValueKind == JsonValueKind.Null ? null : close.GetDecimal(),
+                volume.ValueKind == JsonValueKind.Null ? null : volume.GetDouble());
         }).OrderBy(static k => k.DateTime)];
     }
 

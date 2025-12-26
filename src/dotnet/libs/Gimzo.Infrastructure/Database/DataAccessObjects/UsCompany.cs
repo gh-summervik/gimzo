@@ -7,7 +7,6 @@ internal sealed record UsCompany : DaoBase
         CentralIndexKey = "";
         Exchange = "";
         Symbol = "";
-        Registrant = "";
     }
 
     public UsCompany(Guid userId) : base(userId)
@@ -15,13 +14,12 @@ internal sealed record UsCompany : DaoBase
         CentralIndexKey = "";
         Exchange = "";
         Symbol = "";
-        Registrant = "";
     }
 
     public string CentralIndexKey { get; init; }
     public string Exchange { get; init; }
     public string Symbol { get; init; }
-    public string Registrant { get; init; }
+    public string? Registrant { get; init; }
     public string? Isin { get; init; }
     public string? Lei { get; init; }
     public string? Ein { get; init; }
@@ -34,7 +32,7 @@ internal sealed record UsCompany : DaoBase
     public string? BusinessAddress { get; init; }
     public string? FormerName { get; init; }
     public string? Industry { get; init; }
-    public DateOnly? DateFounding { get; init; }
+    public string? DateFounding { get; init; }
     public string? ChiefExecutiveOfficer { get; init; }
     public int? NumberEmployees { get; init; }
     public string? WebSite { get; init; }
@@ -46,6 +44,5 @@ internal sealed record UsCompany : DaoBase
     public override bool IsValid() => base.IsValid() &&
         !string.IsNullOrWhiteSpace(CentralIndexKey) &&
         !string.IsNullOrWhiteSpace(Exchange) &&
-        !string.IsNullOrWhiteSpace(Symbol) &&
-        !string.IsNullOrWhiteSpace(Registrant);
+        !string.IsNullOrWhiteSpace(Symbol);
 }
