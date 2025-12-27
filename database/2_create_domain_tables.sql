@@ -8,7 +8,6 @@ DROP TABLE IF EXISTS public.crypto_symbols CASCADE;
 DROP TABLE IF EXISTS public.index_symbols CASCADE;
 DROP TABLE IF EXISTS public.eod_prices CASCADE;
 DROP TABLE IF EXISTS public.us_companies CASCADE;
-DROP TABLE IF EXISTS public.international_companies CASCADE;
 DROP TABLE IF EXISTS public.security_information CASCADE;
 DROP TABLE IF EXISTS public.liquidity_ratios CASCADE;
 DROP TABLE IF EXISTS public.profitability_ratios CASCADE;
@@ -166,26 +165,6 @@ CREATE TABLE IF NOT EXISTS public.us_companies (
     created_at_unix_ms BIGINT NOT NULL,
     updated_at_unix_ms BIGINT NOT NULL,
     PRIMARY KEY (central_index_key, exchange, symbol)
-);
-
-CREATE TABLE IF NOT EXISTS public.international_companies (
-    symbol TEXT NOT NULL,
-    registrant TEXT NOT NULL,
-    exchange TEXT NOT NULL,
-    isin TEXT,
-    industry TEXT,
-    year_founding TEXT,
-    chief_executive_officer TEXT,
-    number_employees INTEGER,
-    web_site TEXT,
-    description TEXT,
-    created_by UUID NOT NULL,
-    updated_by UUID NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL,
-    updated_at TIMESTAMPTZ NOT NULL,
-    created_at_unix_ms BIGINT NOT NULL,
-    updated_at_unix_ms BIGINT NOT NULL,
-    PRIMARY KEY (symbol, exchange)
 );
 
 CREATE TABLE IF NOT EXISTS public.liquidity_ratios (

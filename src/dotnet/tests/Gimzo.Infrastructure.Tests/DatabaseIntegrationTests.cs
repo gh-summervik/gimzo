@@ -405,57 +405,6 @@ public class DatabaseIntegrationTests : IClassFixture<IntegrationTestsFixture>
     }
 
     [Fact]
-    public async Task InternationalCompanies_WriteMergeReadDelete_Async()
-    {
-        using var cmdConn = _fixture.GetConnectionPairForDb().CommandConn;
-        Assert.NotNull(cmdConn);
-        var dao = new InternationalCompany
-        {
-            Symbol = "TEST",
-            Registrant = "registrant",
-            Exchange = "exchange",
-            Isin = "isin",
-            Industry = "industry",
-            YearFounding = "year_founding",
-            ChiefExecutiveOfficer = "chief_executive_officer",
-            NumberEmployees = 100,
-            WebSite = "web_site",
-            Description = "description"
-        };
-        const string WhereClause = "WHERE symbol = @Symbol AND exchange = @Exchange";
-        // INSERT
-        await cmdConn.ExecuteAsync(SqlRepository.InsertInternationalCompanies, dao);
-        var fromDb = await FetchFromDb<InternationalCompany>(
-            $"{SqlRepository.SelectInternationalCompanies} {WhereClause}",
-            dao);
-        Assert.NotNull(fromDb);
-        Assert.Equal(dao.Symbol, fromDb.Symbol);
-        Assert.Equal(dao.Registrant, fromDb.Registrant);
-        Assert.Equal(dao.Exchange, fromDb.Exchange);
-        Assert.Equal(dao.Isin, fromDb.Isin);
-        Assert.Equal(dao.Industry, fromDb.Industry);
-        Assert.Equal(dao.YearFounding, fromDb.YearFounding);
-        Assert.Equal(dao.ChiefExecutiveOfficer, fromDb.ChiefExecutiveOfficer);
-        Assert.Equal(dao.NumberEmployees, fromDb.NumberEmployees);
-        Assert.Equal(dao.WebSite, fromDb.WebSite);
-        Assert.Equal(dao.Description, fromDb.Description);
-        var dao2 = dao with { Registrant = nameof(InternationalCompanies_WriteMergeReadDelete_Async) };
-        // MERGE
-        await cmdConn.ExecuteAsync(SqlRepository.MergeInternationalCompanies, dao2);
-        fromDb = await FetchFromDb<InternationalCompany>(
-            $"{SqlRepository.SelectInternationalCompanies} {WhereClause}",
-            dao);
-        Assert.NotNull(fromDb);
-        Assert.Equal(dao2.Registrant, fromDb.Registrant);
-        // DELETE
-        await cmdConn.ExecuteAsync($"DELETE FROM public.international_companies {WhereClause}", dao);
-        fromDb = await FetchFromDb<InternationalCompany>(
-            $"{SqlRepository.SelectInternationalCompanies} {WhereClause}",
-            dao);
-        Assert.Null(fromDb);
-    }
-
-    [Fact]
     public async Task LiquidityRatios_WriteMergeReadDelete_Async()
     {
         using var cmdConn = _fixture.GetConnectionPairForDb().CommandConn;

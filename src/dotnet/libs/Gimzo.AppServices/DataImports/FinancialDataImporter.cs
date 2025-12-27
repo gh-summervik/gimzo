@@ -67,7 +67,6 @@ public sealed class FinancialDataImporter
                 isin: secInfoModel.HasValue ? secInfoModel.Value.Isin : null,
                 figi: secInfoModel.HasValue ? secInfoModel.Value.Figi : null,
                 registrant: symbol.Registrant,
-                isInternational: false,
                 description: null,
                 title: null,
                 name: secInfoModel.HasValue ? secInfoModel.Value.Issuer : null,

@@ -20,19 +20,6 @@ public class FdnClientIntegrationTests(IntegrationTestsFixture fixture) : IClass
     }
 
     [Fact]
-    public async Task GetInternationalStockSymbolsAsync()
-    {
-        var client = _fixture.Client;
-
-        var symbols = await client.GetInternationalStockSymbolsAsync();
-
-        Assert.NotNull(symbols);
-        Assert.NotEmpty(symbols);
-        Assert.Contains("key.TO", symbols.Select(k => k.Symbol));
-    }
-
-
-    [Fact]
     public async Task GetEtfSymbolsAsync()
     {
         var client = _fixture.Client;
@@ -110,17 +97,6 @@ public class FdnClientIntegrationTests(IntegrationTestsFixture fixture) : IClass
         var client = _fixture.Client;
 
         var prices = await client.GetStockPricesAsync("S");
-
-        Assert.NotNull(prices);
-        Assert.NotEmpty(prices);
-    }
-
-    [Fact]
-    public async Task GetInternationalStockPricesAsync()
-    {
-        var client = _fixture.Client;
-
-        var prices = await client.GetInternationalStockPricesAsync("key.TO");
 
         Assert.NotNull(prices);
         Assert.NotEmpty(prices);
@@ -249,14 +225,6 @@ public class FdnClientIntegrationTests(IntegrationTestsFixture fixture) : IClass
     {
         var client = _fixture.Client;
         var info = await client.GetCompanyInformationAsync("A");
-        Assert.NotNull(info);
-    }
-
-    [Fact]
-    public async Task GetInternationalCompanyInformationAsync()
-    {
-        var client = _fixture.Client;
-        var info = await client.GetInternationalCompanyInformationAsync("key.TO");
         Assert.NotNull(info);
     }
 

@@ -39,9 +39,6 @@ public sealed class FinancialDataApiClient(string apiKey, ILogger<FinancialDataA
         public const string IndexPrices = "index-prices";
         public const string IndexSymbols = "index-symbols";
         public const string InitialPublicOfferings = "initial-public-offerings";
-        public const string InternationalCompanyInformation = "international-company-information";
-        public const string InternationalStockPrices = "international-stock-prices";
-        public const string InternationalStockSymbols = "international-stock-symbols";
         public const string KeyMetrics = "key-metrics";
         public const string LiquidityRatios = "liquidity-ratios";
         public const string MarketCap = "market-cap";
@@ -164,16 +161,7 @@ public sealed class FinancialDataApiClient(string apiKey, ILogger<FinancialDataA
         if (symbols.Length == 0)
             throw new Exception("Unable to retrieve stock symbols");
         return [.. symbols.Select(static k => new Stock(k.GetProperty("trading_symbol").GetString() ?? "",
-            k.GetProperty("registrant_name").GetString() ?? "", IsInternational: false))];
-    }
-
-    public async Task<Stock[]> GetInternationalStockSymbolsAsync()
-    {
-        var symbols = await GetDataAsync(EndPoints.InternationalStockSymbols, limit: 500);
-        if (symbols.Length == 0)
-            throw new Exception("Unable to retrieve international stock symbols");
-        return [.. symbols.Select(static k => new Stock(k.GetProperty("trading_symbol").GetString() ?? "",
-            k.GetProperty("registrant_name").GetString() ?? "", IsInternational: true))];
+            k.GetProperty("registrant_name").GetString() ?? ""))];
     }
 
     public async Task<ExchangeTradedFund[]> GetEtfSymbolsAsync()
@@ -238,14 +226,6 @@ public sealed class FinancialDataApiClient(string apiKey, ILogger<FinancialDataA
             throw new ArgumentException("Symbol cannot be empty", nameof(symbol));
         var paramsDict = new Dictionary<string, string> { { "identifier", symbol } };
         return ConvertToEodPrices(await GetDataAsync(EndPoints.StockPrices, paramsDict, 300));
-    }
-
-    public async Task<EodPrice[]> GetInternationalStockPricesAsync(string identifier)
-    {
-        if (string.IsNullOrWhiteSpace(identifier))
-            throw new ArgumentException("Identifier cannot be empty", nameof(identifier));
-        var paramsDict = new Dictionary<string, string> { { "identifier", identifier } };
-        return ConvertToEodPrices(await GetDataAsync(EndPoints.InternationalStockPrices, paramsDict, 300));
     }
 
     public async Task<MinutePrice[]> GetMinutePricesAsync(string identifier, string date)
@@ -424,29 +404,6 @@ public sealed class FinancialDataApiClient(string apiKey, ILogger<FinancialDataA
             marketCap.ValueKind == JsonValueKind.Null ? null : marketCap.GetDecimal(),
             sharesIssued.ValueKind == JsonValueKind.Null ? null : sharesIssued.GetDouble(),
             sharesOutstanding.ValueKind == JsonValueKind.Null ? null : sharesOutstanding.GetDouble(),
-            info.GetProperty("description").GetString() ?? "");
-    }
-
-    public async Task<InternationalCompanyInformation?> GetInternationalCompanyInformationAsync(string identifier)
-    {
-        if (string.IsNullOrWhiteSpace(identifier))
-            throw new ArgumentException("Identifier cannot be empty", nameof(identifier));
-        var paramsDict = new Dictionary<string, string> { { "identifier", identifier } };
-        var info = (await GetDataAsync(EndPoints.InternationalCompanyInformation, paramsDict)).FirstOrDefault();
-        if (info.ValueKind == JsonValueKind.Undefined)
-            return null;
-
-        var numemp = info.GetProperty("number_of_employees");
-        return new InternationalCompanyInformation(
-            info.GetProperty("trading_symbol").GetString() ?? "",
-            info.GetProperty("registrant_name").GetString() ?? "",
-            info.GetProperty("exchange").GetString() ?? "",
-            info.GetProperty("isin_number").GetString() ?? "",
-            info.GetProperty("industry").GetString() ?? "",
-            info.GetProperty("founding_date").GetString() ?? "",
-            info.GetProperty("chief_executive_officer").GetString() ?? "",
-            numemp.ValueKind == JsonValueKind.Null ? 0 : numemp.GetInt32(),
-            info.GetProperty("website").GetString() ?? "",
             info.GetProperty("description").GetString() ?? "");
     }
 

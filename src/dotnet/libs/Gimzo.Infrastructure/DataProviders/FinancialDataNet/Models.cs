@@ -1,6 +1,6 @@
 ﻿namespace Gimzo.Infrastructure.DataProviders.FinancialDataNet;
 
-public readonly record struct Stock(string Symbol, string? Registrant, bool IsInternational = false);
+public readonly record struct Stock(string Symbol, string? Registrant);
 
 public readonly record struct ExchangeTradedFund(string Symbol, string? Description);
 
@@ -25,11 +25,6 @@ public readonly record struct CompanyInformation(string Symbol,
     string? Industry, string? FoundingDate, string? ChiefExecutiveOfficer,
     int? NumberEmployees, string? WebSite, decimal? MarketCap,
     double? SharesIssued, double? SharesOutstanding, string? Description);
-
-public readonly record struct InternationalCompanyInformation(string Symbol,
-    string? Registrant, string Exchange, string? Isin, string? Industry,
-    string? YearFounding, string? ChiefExecutiveOfficer,
-    int? NumberEmployees, string? WebSite, string? Description);
 
 public readonly record struct LiquidityRatios(string Symbol, string CentralIndexKey,
     string? Registrant, string FiscalYear, string FiscalPeriod, DateOnly? PeriodEndDate,

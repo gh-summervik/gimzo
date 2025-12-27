@@ -15,7 +15,6 @@ public sealed class Security
         string? isin = null,
         string? figi = null,
         string? registrant = null,
-        bool isInternational = false,
         string? description = null,
         string? title = null,
         string? name = null,
@@ -48,7 +47,6 @@ public sealed class Security
         Isin = isin;
         Figi = figi;
         Registrant = registrant;
-        IsInternational = isInternational;
         Description = description;
         Title = title;
         Name = name;
@@ -82,7 +80,6 @@ public sealed class Security
     public string? Isin { get; init; }
     public string? Figi { get; init; }
     public string? Registrant { get; init; }
-    public bool IsInternational { get; init; }
     public string? Description { get; init; }
     public string? Title { get; init; }
     public string? Name { get; init; }
