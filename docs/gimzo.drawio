@@ -1,0 +1,139 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/29.0.3 Chrome/140.0.7339.249 Electron/38.7.0 Safari/537.36" version="29.0.3" pages="2">
+  <diagram name="Code Structure" id="uSK0E7AvaZTs4Zxsn4fS">
+    <mxGraphModel dx="1713" dy="1018" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="7NFfFVQppy4ie7YwuXBW-1" value="Gimzo CLI&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Console app for interacting with internal and external data.&lt;/div&gt;" style="html=1;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="330" y="130" width="170" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="7NFfFVQppy4ie7YwuXBW-2" value="Gimzo App Services&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Provides services for top-level apps (e.g., the CLI)&lt;/div&gt;" style="html=1;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="330" y="320" width="170" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="7NFfFVQppy4ie7YwuXBW-3" value="Gimzo Infrastructure&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Interacts with systems outside the code base (e.g., file system, databases, and external APIs)&lt;/div&gt;" style="html=1;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="330" y="520" width="170" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="7NFfFVQppy4ie7YwuXBW-4" value="Use" style="endArrow=open;endSize=12;dashed=1;html=1;rounded=0;" edge="1" parent="1" source="7NFfFVQppy4ie7YwuXBW-1" target="7NFfFVQppy4ie7YwuXBW-2">
+          <mxGeometry width="160" relative="1" as="geometry">
+            <mxPoint x="180" y="630" as="sourcePoint" />
+            <mxPoint x="340" y="630" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="7NFfFVQppy4ie7YwuXBW-5" value="Use" style="endArrow=open;endSize=12;dashed=1;html=1;rounded=0;" edge="1" parent="1" source="7NFfFVQppy4ie7YwuXBW-2" target="7NFfFVQppy4ie7YwuXBW-3">
+          <mxGeometry x="0.0049" width="160" relative="1" as="geometry">
+            <mxPoint x="340" y="500" as="sourcePoint" />
+            <mxPoint x="460" y="500" as="targetPoint" />
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="7NFfFVQppy4ie7YwuXBW-6" value="Gimzo Analysis&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Contains domain-level classes and such.&lt;/div&gt;" style="html=1;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="330" y="700" width="170" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="7NFfFVQppy4ie7YwuXBW-7" value="Use" style="endArrow=open;endSize=12;dashed=1;html=1;rounded=0;" edge="1" parent="1" source="7NFfFVQppy4ie7YwuXBW-3" target="7NFfFVQppy4ie7YwuXBW-6">
+          <mxGeometry x="0.0049" width="160" relative="1" as="geometry">
+            <mxPoint x="480" y="560" as="sourcePoint" />
+            <mxPoint x="480" y="630" as="targetPoint" />
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="7NFfFVQppy4ie7YwuXBW-10" value="Gimzo Common&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Contains low-level, common classes, tools, and utilities.&lt;/div&gt;" style="html=1;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="330" y="910" width="170" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="7NFfFVQppy4ie7YwuXBW-11" value="Use" style="endArrow=open;endSize=12;dashed=1;html=1;rounded=0;" edge="1" parent="1" source="7NFfFVQppy4ie7YwuXBW-6" target="7NFfFVQppy4ie7YwuXBW-10">
+          <mxGeometry x="0.0049" width="160" relative="1" as="geometry">
+            <mxPoint x="420" y="920" as="sourcePoint" />
+            <mxPoint x="310" y="920" as="targetPoint" />
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="bFo7zpW-4edCMRuI4yoz" name="Import Flow">
+    <mxGraphModel dx="1285" dy="764" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="850" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="JpNnUJpywxFnvD-f-zfZ-6" value="" style="ellipse;html=1;shape=startState;fillColor=#000000;strokeColor=#ff0000;" vertex="1" parent="1">
+          <mxGeometry x="25" y="86" width="30" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="JpNnUJpywxFnvD-f-zfZ-7" value="" style="edgeStyle=orthogonalEdgeStyle;html=1;verticalAlign=bottom;endArrow=open;endSize=8;strokeColor=#ff0000;rounded=0;" edge="1" source="JpNnUJpywxFnvD-f-zfZ-6" parent="1" target="JpNnUJpywxFnvD-f-zfZ-15">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="105" y="141" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="JpNnUJpywxFnvD-f-zfZ-11" value="Yes" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="JpNnUJpywxFnvD-f-zfZ-8" target="JpNnUJpywxFnvD-f-zfZ-28">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="JpNnUJpywxFnvD-f-zfZ-22" value="No" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="JpNnUJpywxFnvD-f-zfZ-8" target="JpNnUJpywxFnvD-f-zfZ-20">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="JpNnUJpywxFnvD-f-zfZ-8" value="Is Weekday?" style="strokeWidth=2;html=1;shape=mxgraph.flowchart.decision;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="307" y="89" width="100" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="JpNnUJpywxFnvD-f-zfZ-29" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="JpNnUJpywxFnvD-f-zfZ-14" target="JpNnUJpywxFnvD-f-zfZ-8">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="245" y="416" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="JpNnUJpywxFnvD-f-zfZ-14" value="Load meta data into memory.&lt;br&gt;&lt;br&gt;(Determines whether existing data exists).&lt;br&gt;&lt;br&gt;(Includes previous processes and ignored symbols)" style="rounded=1;whiteSpace=wrap;html=1;absoluteArcSize=1;arcSize=14;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="120" y="201" width="110" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="JpNnUJpywxFnvD-f-zfZ-19" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="JpNnUJpywxFnvD-f-zfZ-15" target="JpNnUJpywxFnvD-f-zfZ-14">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="JpNnUJpywxFnvD-f-zfZ-15" value="Remove from ignore list records that have expired." style="rounded=1;whiteSpace=wrap;html=1;absoluteArcSize=1;arcSize=14;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="125" y="51" width="100" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="ENROvZ1TduKtmpPOx6VT-7" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="JpNnUJpywxFnvD-f-zfZ-17" target="ENROvZ1TduKtmpPOx6VT-6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="JpNnUJpywxFnvD-f-zfZ-17" value="Remove data for ignored symbols." style="rounded=1;whiteSpace=wrap;html=1;absoluteArcSize=1;arcSize=14;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="892" y="444" width="100" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="JpNnUJpywxFnvD-f-zfZ-25" value="Yes" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="JpNnUJpywxFnvD-f-zfZ-20" target="JpNnUJpywxFnvD-f-zfZ-23">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="JpNnUJpywxFnvD-f-zfZ-26" value="No" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="JpNnUJpywxFnvD-f-zfZ-20" target="JpNnUJpywxFnvD-f-zfZ-24">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="JpNnUJpywxFnvD-f-zfZ-20" value="Is Saturday?" style="strokeWidth=2;html=1;shape=mxgraph.flowchart.decision;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="307" y="282" width="100" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="ENROvZ1TduKtmpPOx6VT-2" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="JpNnUJpywxFnvD-f-zfZ-23" target="JpNnUJpywxFnvD-f-zfZ-33">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="JpNnUJpywxFnvD-f-zfZ-23" value="&lt;div style=&quot;&quot;&gt;Fetch and Save&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;public.income_statements&lt;/div&gt;&lt;div&gt;public.balance_sheets&lt;/div&gt;&lt;div&gt;public.cash_flow_statements&lt;/div&gt;&lt;div&gt;public.earnings_releases&lt;/div&gt;&lt;div&gt;public.stock_splits&lt;/div&gt;&lt;div&gt;public.dividends&lt;/div&gt;&lt;div&gt;public.short_interests&lt;/div&gt;&lt;div&gt;public.executive_compensations&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;absoluteArcSize=1;arcSize=14;strokeWidth=2;align=center;" vertex="1" parent="1">
+          <mxGeometry x="491" y="247" width="210" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="ENROvZ1TduKtmpPOx6VT-3" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="JpNnUJpywxFnvD-f-zfZ-24" target="JpNnUJpywxFnvD-f-zfZ-33">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="JpNnUJpywxFnvD-f-zfZ-24" value="&lt;div style=&quot;&quot;&gt;Fetch and Save&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;public.us_companies&lt;/div&gt;&lt;div&gt;public.key_metrics&lt;/div&gt;&lt;div&gt;public.liquidity_ratios&lt;/div&gt;&lt;div&gt;public.profitability_ratios&lt;/div&gt;&lt;div&gt;public.solvency_ratios&lt;/div&gt;&lt;div&gt;public.valuation_ratios&lt;/div&gt;&lt;div&gt;public.efficiency_ratios&lt;/div&gt;&lt;div&gt;public.market_caps&lt;/div&gt;&lt;div&gt;public.employee_counts&lt;/div&gt;&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;absoluteArcSize=1;arcSize=14;strokeWidth=2;align=center;" vertex="1" parent="1">
+          <mxGeometry x="509" y="466" width="168" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="ENROvZ1TduKtmpPOx6VT-1" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="JpNnUJpywxFnvD-f-zfZ-28" target="JpNnUJpywxFnvD-f-zfZ-33">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="JpNnUJpywxFnvD-f-zfZ-28" value="&lt;div style=&quot;&quot;&gt;Fetch and Save&lt;/div&gt;&lt;div style=&quot;&quot;&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;public.stock_symbols&lt;/div&gt;&lt;div&gt;public.security_information&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;(include other symbol types here if necessary - e.g., crypto, ETFs, etc. etc.)&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;absoluteArcSize=1;arcSize=14;strokeWidth=2;align=center;" vertex="1" parent="1">
+          <mxGeometry x="491" y="75" width="210" height="135" as="geometry" />
+        </mxCell>
+        <mxCell id="JpNnUJpywxFnvD-f-zfZ-35" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="JpNnUJpywxFnvD-f-zfZ-33" target="JpNnUJpywxFnvD-f-zfZ-17">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="JpNnUJpywxFnvD-f-zfZ-33" value="Find data to ignore.&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div style=&quot;text-align: left;&quot;&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;Incomplete (delisted?)&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;Prices outside of range (e.g., $5 - $500)&lt;/span&gt;&lt;/div&gt;&lt;div style=&quot;text-align: left;&quot;&gt;Prices without sufficient data (&amp;lt; 200 EOD)&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;absoluteArcSize=1;arcSize=14;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="812" y="272" width="260" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="JpNnUJpywxFnvD-f-zfZ-36" value="" style="ellipse;html=1;shape=endState;fillColor=#000000;strokeColor=#ff0000;" vertex="1" parent="1">
+          <mxGeometry x="927" y="767" width="30" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="ENROvZ1TduKtmpPOx6VT-9" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="ENROvZ1TduKtmpPOx6VT-6" target="JpNnUJpywxFnvD-f-zfZ-36">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ENROvZ1TduKtmpPOx6VT-6" value="Update admin tables." style="rounded=1;whiteSpace=wrap;html=1;absoluteArcSize=1;arcSize=14;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="892" y="591" width="100" height="100" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
