@@ -117,7 +117,6 @@ CREATE TABLE IF NOT EXISTS public.security_information (
 
 CREATE TABLE IF NOT EXISTS public.eod_prices (
     symbol TEXT NOT NULL,
-    security_type TEXT NOT NULL,
     date_eod DATE NOT NULL,
     open NUMERIC(22,4) NOT NULL,
     high NUMERIC(22,4) NOT NULL,
@@ -130,7 +129,7 @@ CREATE TABLE IF NOT EXISTS public.eod_prices (
     updated_at TIMESTAMPTZ NOT NULL,
     created_at_unix_ms BIGINT NOT NULL,
     updated_at_unix_ms BIGINT NOT NULL,
-    PRIMARY KEY (symbol, security_type, date_eod)
+    PRIMARY KEY (symbol, date_eod)
 );
 
 CREATE TABLE IF NOT EXISTS public.us_companies (

@@ -1,5 +1,8 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+DROP TABLE IF EXISTS public.processes CASCADE;
+DROP TABLE IF EXISTS public.ignored_symbols CASCADE;
+
 CREATE TABLE IF NOT EXISTS public.processes(
     process_id UUID NOT NULL,
     process_type TEXT NOT NULL,

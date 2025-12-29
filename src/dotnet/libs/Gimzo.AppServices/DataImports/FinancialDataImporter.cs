@@ -1,5 +1,7 @@
 ﻿using Gimzo.Analysis.Fundamental;
 using Gimzo.Common;
+using Gimzo.Infrastructure;
+using Gimzo.Infrastructure.Database;
 using Gimzo.Infrastructure.DataProviders.FinancialDataNet;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
@@ -9,19 +11,166 @@ namespace Gimzo.AppServices.DataImports;
 public sealed class FinancialDataImporter
 {
     private readonly FinancialDataApiClient _apiClient;
+    private readonly DatabaseService _dbService;
+    private readonly DbDefPair _dbDefPair;
     private readonly ILogger<FinancialDataImporter> _logger;
+    private readonly DateOnly _today;
+    private DbMetaInfo _metaInfo = new();
+    private bool _forceWeekday;
+    private bool _forceSaturday;
+    private bool _forceSunday;
+    private bool _initialized;
 
     public FinancialDataImporter(FinancialDataApiClient apiClient,
+        DbDefPair dbDefPair,
         ILogger<FinancialDataImporter> logger)
     {
+        _dbService = new(dbDefPair, logger);
         _apiClient = apiClient;
+        _dbDefPair = dbDefPair;
         _logger = logger;
+        _today = TimeHelper.TodayEastern;
     }
 
+    /// <summary>
+    /// Initialize the import process by hydrating meta info and determining
+    /// which day to run.
+    /// This method is intended to be called first.
+    /// </summary>
+    public async Task InitializeImportAsync(bool forceWeekday = false,
+        bool forceSaturday = false, bool forceSunday = false)
+    {
+        _forceWeekday = forceWeekday;
+        _forceSaturday = forceSaturday;
+        _forceSunday = forceSunday;
+
+        // this must happen before the fetch of meta info; meta info includes ignored symbols.
+        await _dbService.RemovedExpiredIgnoredSymbolsAsync();
+
+        _metaInfo = await _dbService.GetDbMetaInfoAsync();
+        _initialized = true;
+        LogHelper.LogInfo(_logger, "Import initialized");
+    }
+
+    public async Task ImportAsync(Guid processId)
+    {
+        if (!_initialized)
+            throw new Exception($"Import not initialized; call {nameof(InitializeImportAsync)} first.");
+
+        if (_forceSunday | _forceSaturday | _forceWeekday)
+        {
+            if (_forceWeekday)
+                await DoWeekdayWorkAsync(processId);
+            if (_forceSaturday)
+                await DoSaturdayWorkAsync(processId);
+            if (_forceSunday)
+                await DoSundayWorkAsync(processId);
+        }
+        else
+        {
+            var t = _today.DayOfWeek switch
+            {
+                DayOfWeek.Sunday => DoSundayWorkAsync(processId),
+                DayOfWeek.Saturday => DoSaturdayWorkAsync(processId),
+                _ => DoWeekdayWorkAsync(processId)
+            };
+            await t;
+        }
+
+        var ignoreTasks = new[]
+        {
+            _dbService.AddDelistedSymbolsToIgnoreListAsync(processId),
+            _dbService.AddSymbolsWithPricesOutsideRangeToIgnoreListAsync(processId, 10M, 2_000M),
+            _dbService.AddSymbolsWithShortChartsToIgnoreListAsync(processId, 200)
+        };
+        await Task.WhenAll(ignoreTasks);
+
+        await _dbService.DeleteDataForIgnoredSymbolsAsync();
+    }
+
+    internal async Task DoSundayWorkAsync(Guid processId)
+    {
+        LogHelper.LogInfo(_logger, "Sunday import in {Name} started import at {DateTime} with process id {ProcessId}", nameof(FinancialDataImporter),
+                DateTimeOffset.Now, processId);
+
+        //await SaveStockSymbolsAsync(processId);
+    }
+
+    internal async Task DoWeekdayWorkAsync(Guid processId)
+    {
+        LogHelper.LogInfo(_logger, "Weekday import in {Name} started import at {DateTime} with process id {ProcessId}", nameof(FinancialDataImporter),
+                DateTimeOffset.Now, processId);
+
+        var stockSymbols = (await GetStockSymbolsAsync()).Select(k => new Security(k.Symbol, "Stock",
+            registrant: k.Registrant)).ToArray();
+
+        LogHelper.LogInfo(_logger, "Saving {count} symbols.", stockSymbols.Length);
+
+        await _dbService.SaveStockSymbolsAsync(stockSymbols, processId);
+
+        List<Security> lst = new(10_000);
+        LogHelper.LogInfo(_logger, "Fetching security information.");
+
+        int count = stockSymbols.Length;
+        int i = 0;
+        foreach (var ticker in stockSymbols.Select(k => k.Symbol))
+        {
+            i++;
+            var secInfo = await _apiClient.GetSecurityInformationAsync(ticker);
+            if (secInfo.HasValue)
+            {
+                var model = secInfo.Value;
+
+                lst.Add(new Security(model.Symbol, model.Type ?? "Unknown")
+                {
+                    Issuer = model.Issuer,
+                    Cusip = model.Cusip,
+                    Isin = model.Isin,
+                    Figi = model.Figi
+                });
+            }
+
+            var eodPrices = await _apiClient.GetStockPricesAsync(ticker);
+
+            LogHelper.LogInfo(_logger, "Saving price data for {ticker} - {i}/{count}", ticker, i, count);
+
+            await _dbService.SaveEodPricesAsync(eodPrices.Select(k =>
+                new Analysis.Technical.Charts.Ohlc(k.Symbol, k.Date.GetValueOrDefault(),
+                    k.Open.GetValueOrDefault(),
+                    k.High.GetValueOrDefault(),
+                    k.Low.GetValueOrDefault(),
+                    k.Close.GetValueOrDefault(),
+                    k.Volume.GetValueOrDefault())), processId);
+        }
+
+        LogHelper.LogInfo(_logger, "Saving security info for {count} symbols.", lst.Count);
+
+        await _dbService.SaveSecuritiesAsync(lst, processId);
+    }
+
+    internal async Task DoSaturdayWorkAsync(Guid processId)
+    {
+        LogHelper.LogInfo(_logger, "Saturday import in {Name} started import at {DateTime} with process id {ProcessId}", nameof(FinancialDataImporter),
+                DateTimeOffset.Now, processId);
+
+        //await SaveStockSymbolsAsync(processId);
+    }
+
+    internal async Task<Stock[]> GetStockSymbolsAsync()
+    {
+        var stocks = await _apiClient.GetStockSymbolsAsync();
+
+        return [.. stocks.Where(k => !_metaInfo.IgnoredSymbols.Contains(k.Symbol))];
+    }
+
+    /// <summary>
+    /// This method is going away.
+    /// </summary>
+    /// <param name="processId"></param>
+    /// <returns></returns>
     public async Task Import(Guid processId)
     {
-        if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("{Name} started import at {DateTime} with process id {ProcessId}", nameof(FinancialDataImporter),
+        LogHelper.LogInfo(_logger, "{Name} started import at {DateTime} with process id {ProcessId}", nameof(FinancialDataImporter),
                 DateTimeOffset.Now, processId);
 
         var stockSymbols = await _apiClient.GetStockSymbolsAsync();
@@ -31,11 +180,10 @@ public sealed class FinancialDataImporter
         foreach (var symbol in stockSymbols)
         {
             i++;
-            if (i < 1375)
-                continue;
-
             Stopwatch timer = Stopwatch.StartNew();
-            _logger.LogInformation("Fetching {SYMBOL}, i = {i}/{c}", symbol.Symbol, i, count);
+
+            LogHelper.LogInfo(_logger, "Fetching {SYMBOL}, i = {i}/{c}", symbol.Symbol, i, count);
+
             var ticker = symbol.Symbol;
             string securityType = symbol.GetType().Name;
             var secInfoModel = await _apiClient.GetSecurityInformationAsync(ticker);
@@ -425,8 +573,22 @@ public sealed class FinancialDataImporter
                         )]
                 );
             timer.Stop();
-            _logger.LogInformation("{SYMBOL} processed in {TIME}",
-                symbol.Symbol, timer.Elapsed.ToGeneralText());
+
+            LogHelper.LogInfo(_logger, "{SYMBOL} processed in {TIME}", symbol.Symbol, timer.Elapsed.ToGeneralText());
+        }
+    }
+
+    /// <summary>
+    /// This is a catch-all method to preserve stock symbols in case the app is run for the
+    /// first time on either Saturday or Sunday.
+    /// </summary>
+    private async Task SaveStockSymbolsAsync(Guid processId)
+    {
+        if (!_metaInfo.HasStockSymbols)
+        {
+            var symbols = (await GetStockSymbolsAsync()).Select(k => new Security(k.Symbol, "Stock",
+                registrant: k.Registrant)).ToArray();
+            await _dbService.SaveStockSymbolsAsync(symbols, processId);
         }
     }
 }

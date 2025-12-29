@@ -12,17 +12,14 @@ internal sealed record EodPrice : DaoBase
     public EodPrice() : base()
     {
         Symbol = "";
-        SecurityType = "";
     }
 
     public EodPrice(Guid userId) : base(userId)
     {
         Symbol = "";
-        SecurityType = "";
     }
 
     public string Symbol { get; init; }
-    public string SecurityType { get; init; }
     public DateOnly Date { get; init; }
     public decimal Open { get => _open; init => _open = Math.Round(value, Common.Constants.MoneyPrecision); }
     public decimal High { get => _high; init => _high = Math.Round(value, Common.Constants.MoneyPrecision); }

@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Gimzo.Common;
+using Microsoft.Extensions.Logging;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
@@ -8,7 +9,7 @@ using System.Text.RegularExpressions;
     InternalsVisibleTo("Gimzo.AppServices")]
 namespace Gimzo.Infrastructure.DataProviders.FinancialDataNet;
 
-public sealed class FinancialDataApiClient(string apiKey, ILogger<FinancialDataApiClient> logger) : IDisposable
+public sealed partial class FinancialDataApiClient(string apiKey, ILogger<FinancialDataApiClient> logger) : IDisposable
 {
     private readonly string _apiKey = apiKey ?? throw new ArgumentNullException(nameof(apiKey));
     private readonly ILogger<FinancialDataApiClient> _logger = logger;
@@ -92,12 +93,11 @@ public sealed class FinancialDataApiClient(string apiKey, ILogger<FinancialDataA
                     string content = await response.Content.ReadAsStringAsync(ct);
                     if (string.IsNullOrWhiteSpace(content))
                     {
-                        if (_logger.IsEnabled(LogLevel.Warning))
-                            _logger.LogWarning("Empty response from {Url}. Returning empty array.", url);
+                        LogHelper.LogWarning(_logger, "Empty response from {Url}. Returning empty array.", url);
                         return [];
                     }
                     // fixes a defect in the financialdata.net API.
-                    var json = Regex.Replace(content, @"\:\s*NaN\b", ": null");
+                    var json = NanRegex().Replace(content, ": null");
                     return JsonSerializer.Deserialize<JsonElement[]>(json);
                 }
                 else
@@ -105,26 +105,24 @@ public sealed class FinancialDataApiClient(string apiKey, ILogger<FinancialDataA
                     int status = (int)response.StatusCode;
                     if (status is 429 or 500 or 502 or 503 or 504)
                     {
-                        if (_logger.IsEnabled(LogLevel.Warning))
-                            _logger.LogWarning("Transient error {Status} at {Endpoint} - Retrying after ~{Backoff}s...", status, endpoint, backoff);
-                        int delay = backoff * 1000 + random.Next(0, 1000);
+                        LogHelper.LogWarning(_logger, "Transient error {Status} at {Endpoint}. Headers: {Headers}",
+                                status, endpoint, string.Join("; ", response.Headers.Select(h => $"{h.Key}: {string.Join(",", h.Value)}")));
+                        int delay = backoff * 500 + random.Next(0, 500);
                         await Task.Delay(delay, ct);
-                        backoff *= 2;
+                        backoff++;
                         retries++;
                     }
                     else
                     {
                         string errorContent = await response.Content.ReadAsStringAsync(ct);
-                        if (_logger.IsEnabled(LogLevel.Error))
-                            _logger.LogError("Non-transient error {Status} at {Endpoint}: {ErrorContent}", status, endpoint, errorContent);
+                        LogHelper.LogError(_logger, "Non-transient error {Status} at {Endpoint}: {ErrorContent}", status, endpoint, errorContent);
                         throw new HttpRequestException($"Error {status} at {endpoint}: {errorContent}");
                     }
                 }
             }
             catch (Exception ex) when (ex is not TaskCanceledException and not OperationCanceledException)
             {
-                if (_logger.IsEnabled(LogLevel.Error))
-                    _logger.LogError(ex, "Request failed for {Endpoint}", endpoint);
+                LogHelper.LogError(_logger, ex, "Request failed for {Endpoint}", endpoint);
                 throw new Exception($"Request failed for {endpoint}: {ex.Message}", ex);
             }
         }
@@ -370,12 +368,6 @@ public sealed class FinancialDataApiClient(string apiKey, ILogger<FinancialDataA
         if (info.ValueKind == JsonValueKind.Undefined)
             return null;
 
-        var json = JsonSerializer.Serialize(info);
-
-        if (identifier.Equals("AAGH"))
-        {
-            string x = "";
-        }
         var sharesIssued = info.GetProperty("shares_issued");
         var sharesOutstanding = info.GetProperty("shares_outstanding");
         var marketCap = info.GetProperty("market_cap");
@@ -1198,4 +1190,11 @@ public sealed class FinancialDataApiClient(string apiKey, ILogger<FinancialDataA
         _httpClient.Dispose();
         GC.SuppressFinalize(this);
     }
+
+    /// <summary>
+    /// This is for a defect in the financialdata.net API, where they
+    /// sometimes report NaN incorrectly for numeric values.
+    /// </summary>
+    [GeneratedRegex(@"\:\s*NaN\b")]
+    private static partial Regex NanRegex();
 }

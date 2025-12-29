@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using Gimzo.Infrastructure.Database;
 using Gimzo.Infrastructure.Database.DataAccessObjects;
+using Xunit.Sdk;
 
 namespace Gimzo.Infrastructure.Tests;
 
@@ -204,7 +205,7 @@ public class DatabaseIntegrationTests : IClassFixture<IntegrationTestsFixture>
     {
         using var cmdConn = _fixture.GetConnectionPairForDb().CommandConn;
         Assert.NotNull(cmdConn);
-        
+
         var dao = new IndexSymbol
         {
             Symbol = "TEST",
@@ -286,7 +287,6 @@ public class DatabaseIntegrationTests : IClassFixture<IntegrationTestsFixture>
         var dao = new EodPrice
         {
             Symbol = "TEST",
-            SecurityType = "type",
             Date = new DateOnly(2023, 1, 1),
             Open = 100m,
             High = 110m,
@@ -294,7 +294,7 @@ public class DatabaseIntegrationTests : IClassFixture<IntegrationTestsFixture>
             Close = 105m,
             Volume = 100000
         };
-        const string WhereClause = "WHERE symbol = @Symbol AND security_type = @SecurityType AND date_eod = @Date";
+        const string WhereClause = "WHERE symbol = @Symbol AND date_eod = @Date";
         // INSERT
         await cmdConn.ExecuteAsync(SqlRepository.InsertEodPrices, dao);
         var fromDb = await FetchFromDb<EodPrice>(
@@ -302,7 +302,6 @@ public class DatabaseIntegrationTests : IClassFixture<IntegrationTestsFixture>
             dao);
         Assert.NotNull(fromDb);
         Assert.Equal(dao.Symbol, fromDb.Symbol);
-        Assert.Equal(dao.SecurityType, fromDb.SecurityType);
         Assert.Equal(dao.Date, fromDb.Date);
         Assert.Equal(dao.Open, fromDb.Open);
         Assert.Equal(dao.High, fromDb.High);
@@ -1417,4 +1416,83 @@ public class DatabaseIntegrationTests : IClassFixture<IntegrationTestsFixture>
             dao);
         Assert.Null(fromDb);
     }
-}   
+
+    [Fact]
+    public async Task Processes_WriteMergeReadDelete_Async()
+    {
+        using var cmdConn = _fixture.GetConnectionPairForDb().CommandConn;
+        Assert.NotNull(cmdConn);
+        var dao = new Process
+        {
+            ProcessId = Guid.NewGuid(),
+            ProcessType = "TEST",
+            StartTime = DateTimeOffset.Now.AddMinutes(-5),
+            FinishTime = DateTimeOffset.Now,
+            InputPath = "Input",
+            OutputPath = "Output",
+            ParentProcessId = Guid.NewGuid()
+        };
+
+        const string WhereClause = "WHERE process_id = @ProcessId";
+        // INSERT
+        await cmdConn.ExecuteAsync(SqlRepository.InsertProcess, dao);
+        var fromDb = await FetchFromDb<Process>(
+            $"{SqlRepository.SelectProcess} {WhereClause}",
+            dao);
+        Assert.NotNull(fromDb);
+        Assert.Equal(dao.ProcessId, fromDb.ProcessId);
+        Assert.Equal(dao.ProcessType, fromDb.ProcessType);
+        Assert.Equal(dao.StartTime, fromDb.StartTime);
+        Assert.Equal(dao.FinishTime, fromDb.FinishTime);
+        Assert.Equal(dao.InputPath, fromDb.InputPath);
+        Assert.Equal(dao.OutputPath, fromDb.OutputPath);
+
+        var dao2 = dao with { FinishTime = DateTimeOffset.Now.AddMinutes(1) };
+        // MERGE
+        await cmdConn.ExecuteAsync(SqlRepository.MergeProcess, dao2);
+        fromDb = await FetchFromDb<Process>(
+            $"{SqlRepository.SelectProcess} {WhereClause}", dao);
+        Assert.NotNull(fromDb);
+        Assert.Equal(dao2.FinishTime, fromDb.FinishTime);
+        // DELETE
+        await cmdConn.ExecuteAsync($"DELETE FROM public.processes {WhereClause}", dao);
+        fromDb = await FetchFromDb<Process>($"{SqlRepository.SelectProcess} {WhereClause}", dao);
+        Assert.Null(fromDb);
+    }
+
+    [Fact]
+    public async Task IgnoredSymbol_WriteMergeReadDelete_Async()
+    {
+        using var cmdConn = _fixture.GetConnectionPairForDb().CommandConn;
+        Assert.NotNull(cmdConn);
+        var dao = new IgnoredSymbol
+        {
+            Symbol = "SYMBOL",
+            Reason = "Reason",
+            Expiration = DateOnly.FromDateTime(DateTime.Now)
+        };
+
+        const string WhereClause = "WHERE symbol = @Symbol";
+        // INSERT
+        await cmdConn.ExecuteAsync(SqlRepository.InsertIgnoredSymbol, dao);
+        var fromDb = await FetchFromDb<IgnoredSymbol>(
+            $"{SqlRepository.SelectIgnoredSymbol} {WhereClause}", dao);
+        Assert.NotNull(fromDb);
+
+        Assert.Equal(dao.Symbol, fromDb.Symbol);
+        Assert.Equal(dao.Reason, fromDb.Reason);
+        Assert.Equal(dao.Expiration, fromDb.Expiration);
+
+        var dao2 = dao with { Reason = nameof(IgnoredSymbol_WriteMergeReadDelete_Async) };
+        // MERGE
+        await cmdConn.ExecuteAsync(SqlRepository.MergeIgnoredSymbol, dao2);
+        fromDb = await FetchFromDb<IgnoredSymbol>(
+            $"{SqlRepository.SelectIgnoredSymbol} {WhereClause}", dao);
+        Assert.NotNull(fromDb);
+        Assert.Equal(dao2.Reason, fromDb.Reason);
+        // DELETE
+        await cmdConn.ExecuteAsync($"DELETE FROM public.ignored_symbols {WhereClause}", dao);
+        fromDb = await FetchFromDb<IgnoredSymbol>($"{SqlRepository.SelectIgnoredSymbol} {WhereClause}", dao);
+        Assert.Null(fromDb);
+    }
+}

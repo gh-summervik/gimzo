@@ -427,7 +427,6 @@ FROM public.security_information";
     public const string InsertEodPrices = @"
 INSERT INTO public.eod_prices (
     symbol,
-    security_type,
     date_eod,
     open,
     high,
@@ -442,7 +441,6 @@ INSERT INTO public.eod_prices (
     updated_at_unix_ms
 ) VALUES (
     @Symbol,
-    @SecurityType,
     @Date,
     @Open,
     @High,
@@ -460,7 +458,6 @@ INSERT INTO public.eod_prices (
     public const string MergeEodPrices = @"
 INSERT INTO public.eod_prices (
     symbol,
-    security_type,
     date_eod,
     open,
     high,
@@ -475,7 +472,6 @@ INSERT INTO public.eod_prices (
     updated_at_unix_ms
 ) VALUES (
     @Symbol,
-    @SecurityType,
     @Date,
     @Open,
     @High,
@@ -488,7 +484,7 @@ INSERT INTO public.eod_prices (
     @UpdatedAt,
     @CreatedAtUnixMs,
     @UpdatedAtUnixMs
-) ON CONFLICT (symbol, security_type, date_eod) DO UPDATE SET
+) ON CONFLICT (symbol, date_eod) DO UPDATE SET
     open = EXCLUDED.open,
     high = EXCLUDED.high,
     low = EXCLUDED.low,
@@ -501,7 +497,6 @@ INSERT INTO public.eod_prices (
     public const string SelectEodPrices = @"
 SELECT
     symbol,
-    security_type AS SecurityType,
     date_eod AS Date,
     open AS Open,
     high AS High,
@@ -2937,4 +2932,158 @@ SELECT
     created_at_unix_ms AS CreatedAtUnixMs,
     updated_at_unix_ms AS UpdatedAtUnixMs
 FROM public.short_interests";
+
+    public const string InsertProcess = @"
+INSERT INTO public.processes(
+    process_id,
+    process_type,
+    start_time,
+    finish_time,
+    start_time_unix_ms,
+    finish_time_unix_ms,
+    input_path,
+    output_path,
+    parent_process_id,
+    created_by,
+    updated_by,
+    created_at,
+    updated_at,
+    created_at_unix_ms,
+    updated_at_unix_ms
+) VALUES(
+    @ProcessId,
+    @ProcessType,
+    @StartTime,
+    @FinishTime,
+    @StartTimeUnixMs,
+    @FinishTimeUnixMs,
+    @InputPath,
+    @OutputPath,
+    @ParentProcessId,
+    @CreatedBy,
+    @UpdatedBy,
+    @CreatedAt,
+    @UpdatedAt,
+    @CreatedAtUnixMs,
+    @UpdatedAtUnixMs
+)";
+
+    public const string MergeProcess = @"
+INSERT INTO public.processes(
+    process_id,
+    process_type,
+    start_time,
+    finish_time,
+    start_time_unix_ms,
+    finish_time_unix_ms,
+    input_path,
+    output_path,
+    parent_process_id,
+    created_by,
+    updated_by,
+    created_at,
+    updated_at,
+    created_at_unix_ms,
+    updated_at_unix_ms
+) VALUES(
+    @ProcessId,
+    @ProcessType,
+    @StartTime,
+    @FinishTime,
+    @StartTimeUnixMs,
+    @FinishTimeUnixMs,
+    @InputPath,
+    @OutputPath,
+    @ParentProcessId,
+    @CreatedBy,
+    @UpdatedBy,
+    @CreatedAt,
+    @UpdatedAt,
+    @CreatedAtUnixMs,
+    @UpdatedAtUnixMs
+) ON CONFLICT (process_id) DO UPDATE SET
+    finish_time = EXCLUDED.finish_time,
+    finish_time_unix_ms = EXCLUDED.finish_time_unix_ms,
+    updated_by = EXCLUDED.updated_by,
+    updated_at = EXCLUDED.updated_at,
+    updated_at_unix_ms = EXCLUDED.updated_at_unix_ms";
+
+    public const string SelectProcess = @"
+SELECT
+    process_id AS ProcessId,
+    process_type AS ProcessType,
+    start_time_unix_ms AS StartTimeUnixMs,
+    finish_time_unix_ms AS FinishTimeUnixMs,
+    input_path AS InputPath,
+    output_path AS OutputPath,
+    parent_process_id AS ParentProcessId,
+    created_by AS CreatedBy,
+    updated_by AS UpdatedBy,
+    created_at_unix_ms AS CreatedAtUnixMs,
+    updated_at_unix_ms AS UpdatedAtUnixMs
+FROM public.processes";
+
+    public const string InsertIgnoredSymbol = @"
+INSERT INTO public.ignored_symbols(
+    symbol,
+    reason,
+    expiration,
+    created_by,
+    updated_by,
+    created_at,
+    updated_at,
+    created_at_unix_ms,
+    updated_at_unix_ms)
+VALUES(
+    @Symbol,
+    @Reason,
+    @Expiration,
+    @CreatedBy,
+    @UpdatedBy,
+    @CreatedAt,
+    @UpdatedAt,
+    @CreatedAtUnixMs,
+    @UpdatedAtUnixMs
+)";
+
+    public const string MergeIgnoredSymbol = @"
+INSERT INTO public.ignored_symbols(
+    symbol,
+    reason,
+    expiration,
+    created_by,
+    updated_by,
+    created_at,
+    updated_at,
+    created_at_unix_ms,
+    updated_at_unix_ms)
+VALUES(
+    @Symbol,
+    @Reason,
+    @Expiration,
+    @CreatedBy,
+    @UpdatedBy,
+    @CreatedAt,
+    @UpdatedAt,
+    @CreatedAtUnixMs,
+    @UpdatedAtUnixMs)
+ON CONFLICT (symbol) DO UPDATE SET
+    reason = EXCLUDED.reason,
+    expiration = EXCLUDED.expiration,
+    updated_by = EXCLUDED.updated_by,
+    updated_at = EXCLUDED.updated_at,
+    updated_at_unix_ms = EXCLUDED.updated_at_unix_ms";
+
+
+    public const string SelectIgnoredSymbol = @"
+SELECT
+    symbol,
+    reason,
+    expiration,
+    created_by AS CreatedBy,
+    updated_by AS UpdatedBy,
+    created_at_unix_ms AS CreatedAtUnixMs,
+    updated_at_unix_ms AS UpdatedAtUnixMs
+FROM public.ignored_symbols";
+
 }
