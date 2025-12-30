@@ -14,7 +14,7 @@ internal sealed record EmployeeCount : DaoBase
         FiscalYear = "";
     }
 
-    public EmployeeCount(Guid userId, DataProviders.FinancialDataNet.EmployeeCount count) : base(userId)
+    public EmployeeCount(Analysis.Fundamental.EmployeeCount count, Guid userId) : base(userId)
     {
         Symbol = count.Symbol;
         CentralIndexKey = count.CentralIndexKey;

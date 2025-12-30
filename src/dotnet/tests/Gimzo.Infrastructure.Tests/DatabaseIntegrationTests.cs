@@ -1,7 +1,6 @@
 ﻿using Dapper;
 using Gimzo.Infrastructure.Database;
 using Gimzo.Infrastructure.Database.DataAccessObjects;
-using Xunit.Sdk;
 
 namespace Gimzo.Infrastructure.Tests;
 
@@ -329,7 +328,7 @@ public class DatabaseIntegrationTests : IClassFixture<IntegrationTestsFixture>
     {
         using var cmdConn = _fixture.GetConnectionPairForDb().CommandConn;
         Assert.NotNull(cmdConn);
-        var dao = new UsCompany
+        var dao = new CompanyInformation
         {
             CentralIndexKey = "TEST",
             Exchange = "exchange",
@@ -359,7 +358,7 @@ public class DatabaseIntegrationTests : IClassFixture<IntegrationTestsFixture>
         const string WhereClause = "WHERE central_index_key = @CentralIndexKey AND exchange = @Exchange AND symbol = @Symbol";
         // INSERT
         await cmdConn.ExecuteAsync(SqlRepository.InsertUsCompanies, dao);
-        var fromDb = await FetchFromDb<UsCompany>(
+        var fromDb = await FetchFromDb<CompanyInformation>(
             $"{SqlRepository.SelectUsCompanies} {WhereClause}",
             dao);
         Assert.NotNull(fromDb);
@@ -390,14 +389,14 @@ public class DatabaseIntegrationTests : IClassFixture<IntegrationTestsFixture>
         var dao2 = dao with { Registrant = nameof(UsCompanies_WriteMergeReadDelete_Async) };
         // MERGE
         await cmdConn.ExecuteAsync(SqlRepository.MergeUsCompanies, dao2);
-        fromDb = await FetchFromDb<UsCompany>(
+        fromDb = await FetchFromDb<CompanyInformation>(
             $"{SqlRepository.SelectUsCompanies} {WhereClause}",
             dao);
         Assert.NotNull(fromDb);
         Assert.Equal(dao2.Registrant, fromDb.Registrant);
         // DELETE
         await cmdConn.ExecuteAsync($"DELETE FROM public.us_companies {WhereClause}", dao);
-        fromDb = await FetchFromDb<UsCompany>(
+        fromDb = await FetchFromDb<CompanyInformation>(
             $"{SqlRepository.SelectUsCompanies} {WhereClause}",
             dao);
         Assert.Null(fromDb);
@@ -749,8 +748,8 @@ public class DatabaseIntegrationTests : IClassFixture<IntegrationTestsFixture>
             CentralIndexKey = "TEST",
             Registrant = "registrant",
             FiscalYear = "2023",
-            Value = 1000000m,
-            ChangeInMarketCap = 100000m,
+            Value = 1000000D,
+            ChangeInMarketCap = 100000D,
             PercentageChangeInMarketCap = 0.11,
             SharesOutstanding = 1000000,
             ChangeInSharesOutstanding = 100000,

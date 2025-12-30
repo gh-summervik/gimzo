@@ -16,7 +16,7 @@ internal sealed record ValuationRatio : DaoBase
         FiscalPeriod = "";
     }
 
-    public ValuationRatio(Guid userId, DataProviders.FinancialDataNet.ValuationRatios ratios) : base(userId)
+    public ValuationRatio(Analysis.Fundamental.ValuationRatios ratios, Guid userId) : base(userId)
     {
         Symbol = ratios.Symbol;
         CentralIndexKey = ratios.CentralIndexKey;

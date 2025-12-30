@@ -16,7 +16,7 @@ internal sealed record EarningsRelease : DaoBase
         FiscalQuarterEndDate = "";
     }
 
-    public EarningsRelease(Guid userId, DataProviders.FinancialDataNet.EarningsRelease release) : base(userId)
+    public EarningsRelease(Analysis.Fundamental.EarningsRelease release, Guid userId) : base(userId)
     {
         Symbol = release.Symbol;
         CentralIndexKey = release.CentralIndexKey;

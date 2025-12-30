@@ -14,7 +14,7 @@ internal sealed record KeyMetrics : DaoBase
         FiscalYear = "";
     }
 
-    public KeyMetrics(Guid userId, DataProviders.FinancialDataNet.KeyMetrics metrics) : base(userId)
+    public KeyMetrics(Analysis.Fundamental.KeyMetrics metrics, Guid userId) : base(userId)
     {
         Symbol = metrics.Symbol;
         CentralIndexKey = metrics.CentralIndexKey;

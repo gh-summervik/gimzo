@@ -12,7 +12,7 @@ internal sealed record SecurityInformation : DaoBase
         Symbol = "";
     }
 
-    public SecurityInformation(Guid userId, DataProviders.FinancialDataNet.SecurityInformation info) : base(userId)
+    public SecurityInformation(Analysis.Fundamental.Security info, Guid userId) : base(userId)
     {
         Symbol = info.Symbol;
         Issuer = info.Issuer;

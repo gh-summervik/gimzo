@@ -23,7 +23,6 @@ public static class Constants
             foreach (var p in typeof(DbKeys).GetFields(System.Reflection.BindingFlags.Public |
                 System.Reflection.BindingFlags.Static))
                 yield return p.GetValue(null)?.ToString() ?? p.Name;
-
         }
     }
 }

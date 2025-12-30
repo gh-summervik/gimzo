@@ -106,7 +106,6 @@ public sealed class NullableDateOnlyJsonConverter : JsonConverter<DateOnly?>
         }
     }
 
-
     public override void Write(Utf8JsonWriter writer, DateOnly? value, JsonSerializerOptions options)
     {
         if (value.HasValue)

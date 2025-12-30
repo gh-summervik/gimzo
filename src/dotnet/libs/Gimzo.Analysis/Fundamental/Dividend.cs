@@ -8,6 +8,6 @@ public sealed class Dividend
     public string? Type { get; init; }
     public decimal? Amount { get; init; }
     public DateOnly? DeclarationDate { get; init; }
-    public DateOnly? RecordDate { get; init; }
+    public DateOnly RecordDate { get; init; }
     public DateOnly? PaymentDate { get; init; }
 }

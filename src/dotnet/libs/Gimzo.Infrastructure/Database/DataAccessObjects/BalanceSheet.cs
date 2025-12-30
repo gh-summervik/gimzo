@@ -16,7 +16,7 @@ internal sealed record BalanceSheet : DaoBase
         FiscalPeriod = "";
     }
 
-    public BalanceSheet(Guid userId, DataProviders.FinancialDataNet.BalanceSheet sheet) : base(userId)
+    public BalanceSheet(Analysis.Fundamental.BalanceSheet sheet, Guid userId) : base(userId)
     {
         Symbol = sheet.Symbol;
         CentralIndexKey = sheet.CentralIndexKey;

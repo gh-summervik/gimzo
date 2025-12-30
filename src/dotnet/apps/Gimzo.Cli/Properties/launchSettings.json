@@ -2,7 +2,7 @@
   "profiles": {
     "Gimzo.Cli": {
       "commandName": "Project",
-      "commandLineArgs": "--import --weekday"
+      "commandLineArgs": "-i --weekday"
     }
   }
 }

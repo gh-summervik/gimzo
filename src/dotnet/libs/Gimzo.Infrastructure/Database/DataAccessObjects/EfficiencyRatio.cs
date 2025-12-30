@@ -16,7 +16,7 @@ internal sealed record EfficiencyRatio : DaoBase
         FiscalPeriod = "";
     }
 
-    public EfficiencyRatio(Guid userId, DataProviders.FinancialDataNet.EfficiencyRatios ratios) : base(userId)
+    public EfficiencyRatio(Analysis.Fundamental.EfficiencyRatios ratios, Guid userId) : base(userId)
     {
         Symbol = ratios.Symbol;
         CentralIndexKey = ratios.CentralIndexKey;

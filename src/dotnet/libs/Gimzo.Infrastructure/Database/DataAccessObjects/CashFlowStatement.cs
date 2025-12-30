@@ -16,7 +16,7 @@ internal sealed record CashFlowStatement : DaoBase
         FiscalPeriod = "";
     }
 
-    public CashFlowStatement(Guid userId, DataProviders.FinancialDataNet.CashFlowStatement stmt) : base(userId)
+    public CashFlowStatement(Analysis.Fundamental.CashFlowStatement stmt, Guid userId) : base(userId)
     {
         Symbol = stmt.Symbol;
         CentralIndexKey = stmt.CentralIndexKey;

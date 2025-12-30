@@ -9,7 +9,7 @@ using System.Text.RegularExpressions;
     InternalsVisibleTo("Gimzo.AppServices")]
 namespace Gimzo.Infrastructure.DataProviders.FinancialDataNet;
 
-public sealed partial class FinancialDataApiClient(string apiKey, ILogger<FinancialDataApiClient> logger) : IDisposable
+public sealed class FinancialDataApiClient(string apiKey, ILogger<FinancialDataApiClient> logger) : IDisposable
 {
     private readonly string _apiKey = apiKey ?? throw new ArgumentNullException(nameof(apiKey));
     private readonly ILogger<FinancialDataApiClient> _logger = logger;
@@ -58,7 +58,7 @@ public sealed partial class FinancialDataApiClient(string apiKey, ILogger<Financ
         public const string StockSymbols = "stock-symbols";
         public const string ValuationRatios = "valuation-ratios";
     }
-
+    
     private async Task<JsonElement[]?> MakeRequestAsync(string endpoint, Dictionary<string, string>? parameters = null, CancellationToken ct = default)
     {
         parameters ??= [];
@@ -97,7 +97,11 @@ public sealed partial class FinancialDataApiClient(string apiKey, ILogger<Financ
                         return [];
                     }
                     // fixes a defect in the financialdata.net API.
-                    var json = NanRegex().Replace(content, ": null");
+                    // suppressing this warning because using it forces this
+                    // class into a partial class. Just don't like it.
+#pragma warning disable SYSLIB1045 // Convert to 'GeneratedRegexAttribute'.
+                    var json = Regex.Replace(content, @"\:\s*NaN\b", ": null");
+#pragma warning restore SYSLIB1045 // Convert to 'GeneratedRegexAttribute'.
                     return JsonSerializer.Deserialize<JsonElement[]>(json);
                 }
                 else
@@ -512,8 +516,8 @@ public sealed partial class FinancialDataApiClient(string apiKey, ILogger<Financ
                 k.GetProperty("central_index_key").GetString() ?? "",
                 k.GetProperty("registrant_name").GetString() ?? "",
                 k.GetProperty("fiscal_year").GetString() ?? "",
-                mc.ValueKind == JsonValueKind.Null ? null : mc.GetDecimal(),
-                cimc.ValueKind == JsonValueKind.Null ? null : cimc.GetDecimal(),
+                mc.ValueKind == JsonValueKind.Null ? null : mc.GetDouble(),
+                cimc.ValueKind == JsonValueKind.Null ? null : cimc.GetDouble(),
                 pcimc.ValueKind == JsonValueKind.Null ? null : pcimc.GetDouble(),
                 so.ValueKind == JsonValueKind.Null ? null : so.GetInt64(),
                 cso.ValueKind == JsonValueKind.Null ? null : cso.GetInt64(),
@@ -798,7 +802,7 @@ public sealed partial class FinancialDataApiClient(string apiKey, ILogger<Financ
         if (divs.Length == 0)
             return [];
 
-        return [.. divs.Select(static k =>
+        return [.. divs.Select(k =>
         {
             var amt = k.GetProperty("amount");
             var dd = k.GetProperty("declaration_date");
@@ -806,13 +810,16 @@ public sealed partial class FinancialDataApiClient(string apiKey, ILogger<Financ
             var recd = k.GetProperty("record_date");
             var pd = k.GetProperty("payment_date");
 
+            if (recd.ValueKind == JsonValueKind.Null)
+                throw new Exception($"Record date on dividend cannot be null - symbol is {identifier}");
+
             return new Dividend(k.GetProperty("trading_symbol").GetString() ?? "",
                 k.GetProperty("registrant_name").GetString() ?? "",
                 k.GetProperty("type").GetString() ?? "",
                 amt.ValueKind == JsonValueKind.Null ? null : amt.GetDecimal(),
                 dd.ValueKind == JsonValueKind.Null ? null : DateOnly.FromDateTime(dd.GetDateTime()),
                 exd.ValueKind == JsonValueKind.Null ? null : DateOnly.FromDateTime(exd.GetDateTime()),
-                recd.ValueKind == JsonValueKind.Null ? null : DateOnly.FromDateTime(recd.GetDateTime()),
+                DateOnly.FromDateTime(recd.GetDateTime()),
                 pd.ValueKind == JsonValueKind.Null ? null : DateOnly.FromDateTime(pd.GetDateTime()));
         }).OrderBy(static k => k.DeclarationDate)];
     }
@@ -1190,11 +1197,4 @@ public sealed partial class FinancialDataApiClient(string apiKey, ILogger<Financ
         _httpClient.Dispose();
         GC.SuppressFinalize(this);
     }
-
-    /// <summary>
-    /// This is for a defect in the financialdata.net API, where they
-    /// sometimes report NaN incorrectly for numeric values.
-    /// </summary>
-    [GeneratedRegex(@"\:\s*NaN\b")]
-    private static partial Regex NanRegex();
 }

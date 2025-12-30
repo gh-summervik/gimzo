@@ -12,7 +12,7 @@ internal sealed record StockSplit : DaoBase
         CentralIndexKey = "";
     }
 
-    public StockSplit(Guid userId, DataProviders.FinancialDataNet.StockSplit split) : base(userId)
+    public StockSplit(Analysis.Fundamental.StockSplit split, Guid userId) : base(userId)
     {
         Symbol = split.Symbol;
         CentralIndexKey = split.CentralIndexKey;

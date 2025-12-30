@@ -16,7 +16,7 @@ internal sealed record LiquidityRatio : DaoBase
         FiscalPeriod = "";
     }
 
-    public LiquidityRatio(Guid userId, DataProviders.FinancialDataNet.LiquidityRatios ratios) : base(userId)
+    public LiquidityRatio(Analysis.Fundamental.LiquidityRatios ratios, Guid userId) : base(userId)
     {
         Symbol = ratios.Symbol;
         CentralIndexKey = ratios.CentralIndexKey;

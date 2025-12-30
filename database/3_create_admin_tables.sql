@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS public.processes(
     input_path TEXT,
     output_path TEXT,
     parent_process_id UUID,
+    args TEXT,
     created_by UUID NOT NULL,
     updated_by UUID NOT NULL,
     created_at TIMESTAMPTZ NOT NULL,

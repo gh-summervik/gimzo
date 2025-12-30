@@ -2,20 +2,21 @@
 
 public sealed class CompanyInformation
 {
+    public CompanyInformation() { }
     public required string CentralIndexKey { get; init; }
     public required string Exchange { get; init; }
     public required string Symbol { get; init; }
-    public required string? Registrant { get; init; }
-    public required string? Isin { get; init; }
-    public required string? Lei { get; init; }
-    public required string? Ein { get; init; }
-    public required string? SicCode { get; init; }
-    public required string? SicDescription { get; init; }
-    public required string? FiscalYearEnd { get; init; }
-    public required string? StateOfIncorporation { get; init; }
-    public required string? PhoneNumber { get; init; }
-    public required string? MailingAddress { get; init; }
-    public required string? BusinessAddress { get; init; }
+    public string? Registrant { get; init; }
+    public string? Isin { get; init; }
+    public string? Lei { get; init; }
+    public string? Ein { get; init; }
+    public string? SicCode { get; init; }
+    public string? SicDescription { get; init; }
+    public string? FiscalYearEnd { get; init; }
+    public string? StateOfIncorporation { get; init; }
+    public string? PhoneNumber { get; init; }
+    public string? MailingAddress { get; init; }
+    public string? BusinessAddress { get; init; }
     public string? FormerName { get; init; }
     public string? Industry { get; init; }
     public string? DateFounding { get; init; }

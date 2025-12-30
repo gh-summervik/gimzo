@@ -12,7 +12,7 @@ internal sealed record ShortInterest : DaoBase
         Symbol = "";
     }
 
-    public ShortInterest(Guid userId, DataProviders.FinancialDataNet.ShortInterest interest) : base(userId)
+    public ShortInterest(Analysis.Fundamental.ShortInterest interest, Guid userId) : base(userId)
     {
         Symbol = interest.Symbol;
         Title = interest.Title;

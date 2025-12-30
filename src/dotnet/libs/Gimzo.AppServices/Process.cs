@@ -3,18 +3,19 @@
 public class Process
 {
     public static Process Create(string processType, string? inputPath = null,
-        string? outputPath = null)
+        string? outputPath = null, params string[] args)
     {
         return new Process()
         {
             ProcessType = processType,
             InputPath = inputPath,
             OutputPath = outputPath,
-            StartTime = DateTime.UtcNow
+            StartTime = DateTime.UtcNow,
+            Args = args.Length == 0 ? null : string.Join(' ', args)
         };
     }
 
-    internal Process()
+    private Process()
     {
         ProcessId = Guid.NewGuid();
         ProcessType = "";
@@ -22,11 +23,12 @@ public class Process
 
     internal Process(Guid processId,
         string processType,
-        DateTime startTime,
-        DateTime? finishTime = null,
+        DateTimeOffset startTime,
+        DateTimeOffset? finishTime = null,
         string? inputPath = null,
         string? outputPath = null,
-        Guid? parentProcessId = null)
+        Guid? parentProcessId = null,
+        string? args = null)
     {
         ProcessId = processId;
         ProcessType = processType;
@@ -35,13 +37,30 @@ public class Process
         InputPath = inputPath;
         OutputPath = outputPath;
         ParentProcessId = parentProcessId;
+        Args = args;
     }
 
     public Guid ProcessId { get; init; }
     public string ProcessType { get; init; }
-    public DateTime StartTime { get; init; } = DateTime.UtcNow;
-    public DateTime? FinishTime { get; init; }
+    public DateTimeOffset StartTime { get; init; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset? FinishTime { get; set; }
     public string? InputPath { get; init; }
     public string? OutputPath { get; init; }
     public Guid? ParentProcessId { get; init; }
+    public string? Args { get; init; }
+
+    internal Infrastructure.Database.DataAccessObjects.Process ToDao(DateTimeOffset? finish = null)
+    {
+        return new(ProcessId)
+        {
+            ProcessId = ProcessId,
+            ProcessType = ProcessType,
+            StartTime = StartTime,
+            FinishTime = finish ?? FinishTime,
+            InputPath = InputPath,
+            OutputPath = OutputPath,
+            ParentProcessId = ParentProcessId,
+            Args = Args
+        };
+    }
 }

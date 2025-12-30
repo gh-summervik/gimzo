@@ -16,7 +16,7 @@ internal sealed record IncomeStatement : DaoBase
         FiscalPeriod = "";
     }
 
-    public IncomeStatement(Guid userId, DataProviders.FinancialDataNet.IncomeStatement stmt) : base(userId)
+    public IncomeStatement(Analysis.Fundamental.IncomeStatement stmt, Guid userId) : base(userId)
     {
         Symbol = stmt.Symbol;
         CentralIndexKey = stmt.CentralIndexKey;

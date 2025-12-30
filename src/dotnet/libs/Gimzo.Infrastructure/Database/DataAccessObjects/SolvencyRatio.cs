@@ -16,7 +16,7 @@ internal sealed record SolvencyRatio : DaoBase
         FiscalPeriod = "";
     }
 
-    public SolvencyRatio(Guid userId, DataProviders.FinancialDataNet.SolvencyRatios ratios) : base(userId)
+    public SolvencyRatio(Analysis.Fundamental.SolvencyRatios ratios, Guid userId) : base(userId)
     {
         Symbol = ratios.Symbol;
         CentralIndexKey = ratios.CentralIndexKey;

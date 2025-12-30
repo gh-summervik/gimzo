@@ -13,7 +13,7 @@ internal sealed record Process : DaoBase
 
     public Process(Guid userId) : base(userId)
     {
-        ProcessId = Guid.Empty;
+        ProcessId = userId;
         ProcessType = "";
     }
 
@@ -27,15 +27,14 @@ internal sealed record Process : DaoBase
     public DateTimeOffset? FinishTime
     {
         get => _finishTimeUnixMs.HasValue ? DateTimeOffset.FromUnixTimeMilliseconds(_finishTimeUnixMs.GetValueOrDefault()) : null;
-        init => _finishTimeUnixMs = value?.ToUnixTimeMilliseconds();
+        set => _finishTimeUnixMs = value?.ToUnixTimeMilliseconds();
     }
     public long StartTimeUnixMs { get => _startTimeUnixMs; set => _startTimeUnixMs = value; }
     public long? FinishTimeUnixMs { get => _finishTimeUnixMs; set => _finishTimeUnixMs = value; }
-
     public string? InputPath { get; init; }
     public string? OutputPath { get; init; }
     public Guid? ParentProcessId { get; init; }
-
+    public string? Args { get; init; }
     public override bool IsValid() => base.IsValid() &&
         !ProcessId.Equals(Guid.Empty);
 }

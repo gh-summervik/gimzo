@@ -58,6 +58,7 @@ SELECT
     updated_at_unix_ms AS UpdatedAtUnixMs
 FROM public.stock_symbols";
 
+    
     public const string InsertEtfSymbols = @"
 INSERT INTO public.etf_symbols (
     symbol,
@@ -114,6 +115,7 @@ SELECT
     updated_at_unix_ms AS UpdatedAtUnixMs
 FROM public.etf_symbols";
 
+    
     public const string InsertCommoditySymbols = @"
 INSERT INTO public.commodity_symbols (
     symbol,
@@ -170,6 +172,7 @@ SELECT
     updated_at_unix_ms AS UpdatedAtUnixMs
 FROM public.commodity_symbols";
 
+    
     public const string InsertOtcSymbols = @"
 INSERT INTO public.otc_symbols (
     symbol,
@@ -226,6 +229,7 @@ SELECT
     updated_at_unix_ms AS UpdatedAtUnixMs
 FROM public.otc_symbols";
 
+    
     public const string InsertCryptoSymbols = @"
 INSERT INTO public.crypto_symbols (
     symbol,
@@ -288,6 +292,7 @@ SELECT
     updated_at_unix_ms AS UpdatedAtUnixMs
 FROM public.crypto_symbols";
 
+    
     public const string InsertIndexSymbols = @"
 INSERT INTO public.index_symbols (
     symbol,
@@ -344,6 +349,7 @@ SELECT
     updated_at_unix_ms AS UpdatedAtUnixMs
 FROM public.index_symbols";
 
+    
     public const string InsertSecurityInformation = @"
 INSERT INTO public.security_information (
     symbol,
@@ -424,6 +430,7 @@ SELECT
     updated_at_unix_ms AS UpdatedAtUnixMs
 FROM public.security_information";
 
+    
     public const string InsertEodPrices = @"
 INSERT INTO public.eod_prices (
     symbol,
@@ -509,6 +516,7 @@ SELECT
     updated_at_unix_ms AS UpdatedAtUnixMs
 FROM public.eod_prices";
 
+    
     public const string InsertUsCompanies = @"
 INSERT INTO public.us_companies (
     central_index_key,
@@ -695,6 +703,7 @@ SELECT
     updated_at_unix_ms AS UpdatedAtUnixMs
 FROM public.us_companies";
 
+    
     public const string InsertLiquidityRatios = @"
 INSERT INTO public.liquidity_ratios (
     symbol,
@@ -875,6 +884,7 @@ SELECT
     updated_at_unix_ms AS UpdatedAtUnixMs
 FROM public.liquidity_ratios";
 
+    
     public const string InsertProfitabilityRatios = @"
 INSERT INTO public.profitability_ratios (
     symbol,
@@ -1019,6 +1029,7 @@ SELECT
     updated_at_unix_ms AS UpdatedAtUnixMs
 FROM public.profitability_ratios";
 
+    
     public const string InsertSolvencyRatios = @"
 INSERT INTO public.solvency_ratios (
     symbol,
@@ -1151,6 +1162,7 @@ SELECT
     updated_at_unix_ms AS UpdatedAtUnixMs
 FROM public.solvency_ratios";
 
+    
     public const string InsertValuationRatios = @"
 INSERT INTO public.valuation_ratios (
     symbol,
@@ -1259,6 +1271,7 @@ SELECT
     updated_at_unix_ms AS UpdatedAtUnixMs
 FROM public.valuation_ratios";
 
+    
     public const string InsertKeyMetrics = @"
 INSERT INTO public.key_metrics (
     symbol,
@@ -1446,6 +1459,7 @@ SELECT
     updated_at_unix_ms AS UpdatedAtUnixMs
 FROM public.key_metrics";
 
+    
     public const string InsertMarketCaps = @"
 INSERT INTO public.market_caps (
     symbol,
@@ -1549,6 +1563,7 @@ SELECT
     updated_at_unix_ms AS UpdatedAtUnixMs
 FROM public.market_caps";
 
+    
     public const string InsertEmployeeCounts = @"
 INSERT INTO public.employee_counts (
     symbol,
@@ -1622,6 +1637,7 @@ SELECT
     updated_at_unix_ms AS UpdatedAtUnixMs
 FROM public.employee_counts";
 
+    
     public const string InsertExecutiveCompensations = @"
 INSERT INTO public.executive_compensations (
     symbol,
@@ -1735,6 +1751,7 @@ SELECT
     updated_at_unix_ms AS UpdatedAtUnixMs
 FROM public.executive_compensations";
 
+    
     public const string InsertIncomeStatements = @"
 INSERT INTO public.income_statements (
     symbol,
@@ -1897,6 +1914,7 @@ SELECT
     updated_at_unix_ms AS UpdatedAtUnixMs
 FROM public.income_statements";
 
+    
     public const string InsertBalanceSheets = @"
 INSERT INTO public.balance_sheets (
     symbol,
@@ -2125,6 +2143,7 @@ SELECT
     updated_at_unix_ms AS UpdatedAtUnixMs
 FROM public.balance_sheets";
 
+    
     public const string InsertCashFlowStatements = @"
 INSERT INTO public.cash_flow_statements (
     symbol,
@@ -2383,6 +2402,7 @@ SELECT
     updated_at_unix_ms AS UpdatedAtUnixMs
 FROM public.cash_flow_statements";
 
+    
     public const string InsertStockSplits = @"
 INSERT INTO public.stock_splits (
     symbol,
@@ -2456,6 +2476,7 @@ SELECT
     updated_at_unix_ms AS UpdatedAtUnixMs
 FROM public.stock_splits";
 
+    
     public const string InsertDividends = @"
 INSERT INTO public.dividends (
     symbol,
@@ -2520,13 +2541,13 @@ INSERT INTO public.dividends (
     @UpdatedAt,
     @CreatedAtUnixMs,
     @UpdatedAtUnixMs
-) ON CONFLICT (symbol, ex_date) DO UPDATE SET
+) ON CONFLICT (symbol, record_date) DO UPDATE SET
     registrant = EXCLUDED.registrant,
     type = EXCLUDED.type,
     amount = EXCLUDED.amount,
     declaration_date = EXCLUDED.declaration_date,
-    record_date = EXCLUDED.record_date,
     payment_date = EXCLUDED.payment_date,
+    ex_date = EXCLUDED.ex_date,
     updated_by = EXCLUDED.updated_by,
     updated_at = EXCLUDED.updated_at,
     updated_at_unix_ms = EXCLUDED.updated_at_unix_ms";
@@ -2547,6 +2568,7 @@ SELECT
     updated_at_unix_ms AS UpdatedAtUnixMs
 FROM public.dividends";
 
+    
     public const string InsertEarningsReleases = @"
 INSERT INTO public.earnings_releases (
     symbol,
@@ -2656,6 +2678,7 @@ SELECT
     updated_at_unix_ms AS UpdatedAtUnixMs
 FROM public.earnings_releases";
 
+    
     public const string InsertEfficiencyRatios = @"
 INSERT INTO public.efficiency_ratios (
     symbol,
@@ -2824,6 +2847,7 @@ SELECT
     updated_at_unix_ms AS UpdatedAtUnixMs
 FROM public.efficiency_ratios";
 
+    
     public const string InsertShortInterests = @"
 INSERT INTO public.short_interests (
     symbol,
@@ -2933,6 +2957,7 @@ SELECT
     updated_at_unix_ms AS UpdatedAtUnixMs
 FROM public.short_interests";
 
+    
     public const string InsertProcess = @"
 INSERT INTO public.processes(
     process_id,
@@ -3023,6 +3048,7 @@ SELECT
     updated_at_unix_ms AS UpdatedAtUnixMs
 FROM public.processes";
 
+ 
     public const string InsertIgnoredSymbol = @"
 INSERT INTO public.ignored_symbols(
     symbol,
@@ -3073,8 +3099,7 @@ ON CONFLICT (symbol) DO UPDATE SET
     updated_by = EXCLUDED.updated_by,
     updated_at = EXCLUDED.updated_at,
     updated_at_unix_ms = EXCLUDED.updated_at_unix_ms";
-
-
+    
     public const string SelectIgnoredSymbol = @"
 SELECT
     symbol,
@@ -3085,5 +3110,4 @@ SELECT
     created_at_unix_ms AS CreatedAtUnixMs,
     updated_at_unix_ms AS UpdatedAtUnixMs
 FROM public.ignored_symbols";
-
 }

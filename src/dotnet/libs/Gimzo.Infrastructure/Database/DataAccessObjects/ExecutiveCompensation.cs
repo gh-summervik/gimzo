@@ -18,7 +18,7 @@ internal sealed record ExecutiveCompensation : DaoBase
         FiscalYear = "";
     }
 
-    public ExecutiveCompensation(Guid userId, DataProviders.FinancialDataNet.ExecutiveCompensation comp) : base(userId)
+    public ExecutiveCompensation(Analysis.Fundamental.ExecutiveCompensation comp, Guid userId) : base(userId)
     {
         Symbol = comp.Symbol;
         CentralIndexKey = comp.CentralIndexKey;

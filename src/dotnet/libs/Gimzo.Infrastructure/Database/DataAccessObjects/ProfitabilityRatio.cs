@@ -16,7 +16,7 @@ internal sealed record ProfitabilityRatio : DaoBase
         FiscalPeriod = "";
     }
 
-    public ProfitabilityRatio(Guid userId, DataProviders.FinancialDataNet.ProfitabilityRatios ratios) : base(userId)
+    public ProfitabilityRatio(Analysis.Fundamental.ProfitabilityRatios ratios, Guid userId) : base(userId)
     {
         Symbol = ratios.Symbol;
         CentralIndexKey = ratios.CentralIndexKey;

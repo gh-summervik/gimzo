@@ -1,48 +1,43 @@
-﻿using Gimzo.Analysis.Fundamental;
+﻿using Dapper;
+using Gimzo.Analysis.Fundamental;
 using Gimzo.Common;
 using Gimzo.Infrastructure;
 using Gimzo.Infrastructure.Database;
 using Gimzo.Infrastructure.DataProviders.FinancialDataNet;
 using Microsoft.Extensions.Logging;
-using System.Diagnostics;
 
 namespace Gimzo.AppServices.DataImports;
 
-public sealed class FinancialDataImporter
+public sealed class FinancialDataImporter(FinancialDataApiClient apiClient,
+    DbDefPair dbDefPair,
+    ILogger<FinancialDataImporter> logger)
 {
-    private readonly FinancialDataApiClient _apiClient;
-    private readonly DatabaseService _dbService;
-    private readonly DbDefPair _dbDefPair;
-    private readonly ILogger<FinancialDataImporter> _logger;
-    private readonly DateOnly _today;
+    private readonly FinancialDataApiClient _apiClient = apiClient;
+    private readonly DatabaseService _dbService = new(dbDefPair, logger);
+    private readonly DbDefPair _dbDefPair = dbDefPair;
+    private readonly ILogger<FinancialDataImporter> _logger = logger;
+    private readonly DateOnly _today = TimeHelper.TodayEastern;
     private DbMetaInfo _metaInfo = new();
+    private Process? _process;
     private bool _forceWeekday;
     private bool _forceSaturday;
     private bool _forceSunday;
     private bool _initialized;
-
-    public FinancialDataImporter(FinancialDataApiClient apiClient,
-        DbDefPair dbDefPair,
-        ILogger<FinancialDataImporter> logger)
-    {
-        _dbService = new(dbDefPair, logger);
-        _apiClient = apiClient;
-        _dbDefPair = dbDefPair;
-        _logger = logger;
-        _today = TimeHelper.TodayEastern;
-    }
 
     /// <summary>
     /// Initialize the import process by hydrating meta info and determining
     /// which day to run.
     /// This method is intended to be called first.
     /// </summary>
-    public async Task InitializeImportAsync(bool forceWeekday = false,
+    public async Task InitializeImportAsync(Process process, bool forceWeekday = false,
         bool forceSaturday = false, bool forceSunday = false)
     {
+        _process = process ?? throw new ArgumentNullException(nameof(process));
         _forceWeekday = forceWeekday;
         _forceSaturday = forceSaturday;
         _forceSunday = forceSunday;
+
+        await _dbService.SaveProcess(_process.ToDao());
 
         // this must happen before the fetch of meta info; meta info includes ignored symbols.
         await _dbService.RemovedExpiredIgnoredSymbolsAsync();
@@ -52,7 +47,7 @@ public sealed class FinancialDataImporter
         LogHelper.LogInfo(_logger, "Import initialized");
     }
 
-    public async Task ImportAsync(Guid processId)
+    public async Task ImportAsync()
     {
         if (!_initialized)
             throw new Exception($"Import not initialized; call {nameof(InitializeImportAsync)} first.");
@@ -60,55 +55,49 @@ public sealed class FinancialDataImporter
         if (_forceSunday | _forceSaturday | _forceWeekday)
         {
             if (_forceWeekday)
-                await DoWeekdayWorkAsync(processId);
+                await DoWeekdayWorkAsync();
             if (_forceSaturday)
-                await DoSaturdayWorkAsync(processId);
+                await DoSaturdayWorkAsync();
             if (_forceSunday)
-                await DoSundayWorkAsync(processId);
+                await DoSundayWorkAsync();
         }
         else
         {
             var t = _today.DayOfWeek switch
             {
-                DayOfWeek.Sunday => DoSundayWorkAsync(processId),
-                DayOfWeek.Saturday => DoSaturdayWorkAsync(processId),
-                _ => DoWeekdayWorkAsync(processId)
+                DayOfWeek.Sunday => DoSundayWorkAsync(),
+                DayOfWeek.Saturday => DoSaturdayWorkAsync(),
+                _ => DoWeekdayWorkAsync()
             };
             await t;
         }
 
         var ignoreTasks = new[]
         {
-            _dbService.AddDelistedSymbolsToIgnoreListAsync(processId),
-            _dbService.AddSymbolsWithPricesOutsideRangeToIgnoreListAsync(processId, 10M, 2_000M),
-            _dbService.AddSymbolsWithShortChartsToIgnoreListAsync(processId, 200)
+            _dbService.AddDelistedSymbolsToIgnoreListAsync(_process!.ProcessId),
+            _dbService.AddSymbolsWithPricesOutsideRangeToIgnoreListAsync(_process!.ProcessId, 10M, 2_000M),
+            _dbService.AddSymbolsWithShortChartsToIgnoreListAsync(_process!.ProcessId, 200)
         };
         await Task.WhenAll(ignoreTasks);
 
         await _dbService.DeleteDataForIgnoredSymbolsAsync();
+
+        await _dbService.SaveProcess(_process!.ToDao(DateTimeOffset.UtcNow));
     }
 
-    internal async Task DoSundayWorkAsync(Guid processId)
-    {
-        LogHelper.LogInfo(_logger, "Sunday import in {Name} started import at {DateTime} with process id {ProcessId}", nameof(FinancialDataImporter),
-                DateTimeOffset.Now, processId);
-
-        //await SaveStockSymbolsAsync(processId);
-    }
-
-    internal async Task DoWeekdayWorkAsync(Guid processId)
+    internal async Task DoWeekdayWorkAsync()
     {
         LogHelper.LogInfo(_logger, "Weekday import in {Name} started import at {DateTime} with process id {ProcessId}", nameof(FinancialDataImporter),
-                DateTimeOffset.Now, processId);
+                DateTimeOffset.Now, _process!.ProcessId);
 
-        var stockSymbols = (await GetStockSymbolsAsync()).Select(k => new Security(k.Symbol, "Stock",
-            registrant: k.Registrant)).ToArray();
+        var stockSymbols = (await _apiClient.GetStockSymbolsAsync())
+            .Select(k => new Security(k.Symbol, "Stock", registrant: k.Registrant)).ToArray();
 
         LogHelper.LogInfo(_logger, "Saving {count} symbols.", stockSymbols.Length);
 
-        await _dbService.SaveStockSymbolsAsync(stockSymbols, processId);
+        await _dbService.SaveStockSymbolsAsync(stockSymbols, _process!.ProcessId);
 
-        List<Security> lst = new(10_000);
+        List<Security> securityList = new(10_000);
         LogHelper.LogInfo(_logger, "Fetching security information.");
 
         int count = stockSymbols.Length;
@@ -121,7 +110,7 @@ public sealed class FinancialDataImporter
             {
                 var model = secInfo.Value;
 
-                lst.Add(new Security(model.Symbol, model.Type ?? "Unknown")
+                securityList.Add(new Security(model.Symbol, model.Type ?? "Unknown")
                 {
                     Issuer = model.Issuer,
                     Cusip = model.Cusip,
@@ -140,455 +129,120 @@ public sealed class FinancialDataImporter
                     k.High.GetValueOrDefault(),
                     k.Low.GetValueOrDefault(),
                     k.Close.GetValueOrDefault(),
-                    k.Volume.GetValueOrDefault())), processId);
+                    k.Volume.GetValueOrDefault())), _process!.ProcessId);
         }
 
-        LogHelper.LogInfo(_logger, "Saving security info for {count} symbols.", lst.Count);
+        LogHelper.LogInfo(_logger, "Saving security info for {count} symbols.", securityList.Count);
 
-        await _dbService.SaveSecuritiesAsync(lst, processId);
+        await _dbService.SaveSecuritiesAsync(securityList, _process!.ProcessId);
     }
 
-    internal async Task DoSaturdayWorkAsync(Guid processId)
+    internal async Task DoSaturdayWorkAsync()
     {
         LogHelper.LogInfo(_logger, "Saturday import in {Name} started import at {DateTime} with process id {ProcessId}", nameof(FinancialDataImporter),
-                DateTimeOffset.Now, processId);
+                DateTimeOffset.Now, _process!.ProcessId);
 
-        //await SaveStockSymbolsAsync(processId);
-    }
+        var symbols = await GetSymbolsFromDatabaseAsync();
 
-    internal async Task<Stock[]> GetStockSymbolsAsync()
-    {
-        var stocks = await _apiClient.GetStockSymbolsAsync();
-
-        return [.. stocks.Where(k => !_metaInfo.IgnoredSymbols.Contains(k.Symbol))];
-    }
-
-    /// <summary>
-    /// This method is going away.
-    /// </summary>
-    /// <param name="processId"></param>
-    /// <returns></returns>
-    public async Task Import(Guid processId)
-    {
-        LogHelper.LogInfo(_logger, "{Name} started import at {DateTime} with process id {ProcessId}", nameof(FinancialDataImporter),
-                DateTimeOffset.Now, processId);
-
-        var stockSymbols = await _apiClient.GetStockSymbolsAsync();
-
+        int count = symbols.Length;
         int i = 0;
-        var count = stockSymbols.Length;
-        foreach (var symbol in stockSymbols)
+
+        foreach (var symbol in symbols)
         {
             i++;
-            Stopwatch timer = Stopwatch.StartNew();
+            LogHelper.LogInfo(_logger, "Processing {symbol} - {i}/{count}", symbol, i, count);
+            var coInfoModel = await _apiClient.GetCompanyInformationAsync(symbol);
+            if (coInfoModel.HasValue)
+                await _dbService.SaveCompanyInfoAsync(coInfoModel.Value.ToDomain(), _process!.ProcessId);
 
-            LogHelper.LogInfo(_logger, "Fetching {SYMBOL}, i = {i}/{c}", symbol.Symbol, i, count);
+            var incStmtsModels = await _apiClient.GetIncomeStatementsAsync(symbol);
+            if (incStmtsModels.Length > 0)
+                await _dbService.SaveIncomeStatementsAsync(incStmtsModels.Select(k => k.ToDomain()), _process!.ProcessId);
 
-            var ticker = symbol.Symbol;
-            string securityType = symbol.GetType().Name;
-            var secInfoModel = await _apiClient.GetSecurityInformationAsync(ticker);
-            var coInfoModel = await _apiClient.GetCompanyInformationAsync(ticker);
-            var priceActionsModel = await _apiClient.GetStockPricesAsync(ticker);
-            var metricsModel = await _apiClient.GetKeyMetricsAsync(ticker);
-            var marketCapsModel = await _apiClient.GetMarketCapAsync(ticker);
-            var empCountsModel = await _apiClient.GetEmployeeCountAsync(ticker);
-            var compsModel = await _apiClient.GetExecutiveCompensationAsync(ticker);
-            var incStmtsModel = await _apiClient.GetIncomeStatementsAsync(ticker);
-            var bsStmtsModel = await _apiClient.GetBalanceSheetStatementsAsync(ticker);
-            var cfStmtsModel = await _apiClient.GetCashFlowStatementsAsync(ticker);
-            var divsModel = await _apiClient.GetDividendsAsync(ticker);
-            var splitsModel = await _apiClient.GetStockSplitsAsync(ticker);
-            var shortsModel = await _apiClient.GetShortInterestAsync(ticker);
-            var earningsReleasesModel = await _apiClient.GetEarningsReleasesAsync(ticker);
-            var efficiencyRatiosModel = await _apiClient.GetEfficiencyRatiosAsync(ticker);
-            var liquidityModel = await _apiClient.GetLiquidityRatiosAsync(ticker);
-            var profitabilityModel = await _apiClient.GetProfitabilityRatiosAsync(ticker);
-            var solvencyModel = await _apiClient.GetSolvencyRatiosAsync(ticker);
-            var valuationsModel = await _apiClient.GetValuationRatiosAsync(ticker);
+            var bsStmtsModels = await _apiClient.GetBalanceSheetStatementsAsync(symbol);
+            if (bsStmtsModels.Length > 0)
+                await _dbService.SaveBalanceSheetsAsync(bsStmtsModels.Select(k => k.ToDomain()), _process!.ProcessId);
 
-            var security = new Security(
-                symbol: ticker,
-                securityType: securityType,
-                type: secInfoModel.HasValue ? secInfoModel.Value.Type : null,
-                issuer: secInfoModel.HasValue ? secInfoModel.Value.Issuer : null,
-                cusip: secInfoModel.HasValue ? secInfoModel.Value.Cusip : null,
-                isin: secInfoModel.HasValue ? secInfoModel.Value.Isin : null,
-                figi: secInfoModel.HasValue ? secInfoModel.Value.Figi : null,
-                registrant: symbol.Registrant,
-                description: null,
-                title: null,
-                name: secInfoModel.HasValue ? secInfoModel.Value.Issuer : null,
-                baseAsset: null,
-                quoteAsset: null,
-                company: coInfoModel.HasValue ? new Analysis.Fundamental.CompanyInformation()
-                {
-                    BusinessAddress = coInfoModel.Value.BusinessAddress,
-                    CentralIndexKey = coInfoModel.Value.CentralIndexKey,
-                    ChiefExecutiveOfficer = coInfoModel.Value.ChiefExecutiveOfficer,
-                    DateFounding = coInfoModel.Value.FoundingDate,
-                    Description = coInfoModel.Value.Description,
-                    Ein = coInfoModel.Value.Ein,
-                    Exchange = coInfoModel.Value.Exchange,
-                    FiscalYearEnd = coInfoModel.Value.FiscalYearEnd,
-                    FormerName = coInfoModel.Value.FormerName,
-                    Industry = coInfoModel.Value.Industry,
-                    Isin = coInfoModel.Value.Isin,
-                    Lei = coInfoModel.Value.Lei,
-                    MailingAddress = coInfoModel.Value.MailingAddress,
-                    MarketCap = coInfoModel.Value.MarketCap,
-                    NumberEmployees = coInfoModel.Value.NumberEmployees,
-                    PhoneNumber = coInfoModel.Value.PhoneNumber,
-                    Registrant = coInfoModel.Value.Registrant,
-                    SharesIssued = coInfoModel.Value.SharesIssued,
-                    SharesOutstanding = coInfoModel.Value.SharesOutstanding,
-                    SicCode = coInfoModel.Value.SicCode,
-                    SicDescription = coInfoModel.Value.SicDescription,
-                    StateOfIncorporation = coInfoModel.Value.StateOfIncorporation,
-                    Symbol = ticker,
-                    WebSite = coInfoModel.Value.WebSite
-                } : null,
-                incomeStatements: (incStmtsModel?.Length ?? 0) == 0 ? []
-                    : [.. incStmtsModel!.Select(k => new Analysis.Fundamental.IncomeStatement() {
-                        CentralIndexKey = k.CentralIndexKey,
-                        CostOfRevenue = k.CostOfRevenue,
-                        EarningsPerShareBasic = k.EarningsPerShareBasic,
-                        EarningsPerShareDiluted = k.EarningsPerShareDiluted,
-                        FiscalPeriod = k.FiscalPeriod,
-                        FiscalYear = k.FiscalYear,
-                        GeneralAdminExpenses = k.GeneralAdminExpenses,
-                        GrossProfit = k.GrossProfit,
-                        InterestExpense = k.InterestExpense,
-                        InterestIncome = k.InterestIncome,
-                        NetIncome = k.NetIncome,
-                        OperatingExpenses = k.OperatingExpenses,
-                        OperatingIncome = k.OperatingIncome,
-                        PeriodEndDate = k.PeriodEndDate,
-                        Registrant = k.Registrant,
-                        ResearchDevelopmentExpenses = k.ResearchDevelopmentExpenses,
-                        Revenue = k.Revenue,
-                        Symbol = k.Symbol,
-                        WeightedAverageSharesOutstandingBasic = k.WeightedAverageSharesOutstandingBasic,
-                        WeightedAverageSharesOutstandingDiluted = k.WeightedAverageSharesOutstandingDiluted
-                    })],
-                balanceSheets: (bsStmtsModel?.Length ?? 0) == 0 ? []
-                    : [.. bsStmtsModel!.Select(k => new Analysis.Fundamental.BalanceSheet() {
-                        AccountsPayable = k.AccountsPayable,
-                        AccountsReceivable = k.AccountsReceivable,
-                        AccumulatedOtherComprehensiveIncome = k.AccumulatedOtherComprehensiveIncome,
-                        Cash = k.Cash,
-                        CentralIndexKey = k.CentralIndexKey,
-                        CommonStock = k.CommonStock,
-                        DeferredRevenue = k.DeferredRevenue,
-                        FiscalPeriod = k.FiscalPeriod,
-                        FiscalYear = k.FiscalYear,
-                        LongTermDebt = k.LongTermDebt,
-                        Inventories = k.Inventories,
-                        MarketableSecuritiesCurrent = k.MarketableSecuritiesCurrent,
-                        MarketableSecuritiesNonCurrent = k.MarketableSecuritiesNonCurrent,
-                        PeriodEndDate = k.PeriodEndDate,
-                        NonTradeReceivables = k.NonTradeReceivables,
-                        OtherAssetsCurrent = k.OtherAssetsCurrent,
-                        OtherAssetsNonCurrent = k.OtherAssetsNonCurrent,
-                        OtherLiabilitiesCurrent = k.OtherLiabilitiesCurrent,
-                        OtherLiabilitiesNonCurrent = k.OtherLiabilitiesNonCurrent,
-                        PropertyPlantEquipment = k.PropertyPlantEquipment,
-                        Registrant = k.Registrant,
-                        RetainedEarnings = k.RetainedEarnings,
-                        ShortTermDebt = k.ShortTermDebt,
-                        Symbol = k.Symbol,
-                        TotalAssets = k.TotalAssets,
-                        TotalAssetsCurrent = k.TotalAssetsCurrent,
-                        TotalAssetsNonCurrent = k.TotalAssetsNonCurrent,
-                        TotalLiabilities = k.TotalLiabilities,
-                        TotalLiabilitiesCurrent = k.TotalLiabilitiesCurrent,
-                        TotalLiabilitiesNonCurrent = k.TotalLiabilitiesNonCurrent,
-                        TotalShareholdersEquity = k.TotalShareholdersEquity
-                    })],
-                cashFlowStatements: (cfStmtsModel?.Length ?? 0) == 0 ? []
-                    : [.. cfStmtsModel!.Select(k => new Analysis.Fundamental.CashFlowStatement() {
-                        AcquisitionOfBusiness = k.AcquisitionOfBusiness,
-                        AcquisitionOfProperty = k.AcquisitionOfProperty,
-                        CashAtEndOfPeriod = k.CashAtEndOfPeriod,
-                        CashFromFinancingActivities = k.CashFromFinancingActivities,
-                        CashFromInvestingActivities = k.CashFromInvestingActivities,
-                        CashFromOperatingActivities = k.CashFromOperatingActivities,
-                        CentralIndexKey = k.CentralIndexKey,
-                        ChangeInAccountsPayable = k.ChangeInAccountsPayable,
-                        ChangeInAccountsReceivable = k.ChangeInAccountsReceivable,
-                        ChangeInCash = k.ChangeInCash,
-                        ChangeInDeferredRevenue = k.ChangeInDeferredRevenue,
-                        ChangeInInventories = k.ChangeInInventories,
-                        ChangeInNonTradeReceivables = k.ChangeInNonTradeReceivables,
-                        ChangeInOtherAssets = k.ChangeInOtherAssets,
-                        ChangeInOtherLiabilities = k.ChangeInOtherLiabilities,
-                        DeferredIncomeTaxExpense = k.DeferredIncomeTaxExpense,
-                        Depreciation = k.Depreciation,
-                        FiscalPeriod = k.FiscalPeriod,
-                        FiscalYear = k.FiscalYear,
-                        IncomeTaxesPaid = k.IncomeTaxesPaid,
-                        InterestPaid = k.InterestPaid,
-                        IssuanceOfCommonStock = k.IssuanceOfCommonStock,
-                        IssuanceOfLongTermDebt = k.IssuanceOfLongTermDebt,
-                        OtherFinancingActivities = k.OtherFinancingActivities,
-                        OtherInvestingActivities = k.OtherInvestingActivities,
-                        OtherNonCashIncomeExpense = k.OtherNonCashIncomeExpense,
-                        PaymentsOfDividends = k.PaymentsOfDividends,
-                        PeriodEndDate = k.PeriodEndDate,
-                        PurchasesOfMarketableSecurities = k.PurchasesOfMarketableSecurities,
-                        Registrant = k.Registrant,
-                        RepaymentOfLongTermDebt = k.RepaymentOfLongTermDebt,
-                        RepurchaseOfCommonStock = k.RepurchaseOfCommonStock,
-                        SalesOfMarketableSecurities = k.SalesOfMarketableSecurities,
-                        ShareBasedCompensationExpense = k.ShareBasedCompensationExpense,
-                        Symbol = k.Symbol,
-                        TaxWithholdingForShareBasedCompensation = k.TaxWithholdingForShareBasedCompensation
-                    })],
-                splits: (splitsModel?.Length ?? 0) == 0 ? []
-                    : [.. splitsModel!.Select(k => new Analysis.Fundamental.StockSplit() {
-                        CentralIndexKey = k.CentralIndexKey,
-                        ExecutionDate = k.ExecutionDate,
-                        Multiplier = k.Multiplier,
-                        Registrant = k.Registrant,
-                        Symbol = k.Symbol
-                    })],
-                dividends: (divsModel?.Length ?? 0) == 0 ? []
-                    : [.. divsModel!.Select(k => new Analysis.Fundamental.Dividend() {
-                        Amount = k.Amount,
-                        DeclarationDate = k.DeclarationDate,
-                        ExDate = k.ExDate,
-                        PaymentDate = k.PaymentDate,
-                        RecordDate = k.RecordDate,
-                        Registrant = k.Registrant,
-                        Symbol = k.Symbol,
-                        Type = k.Type
-                    })],
-                efficiencyRatios: (efficiencyRatiosModel?.Length ?? 0) == 0 ? []
-                : [.. efficiencyRatiosModel!.Select(k => new Analysis.Fundamental.EfficiencyRatios() {
-                        AccountsPayableTurnoverRatio = k.AccountsPayableTurnoverRatio,
-                        AccountsReceivableTurnoverRatio = k.AccountsReceivableTurnoverRatio,
-                        AssetTurnoverRatio = k.AssetTurnoverRatio,
-                        CapitalIntensityRatio = k.CapitalIntensityRatio,
-                        CentralIndexKey = k.CentralIndexKey,
-                        DaysCashOnHand = k.DaysCashOnHand,
-                        DaysSalesInInventory = k.DaysSalesInInventory,
-                        DaysWorkingCapital = k.DaysWorkingCapital,
-                        EquityMultiplier = k.EquityMultiplier,
-                        FiscalPeriod = k.FiscalPeriod,
-                        FiscalYear = k.FiscalYear,
-                        FixedAssetTurnoverRatio = k.FixedAssetTurnoverRatio,
-                        InventoryToSalesRatio = k.InventoryToSalesRatio,
-                        InventoryTurnoverRatio = k.InventoryTurnoverRatio,
-                        InvestmentTurnoverRatio = k.InvestmentTurnoverRatio,
-                        PeriodEndDate = k.PeriodEndDate,
-                        Registrant = k.Registrant,
-                        SalesToEquityRatio = k.SalesToEquityRatio,
-                        SalesToOperatingIncomeRatio = k.SalesToOperatingIncomeRatio,
-                        Symbol = k.Symbol,
-                        WorkingCapitalTurnoverRatio = k.WorkingCapitalTurnoverRatio
-                     })],
-                keyMetrics: (metricsModel?.Length ?? 0) == 0 ? []
-                    : [.. metricsModel!.Select(k => new Analysis.Fundamental.KeyMetrics() {
-                        BookValuePerShare = k.BookValuePerShare,
-                        CapitalExpenditures = k.CapitalExpenditures,
-                        CentralIndexKey = k.CentralIndexKey,
-                        DebtToEquityRatio = k.DebtToEquityRatio,
-                        DividendPayoutRatio = k.DividendPayoutRatio,
-                        DividendYield = k.DividendYield,
-                        EarningsGrowthRate = k.EarningsGrowthRate,
-                        EarningsPerShare = k.EarningsPerShare,
-                        EarningsPerShareForecast = k.EarningsPerShareForecast,
-                        Ebitda = k.Ebitda,
-                        EnterpriseValue = k.EnterpriseValue,
-                        FiscalYear = k.FiscalYear,
-                        FiveYearBeta = k.FiveYearBeta,
-                        ForwardPriceToEarningsRatio = k.ForwardPriceToEarningsRatio,
-                        FreeCashFlow = k.FreeCashFlow,
-                        OneYearBeta = k.OneYearBeta,
-                        PeriodEndDate = k.PeriodEndDate,
-                        PriceEarningsToGrowthRate = k.PriceEarningsToGrowthRate,
-                        PriceToBookRatio = k.PriceToBookRatio,
-                        PriceToEarningsRatio = k.PriceToEarningsRatio,
-                        Registrant = k.Registrant,
-                        ReturnOnEquity = k.ReturnOnEquity,
-                        Symbol = k.Symbol,
-                        ThreeYearBeta = k.ThreeYearBeta
-                    })],
-                    marketCaps: (marketCapsModel?.Length ?? 0) == 0 ? []
-                        : [.. marketCapsModel!.Select(k => new Analysis.Fundamental.MarketCap() {
-                            CentralIndexKey = k.CentralIndexKey,
-                            ChangeInMarketCap = k.ChangeInMarketCap,
-                            ChangeInSharesOutstanding = k.ChangeInSharesOutstanding,
-                            FiscalYear = k.FiscalYear,
-                            PercentageChangeInMarketCap = k.PercentageChangeInMarketCap,
-                            PercentageChangeInSharesOutstanding = k.PercentageChangeInSharesOutstanding,
-                            Registrant = k.Registrant,
-                            SharesOutstanding = k.SharesOutstanding,
-                            Symbol = k.Symbol,
-                            Value = k.Value
-                        })],
-                    liquidityRatios: (liquidityModel?.Length ?? 0) == 0 ? []
-                        : [.. liquidityModel!.Select(k => new Analysis.Fundamental.LiquidityRatios() {
-                            CashConversionCycle = k.CashConversionCycle,
-                            CashFlowAdequacyRatio = k.CashFlowAdequacyRatio,
-                            CashRatio = k.CashRatio,
-                            CashToCurrentAssetsRatio = k.CashToCurrentAssetsRatio,
-                            CashToCurrentLiabilitiesRatio = k.CashToCurrentLiabilitiesRatio,
-                            CashToWorkingCapitalRatio = k.CashToWorkingCapitalRatio,
-                            CentralIndexKey = k.CentralIndexKey,
-                            CurrentRatio = k.CurrentRatio,
-                            DaysOfInventoryOutstanding = k.DaysOfInventoryOutstanding,
-                            DaysOfSalesOutstanding = k.DaysOfSalesOutstanding,
-                            DaysPayableOutstanding = k.DaysPayableOutstanding,
-                            FiscalPeriod = k.FiscalPeriod,
-                            FiscalYear = k.FiscalYear,
-                            InventoryToWorkingCapitalRatio = k.InventoryToWorkingCapitalRatio,
-                            NetDebt = k.NetDebt,
-                            PeriodEndDate = k.PeriodEndDate,
-                            QuickRatio = k.QuickRatio,
-                            Registrant = k.Registrant,
-                            SalesToCurrentAssetsRatio = k.SalesToCurrentAssetsRatio,
-                            SalesToWorkingCapitalRatio = k.SalesToWorkingCapitalRatio,
-                            Symbol = k.Symbol,
-                            WorkingCapital = k.WorkingCapital,
-                            WorkingCapitalToDebtRatio = k.WorkingCapitalToDebtRatio
-                        })],
-                    profitabilityRatios: (profitabilityModel?.Length ?? 0) == 0 ? []
-                        : [.. profitabilityModel!.Select(k => new Analysis.Fundamental.ProfitabilityRatios()
-                        {
-                            CashReturnOnAssets = k.CashReturnOnAssets,
-                            CashTurnoverRatio = k.CashTurnoverRatio,
-                            CentralIndexKey = k.CentralIndexKey,
-                            Ebit = k.Ebit,
-                            Ebitda = k.Ebitda,
-                            FiscalPeriod = k.FiscalPeriod,
-                            FiscalYear = k.FiscalYear,
-                            GrossMargin = k.GrossMargin,
-                            OperatingCashFlowMargin = k.OperatingCashFlowMargin,
-                            OperatingMargin = k.OperatingMargin,
-                            PeriodEndDate = k.PeriodEndDate,
-                            ProfitMargin = k.ProfitMargin,
-                            Registrant = k.Registrant,
-                            ReturnOnAssets = k.ReturnOnAssets,
-                            ReturnOnDebt = k.ReturnOnDebt,
-                            ReturnOnEquity = k.ReturnOnEquity,
-                            Symbol = k.Symbol
-                        })],
-                    valuationRatios: (valuationsModel?.Length ?? 0) == 0 ? []
-                        : [.. valuationsModel!.Select(k => new Analysis.Fundamental.ValuationRatios()
-                        {
-                            BookValuePerShare = k.BookValuePerShare,
-                            CentralIndexKey = k.CentralIndexKey,
-                            DividendPayoutRatio = k.DividendPayoutRatio,
-                            DividendsPerShare = k.DividendsPerShare,
-                            FiscalPeriod = k.FiscalPeriod,
-                            FiscalYear = k.FiscalYear,
-                            NetFixedAssets = k.NetFixedAssets,
-                            PeriodEndDate = k.PeriodEndDate,
-                            Registrant = k.Registrant,
-                            RetentionRatio = k.RetentionRatio,
-                            Symbol = k.Symbol
-                        })],
-                    earningsReleases: (earningsReleasesModel?.Length ?? 0) == 0 ? []
-                        : [.. earningsReleasesModel!.Select(k => new Analysis.Fundamental.EarningsRelease()
-                        {
-                            CentralIndexKey = k.CentralIndexKey,
-                            ConferenceCallTime = k.ConferenceCallTime,
-                            EarningsPerShare = k.EarningsPerShare,
-                            EarningsPerShareForecast = k.EarningsPerShareForecast,
-                            FiscalQuarterEndDate = k.FiscalQuarterEndDate,
-                            MarketCap = k.MarketCap,
-                            NumberOfForecasts = k.NumberOfForecasts,
-                            PercentageSurprise = k.PercentageSurprise,
-                            RegistrantName = k.RegistrantName,
-                            Symbol = k.Symbol
-                        })],
-                    shortInterests: (shortsModel?.Length ?? 0) == 0 ? []
-                        : [.. shortsModel!.Select(k => new Analysis.Fundamental.ShortInterest()
-                        {
-                            AverageDailyVolume = k.AverageDailyVolume,
-                            ChangeInShortedSecurities = k.ChangeInShortedSecurities,
-                            DaysToConvert = k.DaysToConvert,
-                            IsStockSplit = k.IsStockSplit,
-                            MarketCode = k.MarketCode,
-                            PercentageChangeInShortedSecurities = k.PercentageChangeInShortedSecurities,
-                            PreviousShortedSecurities = k.PreviousShortedSecurities,
-                            SettlementDate = k.SettlementDate,
-                            ShortedSecurities = k.ShortedSecurities,
-                            Symbol = k.Symbol,
-                            Title = k.Title
-                        })],
-                    executiveCompensations: (compsModel?.Length ?? 0) == 0 ? []
-                        : [.. compsModel!.Select(k => new Analysis.Fundamental.ExecutiveCompensation()
-                        {
-                            Bonus = k.Bonus,
-                            CentralIndexKey = k.CentralIndexKey,
-                            FiscalYear = k.FiscalYear,
-                            IncentivePlanCompensation = k.IncentivePlanCompensation,
-                            Name = k.Name,
-                            OtherCompensation = k.OtherCompensation,
-                            Position = k.Position,
-                            Registrant = k.Registrant,
-                            Salary = k.Salary,
-                            StockAwards = k.StockAwards,
-                            Symbol = k.Symbol,
-                            TotalCompensation = k.TotalCompensation
-                        })],
-                    employeeCounts: (empCountsModel?.Length ?? 0) == 0 ? []
-                        : [.. empCountsModel!.Select(k => new Analysis.Fundamental.EmployeeCount()
-                        {
-                            CentralIndexKey = k.CentralIndexKey,
-                            Count = k.Count,
-                            FiscalYear = k.FiscalYear,
-                            Registrant = k.Registrant,
-                            Symbol = k.Symbol
-                        })],
-                    solvencyRatios: (solvencyModel?.Length ?? 0) == 0 ? []
-                        : [.. solvencyModel!.Select(k => new Analysis.Fundamental.SolvencyRatios()
-                        {
-                            AssetCoverageRatio = k.AssetCoverageRatio,
-                            CashFlowToDebtRatio = k.CashFlowToDebtRatio,
-                            CentralIndexKey = k.CentralIndexKey,
-                            DebtCoverageRatio = k.DebtCoverageRatio,
-                            DebtToAssetsRatio = k.DebtToAssetsRatio,
-                            DebtToCapitalRatio = k.DebtToCapitalRatio,
-                            DebtToEquityRatio = k.DebtToEquityRatio,
-                            DebtToIncomeRatio = k.DebtToIncomeRatio,
-                            EquityRatio = k.EquityRatio,
-                            FiscalPeriod = k.FiscalPeriod,
-                            FiscalYear = k.FiscalYear,
-                            InterestCoverageRatio = k.InterestCoverageRatio,
-                            PeriodEndDate = k.PeriodEndDate,
-                            Registrant = k.Registrant,
-                            Symbol = k.Symbol
-                        })],
-                    priceActions: (priceActionsModel?.Length ?? 0) == 0 ? []
-                        : [.. priceActionsModel!.Select(k =>
-                            new Analysis.Technical.Charts.Ohlc(k.Symbol,
-                               k.Date.GetValueOrDefault(),
-                               k.Open.GetValueOrDefault(),
-                               k.High.GetValueOrDefault(),
-                               k.Low.GetValueOrDefault(),
-                               k.Close.GetValueOrDefault(),
-                               k.Volume.GetValueOrDefault())
-                        )]
-                );
-            timer.Stop();
+            var cfStmtsModels = await _apiClient.GetCashFlowStatementsAsync(symbol);
+            if (cfStmtsModels.Length > 0)
+                await _dbService.SaveCashFlowStatementsAsync(cfStmtsModels.Select(k => k.ToDomain()), _process!.ProcessId);
 
-            LogHelper.LogInfo(_logger, "{SYMBOL} processed in {TIME}", symbol.Symbol, timer.Elapsed.ToGeneralText());
+            var divsModels = await _apiClient.GetDividendsAsync(symbol);
+            if (divsModels.Length > 0)
+                await _dbService.SaveDividendsAsync(divsModels.Select(k => k.ToDomain()), _process!.ProcessId);
+
+            var splitsModels = await _apiClient.GetStockSplitsAsync(symbol);
+            if (splitsModels.Length > 0)
+                await _dbService.SaveSplitsAsync(splitsModels.Select(k => k.ToDomain()), _process!.ProcessId);
+
+            var earningsReleasesModels = await _apiClient.GetEarningsReleasesAsync(symbol);
+            if (earningsReleasesModels.Length > 0)
+                await _dbService.SaveEarningReleasesAsync(earningsReleasesModels.Select(k => k.ToDomain()), _process!.ProcessId);
+
+            var shortsModels = await _apiClient.GetShortInterestAsync(symbol);
+            if (shortsModels.Length > 0)
+                await _dbService.SaveShortInterestsAsync(shortsModels.Select(k => k.ToDomain()), _process!.ProcessId);
         }
     }
 
-    /// <summary>
-    /// This is a catch-all method to preserve stock symbols in case the app is run for the
-    /// first time on either Saturday or Sunday.
-    /// </summary>
-    private async Task SaveStockSymbolsAsync(Guid processId)
+    internal async Task DoSundayWorkAsync()
     {
-        if (!_metaInfo.HasStockSymbols)
+        LogHelper.LogInfo(_logger, "Sunday import in {Name} started import at {DateTime} with process id {ProcessId}", nameof(FinancialDataImporter),
+                DateTimeOffset.Now, _process!.ProcessId);
+
+        var symbols = await GetSymbolsFromDatabaseAsync();
+
+        int count = symbols.Length;
+        int i = 0;
+
+        foreach (var symbol in symbols)
         {
-            var symbols = (await GetStockSymbolsAsync()).Select(k => new Security(k.Symbol, "Stock",
-                registrant: k.Registrant)).ToArray();
-            await _dbService.SaveStockSymbolsAsync(symbols, processId);
+            i++;
+
+            LogHelper.LogInfo(_logger, "Processing {symbol} - {i}/{count}", symbol, i, count);
+
+            var metricsModel = await _apiClient.GetKeyMetricsAsync(symbol);
+            if (metricsModel.Length > 0)
+                await _dbService.SaveKeyMetricsAsync(metricsModel.Select(k => k.ToDomain()), _process!.ProcessId);
+
+            var marketCapsModel = await _apiClient.GetMarketCapAsync(symbol);
+            if (marketCapsModel.Length > 0)
+                await _dbService.SaveMarketCapsAsync(marketCapsModel.Select(k => k.ToDomain()), _process!.ProcessId);
+
+            var empCountsModel = await _apiClient.GetEmployeeCountAsync(symbol);
+            if (empCountsModel.Length > 0)
+                await _dbService.SaveEmployeeCountsAsync(empCountsModel.Select(k => k.ToDomain()), _process!.ProcessId);
+
+            var compsModel = await _apiClient.GetExecutiveCompensationAsync(symbol);
+            if (compsModel.Length > 0)
+                await _dbService.SaveExecCompensationAsync(compsModel.Select(k => k.ToDomain()), _process!.ProcessId);
+
+            var efficiencyRatiosModel = await _apiClient.GetEfficiencyRatiosAsync(symbol);
+            if (efficiencyRatiosModel.Length > 0)
+                await _dbService.SaveEfficiencyRatiosAsync(efficiencyRatiosModel.Select(k => k.ToDomain()), _process!.ProcessId);
+
+            var liquidityModel = await _apiClient.GetLiquidityRatiosAsync(symbol);
+            if (liquidityModel.Length > 0)
+                await _dbService.SaveLiquidityRatiosAsync(liquidityModel.Select(k => k.ToDomain()), _process!.ProcessId);
+
+            var profitabilityModel = await _apiClient.GetProfitabilityRatiosAsync(symbol);
+            if (profitabilityModel.Length > 0)
+                await _dbService.SaveProfitabilityRatiosAsync(profitabilityModel.Select(k => k.ToDomain()), _process!.ProcessId);
+
+            var solvencyModel = await _apiClient.GetSolvencyRatiosAsync(symbol);
+            if (solvencyModel.Length > 0)
+                await _dbService.SaveSolvencyRatiosAsync(solvencyModel.Select(k => k.ToDomain()), _process!.ProcessId);
+
+            var valuationsModel = await _apiClient.GetValuationRatiosAsync(symbol);
+            if (valuationsModel.Length > 0)
+                await _dbService.SaveValuationRatiosAsync(valuationsModel.Select(k => k.ToDomain()), _process!.ProcessId);
         }
+    }
+
+    private async Task<string[]> GetSymbolsFromDatabaseAsync()
+    {
+        const string FetchSymbolsSql = @"SELECT symbol from public.stock_symbols";
+        using var queryCtx = _dbDefPair.GetQueryConnection();
+        return [.. (await queryCtx.QueryAsync<string>(FetchSymbolsSql))];
     }
 }

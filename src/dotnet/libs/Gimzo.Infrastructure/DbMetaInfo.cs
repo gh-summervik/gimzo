@@ -1,6 +1,6 @@
 ﻿namespace Gimzo.Infrastructure;
 
-internal class DbMetaInfo
+internal sealed class DbMetaInfo
 {
     private const string StockSymbolsTableName = "public.stock_symbols";
 

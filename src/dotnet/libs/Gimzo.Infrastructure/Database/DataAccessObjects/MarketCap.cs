@@ -14,7 +14,7 @@ internal sealed record MarketCap : DaoBase
         FiscalYear = "";
     }
 
-    public MarketCap(Guid userId, DataProviders.FinancialDataNet.MarketCap cap) : base(userId)
+    public MarketCap(Analysis.Fundamental.MarketCap cap, Guid userId) : base(userId)
     {
         Symbol = cap.Symbol;
         CentralIndexKey = cap.CentralIndexKey;
@@ -32,8 +32,8 @@ internal sealed record MarketCap : DaoBase
     public string FiscalYear { get; init; }
     public string? Symbol { get; init; }
     public string? Registrant { get; init; }
-    public decimal? Value { get; init; }
-    public decimal? ChangeInMarketCap { get; init; }
+    public double? Value { get; init; }
+    public double? ChangeInMarketCap { get; init; }
     public double? PercentageChangeInMarketCap { get; init; }
     public long? SharesOutstanding { get; init; }
     public long? ChangeInSharesOutstanding { get; init; }

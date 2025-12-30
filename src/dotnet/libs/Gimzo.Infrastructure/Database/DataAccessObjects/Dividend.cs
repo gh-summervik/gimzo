@@ -12,7 +12,7 @@ internal sealed record Dividend : DaoBase
         Symbol = "";
     }
 
-    public Dividend(Guid userId, DataProviders.FinancialDataNet.Dividend div) : base(userId)
+    public Dividend(Analysis.Fundamental.Dividend div, Guid userId) : base(userId)
     {
         Symbol = div.Symbol;
         Registrant = div.Registrant;
@@ -30,10 +30,10 @@ internal sealed record Dividend : DaoBase
     public string? Type { get; init; }
     public decimal? Amount { get; init; }
     public DateOnly? DeclarationDate { get; init; }
-    public DateOnly? RecordDate { get; init; }
+    public DateOnly RecordDate { get; init; }
     public DateOnly? PaymentDate { get; init; }
 
     public override bool IsValid() => base.IsValid() &&
         !string.IsNullOrWhiteSpace(Symbol) &&
-        ExDate > new DateOnly(1900, 1, 1);
+        RecordDate > new DateOnly(1900, 1, 1);
 }

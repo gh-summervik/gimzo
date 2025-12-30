@@ -50,7 +50,7 @@
     </mxGraphModel>
   </diagram>
   <diagram id="bFo7zpW-4edCMRuI4yoz" name="Import Flow">
-    <mxGraphModel dx="1285" dy="764" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="850" math="0" shadow="0">
+    <mxGraphModel dx="734" dy="436" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="850" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -103,14 +103,14 @@
         <mxCell id="ENROvZ1TduKtmpPOx6VT-2" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="JpNnUJpywxFnvD-f-zfZ-23" target="JpNnUJpywxFnvD-f-zfZ-33">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="JpNnUJpywxFnvD-f-zfZ-23" value="&lt;div style=&quot;&quot;&gt;Fetch and Save&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;public.income_statements&lt;/div&gt;&lt;div&gt;public.balance_sheets&lt;/div&gt;&lt;div&gt;public.cash_flow_statements&lt;/div&gt;&lt;div&gt;public.earnings_releases&lt;/div&gt;&lt;div&gt;public.stock_splits&lt;/div&gt;&lt;div&gt;public.dividends&lt;/div&gt;&lt;div&gt;public.short_interests&lt;/div&gt;&lt;div&gt;public.executive_compensations&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;absoluteArcSize=1;arcSize=14;strokeWidth=2;align=center;" vertex="1" parent="1">
+        <mxCell id="JpNnUJpywxFnvD-f-zfZ-23" value="&lt;div style=&quot;&quot;&gt;Fetch and Save&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;public.us_companies&lt;/span&gt;&lt;/div&gt;&lt;div&gt;public.income_statements&lt;/div&gt;&lt;div&gt;public.balance_sheets&lt;/div&gt;&lt;div&gt;public.cash_flow_statements&lt;/div&gt;&lt;div&gt;public.earnings_releases&lt;/div&gt;&lt;div&gt;public.stock_splits&lt;/div&gt;&lt;div&gt;public.dividends&lt;/div&gt;&lt;div&gt;public.short_interests&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;absoluteArcSize=1;arcSize=14;strokeWidth=2;align=center;" vertex="1" parent="1">
           <mxGeometry x="491" y="247" width="210" height="170" as="geometry" />
         </mxCell>
         <mxCell id="ENROvZ1TduKtmpPOx6VT-3" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="JpNnUJpywxFnvD-f-zfZ-24" target="JpNnUJpywxFnvD-f-zfZ-33">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="JpNnUJpywxFnvD-f-zfZ-24" value="&lt;div style=&quot;&quot;&gt;Fetch and Save&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;public.us_companies&lt;/div&gt;&lt;div&gt;public.key_metrics&lt;/div&gt;&lt;div&gt;public.liquidity_ratios&lt;/div&gt;&lt;div&gt;public.profitability_ratios&lt;/div&gt;&lt;div&gt;public.solvency_ratios&lt;/div&gt;&lt;div&gt;public.valuation_ratios&lt;/div&gt;&lt;div&gt;public.efficiency_ratios&lt;/div&gt;&lt;div&gt;public.market_caps&lt;/div&gt;&lt;div&gt;public.employee_counts&lt;/div&gt;&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;absoluteArcSize=1;arcSize=14;strokeWidth=2;align=center;" vertex="1" parent="1">
-          <mxGeometry x="509" y="466" width="168" height="170" as="geometry" />
+        <mxCell id="JpNnUJpywxFnvD-f-zfZ-24" value="&lt;div style=&quot;&quot;&gt;Fetch and Save&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;public.key_metrics&lt;/div&gt;&lt;div&gt;public.liquidity_ratios&lt;/div&gt;&lt;div&gt;public.profitability_ratios&lt;/div&gt;&lt;div&gt;public.solvency_ratios&lt;/div&gt;&lt;div&gt;public.valuation_ratios&lt;/div&gt;&lt;div&gt;public.efficiency_ratios&lt;/div&gt;&lt;div&gt;public.market_caps&lt;/div&gt;&lt;div&gt;public.employee_counts&lt;/div&gt;&lt;/div&gt;&lt;div&gt;public.executive_compensations&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;absoluteArcSize=1;arcSize=14;strokeWidth=2;align=center;" vertex="1" parent="1">
+          <mxGeometry x="492" y="466" width="218" height="170" as="geometry" />
         </mxCell>
         <mxCell id="ENROvZ1TduKtmpPOx6VT-1" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="JpNnUJpywxFnvD-f-zfZ-28" target="JpNnUJpywxFnvD-f-zfZ-33">
           <mxGeometry relative="1" as="geometry" />

@@ -49,8 +49,11 @@ try
         Environment.Exit(0);
     }
 
+
     if (config.Import)
     {
+        var process = Gimzo.AppServices.Process.Create("CLI", null, null, args);
+
         var fdnApiKey = configuration.GetSection("ApiKeys:financialdata.net").Value;
         Debug.Assert(fdnApiKey != null);
 
@@ -63,12 +66,10 @@ try
         var importer = new FinancialDataImporter(apiClient, dbDefPairs![0],
             serviceProvider.GetRequiredService<ILogger<FinancialDataImporter>>());
 
-        Guid processId = Guid.NewGuid();
+        LogHelper.LogInfo(logger, "New process started; id: {id}", process.ProcessId);
 
-        LogHelper.LogInfo(logger, "New process started; id: {id}", processId);
-
-        await importer.InitializeImportAsync(config.Weekday, config.Saturday, config.Sunday);
-        await importer.ImportAsync(processId);
+        await importer.InitializeImportAsync(process, config.Weekday, config.Saturday, config.Sunday);
+        await importer.ImportAsync();
         apiClient.Dispose();
     }
 
@@ -88,6 +89,7 @@ finally
 {
     timer.Stop();
     LogHelper.LogInfo(logger, "Completed in {time}", timer.Elapsed.ToGeneralText());
+    Thread.Sleep(500); // let the logger catch up.
     Environment.Exit(exitCode);
 }
 
@@ -96,7 +98,10 @@ void ShowHelp()
     CliArg[] args =
     [
         new CliArg(["--import","-i"], [], false, "Import from financialdata.net."),
-        new CliArg(["-?", "?", "-h", "--help", "help"], ["command name"], false, "Show this help.")
+        new CliArg(["--saturday","-sat"], [], false, "Force the Saturday import workflow."),
+        new CliArg(["--sunday","-sun"], [], false, "Force the Sunday import workflow."),
+        new CliArg(["--weekday"], [], false, "Force the Weekday import workflow."),
+        new CliArg(["-?", "?", "-h", "--help", "help"], [], false, "Show this help.")
     ];
 
     Console.WriteLine($"{config.AppName} {config.AppVersion}".Trim());
@@ -107,12 +112,16 @@ void ShowHelp()
         Console.WriteLine();
     }
     Console.WriteLine(CliHelper.FormatArguments(args));
+    Console.WriteLine($"\t{config.AppName} will perform the workflow according to the current day of week,");
+    Console.WriteLine("\tbut you can override this behavior with the --[weekday|sat|sun] options.");
     Console.WriteLine();
+    Console.WriteLine("\tOn a first run, use the `--weekday` argument to ensure best behavior.");
+    Console.WriteLine($"\tYou can run them all, as in `{config.AppName} --import --weekday --sat --sun`");
 }
 
 void ParseArguments(string[] args, out string[] childArgs)
 {
-    config = new Config(Assembly.GetExecutingAssembly().GetName().Name ?? nameof(Program), "v1", "Gimzo");
+    config = new Config(Assembly.GetExecutingAssembly().GetName().Name ?? nameof(Program), "v0.1", "US stock data collection and analysis.");
 
     childArgs = [];
 
@@ -148,6 +157,9 @@ void ParseArguments(string[] args, out string[] childArgs)
                 throw new ArgumentException($"Unknown argument: {args[a]}");
         }
     }
+
+    if (!config.Import && !config.ShowHelp)
+        config.ShowHelp = true;
 }
 
 class Config(string appName, string appVersion, string? description)
