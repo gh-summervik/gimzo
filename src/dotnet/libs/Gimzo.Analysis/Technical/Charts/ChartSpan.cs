@@ -35,4 +35,7 @@ public readonly struct ChartSpan
     public ArraySegment<double> TrendValues { get; }
     public Dictionary<MovingAverageKey, decimal[]> MovingAverages { get; }
     public int Length { get; }
+    public PriceRange GetPriceRange() =>
+        new(PriceActions.MaxBy(k => k.High)?.High ?? 0M,
+            PriceActions.MinBy(k => k.Low)?.Low ?? 0M);
 }

@@ -1,0 +1,10 @@
+﻿@{
+    ViewData["Title"] = "Gimzo";
+    Layout = "_Layout";
+}
+<h1>Welcome</h1>
+
+<form class="search-form" method="post" action="/search">
+    <input type="text" name="ticker" placeholder="Enter ticker symbol" required />
+    <button type="submit">Search</button>
+</form>

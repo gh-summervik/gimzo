@@ -357,9 +357,9 @@ public class DatabaseIntegrationTests : IClassFixture<IntegrationTestsFixture>
         };
         const string WhereClause = "WHERE central_index_key = @CentralIndexKey AND exchange = @Exchange AND symbol = @Symbol";
         // INSERT
-        await cmdConn.ExecuteAsync(SqlRepository.InsertUsCompanies, dao);
+        await cmdConn.ExecuteAsync(SqlRepository.InsertCompanyInfo, dao);
         var fromDb = await FetchFromDb<CompanyInformation>(
-            $"{SqlRepository.SelectUsCompanies} {WhereClause}",
+            $"{SqlRepository.SelectCompanyInfo} {WhereClause}",
             dao);
         Assert.NotNull(fromDb);
         Assert.Equal(dao.CentralIndexKey, fromDb.CentralIndexKey);
@@ -388,16 +388,16 @@ public class DatabaseIntegrationTests : IClassFixture<IntegrationTestsFixture>
         Assert.Equal(dao.Description, fromDb.Description);
         var dao2 = dao with { Registrant = nameof(UsCompanies_WriteMergeReadDelete_Async) };
         // MERGE
-        await cmdConn.ExecuteAsync(SqlRepository.MergeUsCompanies, dao2);
+        await cmdConn.ExecuteAsync(SqlRepository.MergeCompanyInfo, dao2);
         fromDb = await FetchFromDb<CompanyInformation>(
-            $"{SqlRepository.SelectUsCompanies} {WhereClause}",
+            $"{SqlRepository.SelectCompanyInfo} {WhereClause}",
             dao);
         Assert.NotNull(fromDb);
         Assert.Equal(dao2.Registrant, fromDb.Registrant);
         // DELETE
         await cmdConn.ExecuteAsync($"DELETE FROM public.us_companies {WhereClause}", dao);
         fromDb = await FetchFromDb<CompanyInformation>(
-            $"{SqlRepository.SelectUsCompanies} {WhereClause}",
+            $"{SqlRepository.SelectCompanyInfo} {WhereClause}",
             dao);
         Assert.Null(fromDb);
     }

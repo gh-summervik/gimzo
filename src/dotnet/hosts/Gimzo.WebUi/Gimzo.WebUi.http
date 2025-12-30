@@ -1,0 +1,6 @@
+@Gimzo.WebUi_HostAddress = http://localhost:5199
+
+GET {{Gimzo.WebUi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

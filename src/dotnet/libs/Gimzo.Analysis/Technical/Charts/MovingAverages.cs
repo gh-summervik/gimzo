@@ -81,9 +81,8 @@ public readonly struct MovingAverage
     {
         decimal sum = 0M;
         for (int i = 0; i < period; i++)
-        {
             sum += values[i];
-        }
+        
         Values[period - 1] = sum / period;
 
         for (int i = period; i < values.Length; i++)
@@ -98,15 +97,12 @@ public readonly struct MovingAverage
         decimal factor = 2M / (period + 1);
         decimal sum = 0M;
         for (int i = 0; i < period; i++)
-        {
             sum += values[i];
-        }
+        
         Values[period - 1] = sum / period; // Initial SMA
 
         for (int i = period; i < values.Length; i++)
-        {
             Values[i] = (values[i] - Values[i - 1]) * factor + Values[i - 1];
-        }
     }
     
     public KeyValuePair<MovingAverageKey, decimal[]> GetSpan(int start, int finish)

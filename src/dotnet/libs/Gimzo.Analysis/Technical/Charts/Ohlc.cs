@@ -48,15 +48,11 @@ public record class Ohlc : PriceRange
         };
     }
 
-    public static bool operator <(Ohlc a, Ohlc b) =>
-        a.Date.DayNumber < b.Date.DayNumber;
+    public static bool operator <(Ohlc a, Ohlc b) => a.Date.DayNumber < b.Date.DayNumber;
 
-    public static bool operator >(Ohlc a, Ohlc b) =>
-        a.Date.DayNumber > b.Date.DayNumber;
+    public static bool operator >(Ohlc a, Ohlc b) => a.Date.DayNumber > b.Date.DayNumber;
 
-    public static bool operator <=(Ohlc a, Ohlc b) =>
-        a.Date.DayNumber <= b.Date.DayNumber;
+    public static bool operator <=(Ohlc a, Ohlc b) => a.Date.DayNumber <= b.Date.DayNumber;
 
-    public static bool operator >=(Ohlc a, Ohlc b) =>
-        a.Date.DayNumber >= b.Date.DayNumber;
+    public static bool operator >=(Ohlc a, Ohlc b) => a.Date.DayNumber >= b.Date.DayNumber;
 }

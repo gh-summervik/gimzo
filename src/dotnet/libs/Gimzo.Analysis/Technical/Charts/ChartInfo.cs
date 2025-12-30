@@ -5,15 +5,12 @@ namespace Gimzo.Analysis.Technical.Charts;
 
 public readonly struct ChartInfo : IEquatable<ChartInfo>
 {
-    public required string Code { get; init; }
-    public string? Source { get; init; }
-    public string? Industry { get; init; }
-    public string? Sector { get; init; }
+    public required string Symbol { get; init; }
     public ChartInterval Interval { get; init; }
 
     public override string ToString()
     {
-        return $"{Code} {Interval.GetEnumDescription()}";
+        return $"{Symbol} {Interval.GetEnumDescription()}";
     }
 
     public override bool Equals(object? obj)
@@ -23,16 +20,13 @@ public readonly struct ChartInfo : IEquatable<ChartInfo>
 
     public bool Equals(ChartInfo other)
     {
-        return Code == other.Code &&
-               Source == other.Source &&
-               Industry == other.Industry &&
-               Sector == other.Sector &&
+        return Symbol == other.Symbol &&
                Interval == other.Interval;
     }
 
     public override int GetHashCode()
     {
-        return HashCode.Combine(Code, Source, Industry, Sector, Interval);
+        return HashCode.Combine(Symbol, Interval);
     }
     public static bool operator ==(ChartInfo left, ChartInfo right)
     {

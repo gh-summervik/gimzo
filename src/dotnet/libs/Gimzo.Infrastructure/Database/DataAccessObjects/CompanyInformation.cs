@@ -73,4 +73,35 @@ internal sealed record CompanyInformation : DaoBase
         !string.IsNullOrWhiteSpace(CentralIndexKey) &&
         !string.IsNullOrWhiteSpace(Exchange) &&
         !string.IsNullOrWhiteSpace(Symbol);
+
+    public Analysis.Fundamental.CompanyInformation ToDomain()
+    {
+        return new()
+        {
+            CentralIndexKey = CentralIndexKey,
+            Exchange = Exchange,
+            Symbol = Symbol,
+            Registrant = Registrant,
+            Isin = Isin,
+            Lei = Lei,
+            Ein = Ein,
+            SicCode = SicCode,
+            SicDescription = SicDescription,
+            FiscalYearEnd = FiscalYearEnd,
+            StateOfIncorporation = StateOfIncorporation,
+            PhoneNumber = PhoneNumber,
+            MailingAddress = MailingAddress,
+            BusinessAddress = BusinessAddress,
+            FormerName = FormerName,
+            Industry = Industry,
+            DateFounding = DateFounding,
+            ChiefExecutiveOfficer = ChiefExecutiveOfficer,
+            NumberEmployees = NumberEmployees,
+            WebSite = WebSite,
+            MarketCap = MarketCap,
+            SharesIssued = SharesIssued,
+            SharesOutstanding = SharesOutstanding,
+            Description = Description,
+        };
+    }
 }

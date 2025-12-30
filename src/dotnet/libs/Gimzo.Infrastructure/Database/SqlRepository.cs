@@ -517,7 +517,7 @@ SELECT
 FROM public.eod_prices";
 
     
-    public const string InsertUsCompanies = @"
+    public const string InsertCompanyInfo = @"
 INSERT INTO public.us_companies (
     central_index_key,
     exchange,
@@ -582,7 +582,7 @@ INSERT INTO public.us_companies (
     @UpdatedAtUnixMs
 )";
 
-    public const string MergeUsCompanies = @"
+    public const string MergeCompanyInfo = @"
 INSERT INTO public.us_companies (
     central_index_key,
     exchange,
@@ -671,7 +671,7 @@ INSERT INTO public.us_companies (
     updated_at = EXCLUDED.updated_at,
     updated_at_unix_ms = EXCLUDED.updated_at_unix_ms";
 
-    public const string SelectUsCompanies = @"
+    public const string SelectCompanyInfo = @"
 SELECT
     central_index_key AS CentralIndexKey,
     exchange AS Exchange,

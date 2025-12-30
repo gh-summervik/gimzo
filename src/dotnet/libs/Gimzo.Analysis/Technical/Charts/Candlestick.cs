@@ -3,8 +3,8 @@
 public record class Candlestick : Ohlc
 {
     public Candlestick(string symbol, DateTime start, DateTime end,
-    decimal open, decimal high, decimal low, decimal close, long volume)
-        : base(symbol, start, end, open, high, low, close, volume)
+        decimal open, decimal high, decimal low, decimal close, long volume)
+            : base(symbol, start, end, open, high, low, close, volume)
     {
     }
 

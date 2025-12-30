@@ -1,0 +1,25 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"]</title>
+    <link rel="stylesheet" href="~/css/pico.min.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/main.css" asp-append-version="true" />
+    <script src="~/js/htmx.min.js" asp-append-version="true"></script>
+</head>
+<body>
+    <nav>
+        <div class="container">
+            <a href="/" class="logo">Gimzo</a>
+            <ul class="nav-links">
+                <li><a href="/">Home</a></li>
+                <!-- Add other links here -->
+            </ul>
+        </div>
+    </nav>
+    <main class="container">
+        @RenderBody()
+    </main>
+</body>
+</html>

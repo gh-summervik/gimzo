@@ -1,0 +1,141 @@
+﻿:root {
+    --primary: #014421; /* Dark forest green */
+    --primary-hover: #012b15;
+    --background: #014421;
+    --foreground: #FFFFFF;
+    --border-color: #8c8d9c;
+    --success: #4CAF50;
+    --danger: #F44336;
+}
+
+body {
+    background-color: var(--background);
+    color: var(--foreground);
+    margin: 0;
+    padding: 0;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0.5rem;
+}
+
+nav .container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 2px solid var(--border-color)
+}
+
+.logo {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--foreground);
+    text-decoration: none;
+    margin-right: 1rem;
+}
+
+.nav-links {
+    list-style: none;
+    display: flex;
+    gap: 1rem;
+    margin: 0;
+    padding: 0;
+}
+
+    .nav-links a {
+        color: var(--foreground);
+        text-decoration: none;
+        padding: 0.5rem;
+    }
+
+        .nav-links a:hover {
+            background-color: var(--primary-hover);
+            border-radius: 4px;
+        }
+
+h1, h2, h3, h4 {
+    margin-bottom: 1rem;
+}
+
+.search-form {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+    margin-left:2rem;
+}
+
+    .search-form input {
+        flex: 1;
+        max-width: 10rem;
+    }
+
+    .search-form button {
+        width: auto;
+        flex-shrink: 0; /* Prevent button from growing */
+        margin-left:.5rem;
+    }
+
+@media (max-width: 768px) {
+    nav .container {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .nav-links {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+}
+
+.up {
+    color: var(--success);
+}
+
+.down {
+    color: var(--danger);
+}
+
+.company-info {
+    background-color: rgba(255, 255, 255, 0.1);
+    padding: 1rem;
+    border-radius: 0.5rem;
+    margin-top: 1rem;
+}
+
+.info-columns {
+    display: flex;
+    gap: 2rem;
+    flex-wrap: wrap;
+}
+
+    .info-columns dl {
+        flex: 1 1 300px;
+    }
+
+.company-info dt {
+    font-weight: bold;
+}
+
+.company-info dd {
+    margin-bottom: 0.5rem;
+    word-break: break-word;
+}
+
+.sub-nav {
+    background-color: var(--primary-hover);
+    padding: 0.5rem 0;
+}
+
+    .sub-nav .nav-links {
+        display: flex;
+        gap: 1rem;
+    }
+
+    .sub-nav a {
+        color: var(--foreground);
+        text-decoration: none;
+    }

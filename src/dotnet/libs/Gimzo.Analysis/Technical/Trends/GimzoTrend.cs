@@ -2,12 +2,8 @@
 
 namespace Gimzo.Analysis.Technical.Trends;
 
-public class GimzoTrend : PriceTrendBase, ITrend
+public class GimzoTrend(Ohlc[] prices) : PriceTrendBase(prices), ITrend
 {
-    public GimzoTrend(Ohlc[] prices) : base(prices)
-    {
-    }
-
     public void Calculate()
     {
         MovingAverageKey[] maKeys = [

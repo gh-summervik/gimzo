@@ -1,0 +1,99 @@
+﻿@model Gimzo.AppServices.Models.CompanyInfo
+
+@{
+    ViewData["Title"] = Model == null ? "Gimzo" : $"Gimzo - {Model!.Symbol}";
+    Layout = "_Layout";
+}
+
+@if (Model is null)
+{
+    <div>No information found for ticker.</div>
+}
+else
+{
+    <nav class="sub-nav">
+        <div class="container">
+            <ul class="nav-links">
+                <li><a href="/financials/@Model.Symbol">Financials</a></li>
+                <!-- Add more sub-nav links as needed, e.g., Quotes, Filings -->
+            </ul>
+        </div>
+    </nav>
+
+    <article class="company-info">
+        <h3>@Model.Symbol - @Model.Registrant</h3>
+        @if (Model.CurrentAverageTrueRange != null)
+        {
+            <hr />
+            <div class="info-columns">
+                <dl>
+                    <dt>Last Close (@Model.LastOhlc?.Date.ToString("yyyy-MM-dd"))</dt>
+                    <dd>@Model.LastOhlc?.Close.ToString("C")</dd>
+                    @if (Model.FiftyTwoWeekLow != null)
+                    {
+                        <dt>1-Year High/Low</dt>
+                        <dd>@Model.FiftyTwoWeekLow?.ToString("C") - @Model.FiftyTwoWeekHigh?.ToString("C")</dd>
+                    }
+                </dl>
+                <dl>
+                    <dt>Average True Range (period: @Model.CurrentAverageTrueRange?.Period)</dt>
+                    <dd>@Model.CurrentAverageTrueRange?.Values.LastOrDefault().ToString("C")</dd>
+                    <dt>Average Volume (period: 20)</dt>
+                    <dd>@Model.TwentyDayAverageVolume?.ToString("#,##0")</dd>
+                </dl>
+            </div>
+            <hr />
+        }
+        <div class="info-columns">
+            <dl>
+                <dt>Market Cap</dt>
+                <dd>@Model.MarketCap?.ToString("C")</dd>
+                <dt>Shares Issued</dt>
+                <dd>@Model.SharesIssued?.ToString("#,##0.0")</dd>
+                <dt>Shares Outstanding</dt>
+                <dd>@Model.SharesOutstanding?.ToString("#,##0.0")</dd>
+                <dt>Exchange</dt>
+                <dd>@Model.Exchange</dd>
+                <dt>Industry</dt>
+                <dd>@Model.Industry</dd>
+                <dt>Number of Employees</dt>
+                <dd>@Model.NumberEmployees?.ToString("#,##0")</dd>
+                <dt>CEO</dt>
+                <dd>@Model.ChiefExecutiveOfficer</dd>
+                <dt>Fiscal Year End</dt>
+                <dd>@Model.FiscalYearEnd</dd>
+                <dt>Founding Date</dt>
+                <dd>@Model.DateFounding</dd>
+            </dl>
+            <dl>
+                <dt>Central Index Key</dt>
+                <dd>@Model.CentralIndexKey</dd>
+                <dt>ISIN</dt>
+                <dd>@Model.Isin</dd>
+                <dt>LEI</dt>
+                <dd>@Model.Lei</dd>
+                <dt>EIN</dt>
+                <dd>@Model.Ein</dd>
+                <dt>SIC Code</dt>
+                <dd>@Model.Sic</dd>
+                <dt>State of Incorporation</dt>
+                <dd>@Model.StateOfIncorporation</dd>
+                <dt>Phone Number</dt>
+                <dd>@Model.PhoneNumber</dd>
+                <dt>Mailing Address</dt>
+                <dd>@Model.MailingAddress</dd>
+                <dt>Business Address</dt>
+                <dd>@Model.BusinessAddress</dd>
+                <dt>Website</dt>
+                <dd><a href="@Model.WebSite" target="_blank">@Model.WebSite</a></dd>
+                <dt>Former Name</dt>
+                <dd>@Model.FormerName</dd>
+            </dl>
+
+        </div>
+        <section>
+            <h4>Description</h4>
+            <p>@Model.Description</p>
+        </section>
+    </article>
+}

@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Gimzo.Infrastructure.Database;
 
-internal sealed class DatabaseService
+internal sealed partial class DatabaseService
 {
     private readonly DbDefPair _dbDefPair;
     private readonly ILogger _logger;
@@ -146,7 +146,7 @@ AND table_type = 'BASE TABLE'";
 
         using var cmdCtx = _dbDefPair.GetCommandConnection();
 
-        await cmdCtx.ExecuteAsync(SqlRepository.MergeUsCompanies,
+        await cmdCtx.ExecuteAsync(SqlRepository.MergeCompanyInfo,
             new DataAccessObjects.CompanyInformation(company, processId));
     }
 
