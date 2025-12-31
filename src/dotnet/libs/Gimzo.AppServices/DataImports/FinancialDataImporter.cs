@@ -5,6 +5,9 @@ using Gimzo.Infrastructure;
 using Gimzo.Infrastructure.Database;
 using Gimzo.Infrastructure.DataProviders.FinancialDataNet;
 using Microsoft.Extensions.Logging;
+using OoplesFinance.YahooFinanceAPI;
+using OoplesFinance.YahooFinanceAPI.Enums;
+using OoplesFinance.YahooFinanceAPI.Models;
 
 namespace Gimzo.AppServices.DataImports;
 
@@ -12,7 +15,8 @@ public sealed class FinancialDataImporter(FinancialDataApiClient apiClient,
     DbDefPair dbDefPair,
     ILogger<FinancialDataImporter> logger)
 {
-    private readonly FinancialDataApiClient _apiClient = apiClient;
+    private readonly FinancialDataApiClient _fdnApiClient = apiClient;
+    private readonly YahooClient _yahooClient = new();
     private readonly DatabaseService _dbService = new(dbDefPair, logger);
     private readonly DbDefPair _dbDefPair = dbDefPair;
     private readonly ILogger<FinancialDataImporter> _logger = logger;
@@ -90,7 +94,10 @@ public sealed class FinancialDataImporter(FinancialDataApiClient apiClient,
         LogHelper.LogInfo(_logger, "Weekday import in {Name} started import at {DateTime} with process id {ProcessId}", nameof(FinancialDataImporter),
                 DateTimeOffset.Now, _process!.ProcessId);
 
-        var stockSymbols = (await _apiClient.GetStockSymbolsAsync())
+        var stockSymbolModels = (await _fdnApiClient.GetStockSymbolsAsync())
+            .Where(k => !_metaInfo.IgnoredSymbols.Contains(k.Symbol));
+
+        var stockSymbols = stockSymbolModels
             .Select(k => new Security(k.Symbol, "Stock", registrant: k.Registrant)).ToArray();
 
         LogHelper.LogInfo(_logger, "Saving {count} symbols.", stockSymbols.Length);
@@ -105,7 +112,7 @@ public sealed class FinancialDataImporter(FinancialDataApiClient apiClient,
         foreach (var ticker in stockSymbols.Select(k => k.Symbol))
         {
             i++;
-            var secInfo = await _apiClient.GetSecurityInformationAsync(ticker);
+            var secInfo = await _fdnApiClient.GetSecurityInformationAsync(ticker);
             if (secInfo.HasValue)
             {
                 var model = secInfo.Value;
@@ -119,17 +126,53 @@ public sealed class FinancialDataImporter(FinancialDataApiClient apiClient,
                 });
             }
 
-            var eodPrices = await _apiClient.GetStockPricesAsync(ticker);
+            var fdnEodPrices = await _fdnApiClient.GetStockPricesAsync(ticker);
 
-            LogHelper.LogInfo(_logger, "Saving price data for {ticker} - {i}/{count}", ticker, i, count);
+            if (fdnEodPrices.Length > 0)
+            {
+                /*
+                 * YAHOO to the rescue.
+                 * 
+                 * We have to employ Yahoo here to capture the past few days because
+                 * financialdata.net has a 2-day delay on EOD historical prices. Really.
+                 * 
+                 * We do all this date manipulation so that one set of values does not overwrite the other.
+                 * FDN is the primary, and then we try to fill in the latest using Yahoo.
+                 */
+                var yahooStartTime = fdnEodPrices[^1].Date.GetValueOrDefault().AddWeekdays(1).ToDateTime(TimeOnly.MinValue);
+                DateTime yahooFinishTime = TimeHelper.NowEastern.TimeOfDay.Hours > 17
+                    ? DateTime.Now.EndOfDay() : DateTime.Now.AddWeekdays(-1).EndOfDay();
+                IEnumerable<HistoricalChartInfo> yahooEodPrices;
+                try
+                {
+                    yahooEodPrices = yahooStartTime < DateTime.Now && yahooStartTime < yahooFinishTime
+                        ? await _yahooClient.GetHistoricalDataAsync(ticker, DataFrequency.Daily, yahooStartTime, yahooFinishTime)
+                        : [];
+                }
+                catch (Exception ex)
+                {
+                    LogHelper.LogWarning(_logger, ex.Message);
+                    // not all tickers are available via Yahoo.
+                    yahooEodPrices = [];
+                }
 
-            await _dbService.SaveEodPricesAsync(eodPrices.Select(k =>
-                new Analysis.Technical.Charts.Ohlc(k.Symbol, k.Date.GetValueOrDefault(),
-                    k.Open.GetValueOrDefault(),
-                    k.High.GetValueOrDefault(),
-                    k.Low.GetValueOrDefault(),
-                    k.Close.GetValueOrDefault(),
-                    k.Volume.GetValueOrDefault())), _process!.ProcessId);
+                var allPrices = fdnEodPrices.Select(k =>
+                    new Analysis.Technical.Charts.Ohlc(k.Symbol, k.Date.GetValueOrDefault(),
+                        k.Open.GetValueOrDefault(),
+                        k.High.GetValueOrDefault(),
+                        k.Low.GetValueOrDefault(),
+                        k.Close.GetValueOrDefault(),
+                        k.Volume.GetValueOrDefault()))
+                    .Union(yahooEodPrices.Select(k =>
+                        new Analysis.Technical.Charts.Ohlc(k.Meta.Symbol,
+                            DateOnly.FromDateTime(k.Date),
+                            (decimal)k.Open, (decimal)k.High,
+                            (decimal)k.Low, (decimal)k.Close, k.Volume)));
+
+                LogHelper.LogInfo(_logger, "Saving price data for {ticker} - {i}/{count}", ticker, i, count);
+
+                await _dbService.SaveEodPricesAsync(allPrices, _process!.ProcessId);
+            }
         }
 
         LogHelper.LogInfo(_logger, "Saving security info for {count} symbols.", securityList.Count);
@@ -151,35 +194,35 @@ public sealed class FinancialDataImporter(FinancialDataApiClient apiClient,
         {
             i++;
             LogHelper.LogInfo(_logger, "Processing {symbol} - {i}/{count}", symbol, i, count);
-            var coInfoModel = await _apiClient.GetCompanyInformationAsync(symbol);
+            var coInfoModel = await _fdnApiClient.GetCompanyInformationAsync(symbol);
             if (coInfoModel.HasValue)
                 await _dbService.SaveCompanyInfoAsync(coInfoModel.Value.ToDomain(), _process!.ProcessId);
 
-            var incStmtsModels = await _apiClient.GetIncomeStatementsAsync(symbol);
+            var incStmtsModels = await _fdnApiClient.GetIncomeStatementsAsync(symbol);
             if (incStmtsModels.Length > 0)
                 await _dbService.SaveIncomeStatementsAsync(incStmtsModels.Select(k => k.ToDomain()), _process!.ProcessId);
 
-            var bsStmtsModels = await _apiClient.GetBalanceSheetStatementsAsync(symbol);
+            var bsStmtsModels = await _fdnApiClient.GetBalanceSheetStatementsAsync(symbol);
             if (bsStmtsModels.Length > 0)
                 await _dbService.SaveBalanceSheetsAsync(bsStmtsModels.Select(k => k.ToDomain()), _process!.ProcessId);
 
-            var cfStmtsModels = await _apiClient.GetCashFlowStatementsAsync(symbol);
+            var cfStmtsModels = await _fdnApiClient.GetCashFlowStatementsAsync(symbol);
             if (cfStmtsModels.Length > 0)
                 await _dbService.SaveCashFlowStatementsAsync(cfStmtsModels.Select(k => k.ToDomain()), _process!.ProcessId);
 
-            var divsModels = await _apiClient.GetDividendsAsync(symbol);
+            var divsModels = await _fdnApiClient.GetDividendsAsync(symbol);
             if (divsModels.Length > 0)
                 await _dbService.SaveDividendsAsync(divsModels.Select(k => k.ToDomain()), _process!.ProcessId);
 
-            var splitsModels = await _apiClient.GetStockSplitsAsync(symbol);
+            var splitsModels = await _fdnApiClient.GetStockSplitsAsync(symbol);
             if (splitsModels.Length > 0)
                 await _dbService.SaveSplitsAsync(splitsModels.Select(k => k.ToDomain()), _process!.ProcessId);
 
-            var earningsReleasesModels = await _apiClient.GetEarningsReleasesAsync(symbol);
+            var earningsReleasesModels = await _fdnApiClient.GetEarningsReleasesAsync(symbol);
             if (earningsReleasesModels.Length > 0)
                 await _dbService.SaveEarningReleasesAsync(earningsReleasesModels.Select(k => k.ToDomain()), _process!.ProcessId);
 
-            var shortsModels = await _apiClient.GetShortInterestAsync(symbol);
+            var shortsModels = await _fdnApiClient.GetShortInterestAsync(symbol);
             if (shortsModels.Length > 0)
                 await _dbService.SaveShortInterestsAsync(shortsModels.Select(k => k.ToDomain()), _process!.ProcessId);
         }
@@ -201,39 +244,39 @@ public sealed class FinancialDataImporter(FinancialDataApiClient apiClient,
 
             LogHelper.LogInfo(_logger, "Processing {symbol} - {i}/{count}", symbol, i, count);
 
-            var metricsModel = await _apiClient.GetKeyMetricsAsync(symbol);
+            var metricsModel = await _fdnApiClient.GetKeyMetricsAsync(symbol);
             if (metricsModel.Length > 0)
                 await _dbService.SaveKeyMetricsAsync(metricsModel.Select(k => k.ToDomain()), _process!.ProcessId);
 
-            var marketCapsModel = await _apiClient.GetMarketCapAsync(symbol);
+            var marketCapsModel = await _fdnApiClient.GetMarketCapAsync(symbol);
             if (marketCapsModel.Length > 0)
                 await _dbService.SaveMarketCapsAsync(marketCapsModel.Select(k => k.ToDomain()), _process!.ProcessId);
 
-            var empCountsModel = await _apiClient.GetEmployeeCountAsync(symbol);
+            var empCountsModel = await _fdnApiClient.GetEmployeeCountAsync(symbol);
             if (empCountsModel.Length > 0)
                 await _dbService.SaveEmployeeCountsAsync(empCountsModel.Select(k => k.ToDomain()), _process!.ProcessId);
 
-            var compsModel = await _apiClient.GetExecutiveCompensationAsync(symbol);
+            var compsModel = await _fdnApiClient.GetExecutiveCompensationAsync(symbol);
             if (compsModel.Length > 0)
                 await _dbService.SaveExecCompensationAsync(compsModel.Select(k => k.ToDomain()), _process!.ProcessId);
 
-            var efficiencyRatiosModel = await _apiClient.GetEfficiencyRatiosAsync(symbol);
+            var efficiencyRatiosModel = await _fdnApiClient.GetEfficiencyRatiosAsync(symbol);
             if (efficiencyRatiosModel.Length > 0)
                 await _dbService.SaveEfficiencyRatiosAsync(efficiencyRatiosModel.Select(k => k.ToDomain()), _process!.ProcessId);
 
-            var liquidityModel = await _apiClient.GetLiquidityRatiosAsync(symbol);
+            var liquidityModel = await _fdnApiClient.GetLiquidityRatiosAsync(symbol);
             if (liquidityModel.Length > 0)
                 await _dbService.SaveLiquidityRatiosAsync(liquidityModel.Select(k => k.ToDomain()), _process!.ProcessId);
 
-            var profitabilityModel = await _apiClient.GetProfitabilityRatiosAsync(symbol);
+            var profitabilityModel = await _fdnApiClient.GetProfitabilityRatiosAsync(symbol);
             if (profitabilityModel.Length > 0)
                 await _dbService.SaveProfitabilityRatiosAsync(profitabilityModel.Select(k => k.ToDomain()), _process!.ProcessId);
 
-            var solvencyModel = await _apiClient.GetSolvencyRatiosAsync(symbol);
+            var solvencyModel = await _fdnApiClient.GetSolvencyRatiosAsync(symbol);
             if (solvencyModel.Length > 0)
                 await _dbService.SaveSolvencyRatiosAsync(solvencyModel.Select(k => k.ToDomain()), _process!.ProcessId);
 
-            var valuationsModel = await _apiClient.GetValuationRatiosAsync(symbol);
+            var valuationsModel = await _fdnApiClient.GetValuationRatiosAsync(symbol);
             if (valuationsModel.Length > 0)
                 await _dbService.SaveValuationRatiosAsync(valuationsModel.Select(k => k.ToDomain()), _process!.ProcessId);
         }

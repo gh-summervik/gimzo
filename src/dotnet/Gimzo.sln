@@ -27,6 +27,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "hosts", "hosts", "{2F3EF1A3
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Gimzo.WebUi", "hosts\Gimzo.WebUi\Gimzo.WebUi.csproj", "{72044579-807C-4C90-A77C-44E6604B00E9}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Gimzo.Prototype.Cli", "apps\Gimzo.Prototype.Cli\Gimzo.Prototype.Cli.csproj", "{41DD0A20-370D-42B7-A475-7BA76196021F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -133,6 +135,18 @@ Global
 		{72044579-807C-4C90-A77C-44E6604B00E9}.Release|x64.Build.0 = Release|Any CPU
 		{72044579-807C-4C90-A77C-44E6604B00E9}.Release|x86.ActiveCfg = Release|Any CPU
 		{72044579-807C-4C90-A77C-44E6604B00E9}.Release|x86.Build.0 = Release|Any CPU
+		{41DD0A20-370D-42B7-A475-7BA76196021F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{41DD0A20-370D-42B7-A475-7BA76196021F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{41DD0A20-370D-42B7-A475-7BA76196021F}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{41DD0A20-370D-42B7-A475-7BA76196021F}.Debug|x64.Build.0 = Debug|Any CPU
+		{41DD0A20-370D-42B7-A475-7BA76196021F}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{41DD0A20-370D-42B7-A475-7BA76196021F}.Debug|x86.Build.0 = Debug|Any CPU
+		{41DD0A20-370D-42B7-A475-7BA76196021F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{41DD0A20-370D-42B7-A475-7BA76196021F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{41DD0A20-370D-42B7-A475-7BA76196021F}.Release|x64.ActiveCfg = Release|Any CPU
+		{41DD0A20-370D-42B7-A475-7BA76196021F}.Release|x64.Build.0 = Release|Any CPU
+		{41DD0A20-370D-42B7-A475-7BA76196021F}.Release|x86.ActiveCfg = Release|Any CPU
+		{41DD0A20-370D-42B7-A475-7BA76196021F}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -146,6 +160,7 @@ Global
 		{49681991-E543-4A6C-9759-27FA549DF5CF} = {6C4D298B-81FB-2B6B-5AB6-46205EDDC72C}
 		{D0631106-6314-42FC-81CC-EA10CB007E5F} = {6C4D298B-81FB-2B6B-5AB6-46205EDDC72C}
 		{72044579-807C-4C90-A77C-44E6604B00E9} = {2F3EF1A3-B2B0-B28C-122D-FFB85167A4CE}
+		{41DD0A20-370D-42B7-A475-7BA76196021F} = {1787FE1D-075E-9E68-7218-25F1BD1BBEAB}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {34C9794A-BB36-40C9-8709-B486FD95FD47}
