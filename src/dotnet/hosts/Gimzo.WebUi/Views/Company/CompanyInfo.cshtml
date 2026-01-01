@@ -29,10 +29,15 @@ else
                 <dl>
                     <dt>Last Close (@Model.LastOhlc?.Date.ToString("yyyy-MM-dd"))</dt>
                     <dd>@Model.LastOhlc?.Close.ToString("C")</dd>
-                    @if (Model.FiftyTwoWeekLow != null)
+                    @if (Model.FiftyTwoWeekLow.HasValue)
                     {
                         <dt>1-Year High/Low</dt>
-                        <dd>@Model.FiftyTwoWeekLow?.ToString("C") - @Model.FiftyTwoWeekHigh?.ToString("C")</dd>
+                        <dd>@Model.FiftyTwoWeekLow.Value.ToString("C") - @Model.FiftyTwoWeekHigh?.ToString("C")</dd>
+                    }
+                    @if (Model.LastTrendValue.HasValue)
+                    {
+                        <dt>Latest Gimzo Trend</dt>
+                        <dd>@Model.LastTrendValue.Value.ToString("#,##0.00")</dd>
                     }
                 </dl>
                 <dl>

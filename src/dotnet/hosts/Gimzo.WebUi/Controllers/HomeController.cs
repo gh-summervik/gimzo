@@ -23,12 +23,7 @@ public class HomeController(UiModelService modelService, ILogger<HomeController>
         return Redirect($"/company-info/{ticker.ToUpperInvariant()}");
     }
 
-    [HttpGet("/company-info/{ticker}")]
-    public async Task<IActionResult> GetCompanyInfo(string ticker)
-    {
-        CompanyInfo? model = await _dataService.GetCompanyInfoAsync(ticker.ToUpperInvariant());
-        return View("CompanyInfo", model);
-    }
+   
 
 
 }

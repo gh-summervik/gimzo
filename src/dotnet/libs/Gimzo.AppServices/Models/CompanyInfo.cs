@@ -40,4 +40,5 @@ public class CompanyInfo
     public decimal? FiftyTwoWeekLow { get; set;  }
     public decimal? FiftyTwoWeekHigh { get; set; }
     public long? TwentyDayAverageVolume { get; set; }
+    public double? LastTrendValue { get; set;  }
 }

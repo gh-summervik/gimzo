@@ -1,0 +1,70 @@
+﻿@model Gimzo.AppServices.Models.ChartModel
+@{
+    ViewData["Title"] = Model == null ? "Gimzo" : $"Gimzo - {Model!.Symbol} Chart";
+    Layout = "_Layout";
+}
+
+<div id="chart" style="height: 350px;"></div>
+<div id="trend-chart" style="height: 200px;"></div>  <!-- Smaller height for sub-chart -->
+
+<script src="~/js/apexcharts.min.js"></script>
+<script>
+    var optionsMain = {
+        series: @Html.Raw(Model?.SerializedData ?? "[]"),
+        chart: { 
+            type: 'candlestick', 
+            height: 350, 
+            toolbar: { show: false }  // Hide all toolbars/controls
+        },
+        xaxis: {
+            type: 'datetime',
+            title: { show: false },
+            labels: { show: false }
+        },
+        yaxis: {
+            title: { text: 'Price (USD)', style: { color: '#000' } },
+            labels: { show: true, formatter: function(val) { return '$' + val.toFixed(2); }, style: { colors: '#000' } }
+        },
+        title: {
+            text: '@(Model?.Symbol ?? "Chart")',
+            style: { color: '#000000' }
+        },
+        grid: { yaxis: { lines: { show: false } } },
+        tooltip: { enabled: false },
+        legend: { show: true }
+    };
+    var chartMain = new ApexCharts(document.querySelector("#chart"), optionsMain);
+    chartMain.render();
+
+    var optionsTrend = {
+        series: @Html.Raw(Model?.SerializedTrend ?? "[]"),
+        chart: { 
+            type: 'line', 
+            height: 200, 
+            toolbar: { show: false }  // Hide all toolbars/controls
+        },
+        xaxis: {
+            type: 'datetime',
+            title: { text: 'Date', style: { color: '#000' } },
+            labels: { show: true, rotate: -45, rotateAlways: true, format: 'MMM yy', style: { colors: '#000' } }
+        },
+        yaxis: {
+            min: -1,
+            max: 1,
+            title: { text: 'Trend Value', style: { color: '#000' } },
+            labels: { show: true, formatter: function(val) { return val.toFixed(2); }, style: { colors: '#000' } }
+        },
+        annotations: {
+            yaxis: [{
+                y: 0,
+                borderColor: '#777777',
+                label: { show: true, style: { color: '#fff', background: '#777' } }
+            }]
+        },
+        grid: { yaxis: { lines: { show: false } } },
+        tooltip: { enabled: false },
+        legend: { show: true }
+    };
+    var chartTrend = new ApexCharts(document.querySelector("#trend-chart"), optionsTrend);
+    chartTrend.render();
+</script>

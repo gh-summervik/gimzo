@@ -139,3 +139,8 @@ h1, h2, h3, h4 {
         color: var(--foreground);
         text-decoration: none;
     }
+
+
+#chart, #trend-chart {
+    background-color: #FFFFFF;
+}
