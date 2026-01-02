@@ -2,19 +2,24 @@
 using Gimzo.Analysis.Fundamental;
 using Gimzo.Analysis.Technical.Charts;
 using Gimzo.Common;
+using Gimzo.Infrastructure;
+using Gimzo.Infrastructure.Database;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 
-namespace Gimzo.Infrastructure.Database;
+namespace Gimzo.AppServices.Data;
 
-internal sealed partial class DatabaseService
+internal sealed partial class DataService
 {
     private readonly DbDefPair _dbDefPair;
+    private readonly IMemoryCache _memoryCache;
     private readonly ILogger _logger;
     private const int ChunkSize = 1_000;
 
-    public DatabaseService(DbDefPair dbDefPair, ILogger logger)
+    public DataService(DbDefPair dbDefPair, IMemoryCache memoryCache, ILogger logger)
     {
         _dbDefPair = dbDefPair;
+        _memoryCache = memoryCache;
         _logger = logger;
 
         SqlMapper.AddTypeHandler(new DateOnlyTypeHandler());
@@ -80,7 +85,7 @@ AND table_type = 'BASE TABLE'";
             processId = Constants.SystemId;
 
         using var cmdCtx = _dbDefPair.GetCommandConnection();
-        foreach (var chunk in securities.Select(k => new DataAccessObjects.StockSymbol()
+        foreach (var chunk in securities.Select(k => new Infrastructure.Database.DataAccessObjects.StockSymbol()
         {
             Symbol = k.Symbol,
             Registrant = k.Registrant,
@@ -98,7 +103,7 @@ AND table_type = 'BASE TABLE'";
             processId = Constants.SystemId;
 
         using var cmdCtx = _dbDefPair.GetCommandConnection();
-        foreach (var chunk in securities.Select(k => new DataAccessObjects.SecurityInformation()
+        foreach (var chunk in securities.Select(k => new Infrastructure.Database.DataAccessObjects.SecurityInformation()
         {
             Symbol = k.Symbol,
             Cusip = k.Cusip,
@@ -122,7 +127,7 @@ AND table_type = 'BASE TABLE'";
         using var cmdCtx = _dbDefPair.GetCommandConnection();
 
         foreach (var chunk in prices.Select(k =>
-            new DataAccessObjects.EodPrice(processId)
+            new Infrastructure.Database.DataAccessObjects.EodPrice(processId)
             {
                 Date = k.Date,
                 Open = k.Open,
@@ -147,7 +152,7 @@ AND table_type = 'BASE TABLE'";
         using var cmdCtx = _dbDefPair.GetCommandConnection();
 
         await cmdCtx.ExecuteAsync(SqlRepository.MergeCompanyInfo,
-            new DataAccessObjects.CompanyInformation(company, processId));
+            new Infrastructure.Database.DataAccessObjects.CompanyInformation(company, processId));
     }
 
     public async Task SaveIncomeStatementsAsync(IEnumerable<IncomeStatement> statements, Guid processId)
@@ -157,7 +162,7 @@ AND table_type = 'BASE TABLE'";
 
         using var cmdCtx = _dbDefPair.GetCommandConnection();
 
-        foreach (var chunk in statements.Select(k => new DataAccessObjects.IncomeStatement(k, processId)).Chunk(ChunkSize))
+        foreach (var chunk in statements.Select(k => new Infrastructure.Database.DataAccessObjects.IncomeStatement(k, processId)).Chunk(ChunkSize))
             await cmdCtx.ExecuteAsync(SqlRepository.MergeIncomeStatements, chunk);
     }
 
@@ -168,7 +173,7 @@ AND table_type = 'BASE TABLE'";
 
         using var cmdCtx = _dbDefPair.GetCommandConnection();
 
-        foreach (var chunk in statements.Select(k => new DataAccessObjects.BalanceSheet(k, processId)).Chunk(ChunkSize))
+        foreach (var chunk in statements.Select(k => new Infrastructure.Database.DataAccessObjects.BalanceSheet(k, processId)).Chunk(ChunkSize))
             await cmdCtx.ExecuteAsync(SqlRepository.MergeBalanceSheets, chunk);
     }
 
@@ -179,7 +184,7 @@ AND table_type = 'BASE TABLE'";
 
         using var cmdCtx = _dbDefPair.GetCommandConnection();
 
-        foreach (var chunk in statements.Select(k => new DataAccessObjects.CashFlowStatement(k, processId)).Chunk(ChunkSize))
+        foreach (var chunk in statements.Select(k => new Infrastructure.Database.DataAccessObjects.CashFlowStatement(k, processId)).Chunk(ChunkSize))
             await cmdCtx.ExecuteAsync(SqlRepository.MergeCashFlowStatements, chunk);
     }
 
@@ -190,7 +195,7 @@ AND table_type = 'BASE TABLE'";
 
         using var cmdCtx = _dbDefPair.GetCommandConnection();
 
-        foreach (var chunk in dividends.Select(k => new DataAccessObjects.Dividend(k, processId)).Chunk(ChunkSize))
+        foreach (var chunk in dividends.Select(k => new Infrastructure.Database.DataAccessObjects.Dividend(k, processId)).Chunk(ChunkSize))
             await cmdCtx.ExecuteAsync(SqlRepository.MergeDividends, chunk);
     }
 
@@ -201,7 +206,7 @@ AND table_type = 'BASE TABLE'";
 
         using var cmdCtx = _dbDefPair.GetCommandConnection();
 
-        foreach (var chunk in splits.Select(k => new DataAccessObjects.StockSplit(k, processId)).Chunk(ChunkSize))
+        foreach (var chunk in splits.Select(k => new Infrastructure.Database.DataAccessObjects.StockSplit(k, processId)).Chunk(ChunkSize))
             await cmdCtx.ExecuteAsync(SqlRepository.MergeStockSplits, chunk);
     }
 
@@ -212,7 +217,7 @@ AND table_type = 'BASE TABLE'";
 
         using var cmdCtx = _dbDefPair.GetCommandConnection();
 
-        foreach (var chunk in releases.Select(k => new DataAccessObjects.EarningsRelease(k, processId)).Chunk(ChunkSize))
+        foreach (var chunk in releases.Select(k => new Infrastructure.Database.DataAccessObjects.EarningsRelease(k, processId)).Chunk(ChunkSize))
             await cmdCtx.ExecuteAsync(SqlRepository.MergeEarningsReleases, chunk);
     }
 
@@ -223,7 +228,7 @@ AND table_type = 'BASE TABLE'";
 
         using var cmdCtx = _dbDefPair.GetCommandConnection();
 
-        foreach (var chunk in shortInterests.Select(k => new DataAccessObjects.ShortInterest(k, processId)).Chunk(ChunkSize))
+        foreach (var chunk in shortInterests.Select(k => new Infrastructure.Database.DataAccessObjects.ShortInterest(k, processId)).Chunk(ChunkSize))
             await cmdCtx.ExecuteAsync(SqlRepository.MergeShortInterests, chunk);
     }
 
@@ -318,7 +323,7 @@ HAVING COUNT(*) < @MinDays";
             if (processId.Equals(Guid.Empty))
                 processId = Constants.SystemId;
 
-            var daos = symbols.Select(k => new DataAccessObjects.IgnoredSymbol(processId)
+            var daos = symbols.Select(k => new Infrastructure.Database.DataAccessObjects.IgnoredSymbol(processId)
             {
                 Reason = reason,
                 Expiration = expiration,
@@ -375,7 +380,7 @@ DELETE FROM public.valuation_ratios WHERE symbol = @Symbol;";
 
         using var cmdCtx = _dbDefPair.GetCommandConnection();
 
-        foreach (var chunk in metrics.Select(k => new DataAccessObjects.KeyMetrics(k, processId)).Chunk(ChunkSize))
+        foreach (var chunk in metrics.Select(k => new Infrastructure.Database.DataAccessObjects.KeyMetrics(k, processId)).Chunk(ChunkSize))
             await cmdCtx.ExecuteAsync(SqlRepository.MergeKeyMetrics, chunk);
     }
 
@@ -386,7 +391,7 @@ DELETE FROM public.valuation_ratios WHERE symbol = @Symbol;";
 
         using var cmdCtx = _dbDefPair.GetCommandConnection();
 
-        foreach (var chunk in marketCaps.Select(k => new DataAccessObjects.MarketCap(k, processId)).Chunk(ChunkSize))
+        foreach (var chunk in marketCaps.Select(k => new Infrastructure.Database.DataAccessObjects.MarketCap(k, processId)).Chunk(ChunkSize))
             await cmdCtx.ExecuteAsync(SqlRepository.MergeMarketCaps, chunk);
     }
 
@@ -397,7 +402,7 @@ DELETE FROM public.valuation_ratios WHERE symbol = @Symbol;";
 
         using var cmdCtx = _dbDefPair.GetCommandConnection();
 
-        foreach (var chunk in empCounts.Select(k => new DataAccessObjects.EmployeeCount(k, processId)).Chunk(ChunkSize))
+        foreach (var chunk in empCounts.Select(k => new Infrastructure.Database.DataAccessObjects.EmployeeCount(k, processId)).Chunk(ChunkSize))
             await cmdCtx.ExecuteAsync(SqlRepository.MergeEmployeeCounts, chunk);
     }
 
@@ -408,7 +413,7 @@ DELETE FROM public.valuation_ratios WHERE symbol = @Symbol;";
 
         using var cmdCtx = _dbDefPair.GetCommandConnection();
 
-        foreach (var chunk in comps.Select(k => new DataAccessObjects.ExecutiveCompensation(k, processId)).Chunk(ChunkSize))
+        foreach (var chunk in comps.Select(k => new Infrastructure.Database.DataAccessObjects.ExecutiveCompensation(k, processId)).Chunk(ChunkSize))
             await cmdCtx.ExecuteAsync(SqlRepository.MergeExecutiveCompensations, chunk);
     }
 
@@ -419,7 +424,7 @@ DELETE FROM public.valuation_ratios WHERE symbol = @Symbol;";
 
         using var cmdCtx = _dbDefPair.GetCommandConnection();
 
-        foreach (var chunk in ratios.Select(k => new DataAccessObjects.EfficiencyRatio(k, processId)).Chunk(ChunkSize))
+        foreach (var chunk in ratios.Select(k => new Infrastructure.Database.DataAccessObjects.EfficiencyRatio(k, processId)).Chunk(ChunkSize))
             await cmdCtx.ExecuteAsync(SqlRepository.MergeEfficiencyRatios, chunk);
     }
 
@@ -430,7 +435,7 @@ DELETE FROM public.valuation_ratios WHERE symbol = @Symbol;";
 
         using var cmdCtx = _dbDefPair.GetCommandConnection();
 
-        foreach (var chunk in ratios.Select(k => new DataAccessObjects.LiquidityRatio(k, processId)).Chunk(ChunkSize))
+        foreach (var chunk in ratios.Select(k => new Infrastructure.Database.DataAccessObjects.LiquidityRatio(k, processId)).Chunk(ChunkSize))
             await cmdCtx.ExecuteAsync(SqlRepository.MergeLiquidityRatios, chunk);
     }
 
@@ -441,7 +446,7 @@ DELETE FROM public.valuation_ratios WHERE symbol = @Symbol;";
 
         using var cmdCtx = _dbDefPair.GetCommandConnection();
 
-        foreach (var chunk in ratios.Select(k => new DataAccessObjects.ProfitabilityRatio(k, processId)).Chunk(ChunkSize))
+        foreach (var chunk in ratios.Select(k => new Infrastructure.Database.DataAccessObjects.ProfitabilityRatio(k, processId)).Chunk(ChunkSize))
             await cmdCtx.ExecuteAsync(SqlRepository.MergeProfitabilityRatios, chunk);
     }
 
@@ -452,7 +457,7 @@ DELETE FROM public.valuation_ratios WHERE symbol = @Symbol;";
 
         using var cmdCtx = _dbDefPair.GetCommandConnection();
 
-        foreach (var chunk in ratios.Select(k => new DataAccessObjects.SolvencyRatio(k, processId)).Chunk(ChunkSize))
+        foreach (var chunk in ratios.Select(k => new Infrastructure.Database.DataAccessObjects.SolvencyRatio(k, processId)).Chunk(ChunkSize))
             await cmdCtx.ExecuteAsync(SqlRepository.MergeSolvencyRatios, chunk);
     }
 
@@ -463,7 +468,7 @@ DELETE FROM public.valuation_ratios WHERE symbol = @Symbol;";
 
         using var cmdCtx = _dbDefPair.GetCommandConnection();
 
-        foreach (var chunk in ratios.Select(k => new DataAccessObjects.ValuationRatio(k, processId)).Chunk(ChunkSize))
+        foreach (var chunk in ratios.Select(k => new Infrastructure.Database.DataAccessObjects.ValuationRatio(k, processId)).Chunk(ChunkSize))
             await cmdCtx.ExecuteAsync(SqlRepository.MergeValuationRatios, chunk);
     }
 
@@ -471,7 +476,7 @@ DELETE FROM public.valuation_ratios WHERE symbol = @Symbol;";
     /// Save the process to the database.
     /// This method deviates from other methods in that it takes a DAO directly.
     /// </summary>
-    internal async Task SaveProcess(DataAccessObjects.Process process)
+    internal async Task SaveProcess(Infrastructure.Database.DataAccessObjects.Process process)
     {
         using var cmdCtx = _dbDefPair.GetCommandConnection();
         await cmdCtx.ExecuteAsync(SqlRepository.MergeProcess, process);

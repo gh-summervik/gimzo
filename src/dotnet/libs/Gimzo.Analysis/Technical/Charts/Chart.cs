@@ -9,22 +9,17 @@ public class Chart : IEquatable<Chart?>
     private decimal[] _averageHeights = [];
     private decimal[] _averageBodyHeights = [];
     private double[] _averageVolumes = [];
-    private TrendSentiment[] _lookbackSentiment = [];
-    private readonly int _lookbackLength = 15;
     private readonly List<AverageTrueRange> _atrs = [];
     private readonly HashSet<int> _atrPeriods = [];
 
     public ChartInfo Info { get; init; }
-    public Chart(string name, ChartInterval interval = ChartInterval.Daily,
-        int lookbackLength = 15)
+    public Chart(string name, ChartInterval interval = ChartInterval.Daily)
     {
         Info = new()
         {
             Symbol = name,
             Interval = interval
         };
-
-        _lookbackLength = Math.Max(lookbackLength, 0);
     }
 
     private ITrend? Trend { get; set; } = null;
@@ -37,8 +32,14 @@ public class Chart : IEquatable<Chart?>
     public DateOnly Start => PriceActions[0].Date;
     public DateOnly End => PriceActions[^1].Date;
     public MovingAverage[] MovingAverages => [.. _movingaverages];
-    public AverageTrueRange[] ATRs => [.. _atrs];
+    public MovingAverageKey[] MovingAverageKeys => [.. _movingaverages.Select(k => k.Key)];
+    public MovingAverage? GetMovingAverage(MovingAverageKey key) =>
+        _movingaverages.FirstOrDefault(k => k.Key.Equals(key));
 
+    public PriceExtreme[] Extremes { get; private set; } = [];
+    public AverageTrueRange[] ATRs => [.. _atrs];
+    public double[] AverageVolumes => _averageVolumes;
+    public BollingerBand? BollingerBand { get; private set; }    
     public Chart WithMovingAverage(MovingAverageKey key)
     {
         _movingAverageKeys.Add(key);
@@ -90,6 +91,20 @@ public class Chart : IEquatable<Chart?>
         return this;
     }
 
+    public Chart WithBollingerBand(int period = 21,
+        MovingAverageType movingAverageType = MovingAverageType.Simple,
+        PricePoint pricePoint = PricePoint.Close, double stdDevMultiplier = 2.0)
+    {
+        var key = new MovingAverageKey(period, pricePoint, movingAverageType);
+        return WithBollingerBand(key, stdDevMultiplier);
+    }
+
+    public Chart WithBollingerBand(MovingAverageKey key, double stdDevMultiplier = 2.0)
+    {
+        BollingerBand = new BollingerBand(key, stdDevMultiplier, [.. PriceActions.Select(p => p.Close)]);
+        return this;
+    }
+
     public Chart Build()
     {
         if (PriceActions.Length < 1)
@@ -106,22 +121,9 @@ public class Chart : IEquatable<Chart?>
         _averageHeights = new decimal[PriceActions.Length];
         _averageBodyHeights = new decimal[PriceActions.Length];
         _averageVolumes = new double[PriceActions.Length];
-        _lookbackSentiment = new TrendSentiment[PriceActions.Length];
 
         for (int p = 0; p < PriceActions.Length; p++)
         {
-            if (_lookbackLength > 0 && p > _lookbackLength)
-            {
-                var lookback = Candlesticks[(p - _lookbackLength - 1)..(p)];
-                _lookbackSentiment[p] = lookback.All(pr => pr.High < Candlesticks[p].High)
-                    ? TrendSentiment.Bullish
-                    : lookback.All(pr => pr.Low > Candlesticks[p].Low)
-                    ? TrendSentiment.Bearish
-                    : TrendSentiment.Neutral;
-            }
-            else
-                _lookbackSentiment[p] = TrendSentiment.Neutral;
-
             if (p == 0)
             {
                 _averageHeights[p] = Candlesticks[p].Length;
@@ -140,7 +142,123 @@ public class Chart : IEquatable<Chart?>
         foreach (var period in _atrPeriods)
             _atrs.Add(new AverageTrueRange(PriceActions, period));
 
+        List<PriceExtreme> highs = new(100);
+        List<PriceExtreme> lows = new(100);
+
+        /*
+         * Completing this loop twice because a given candle can be both a low and a high.
+         * Mixing them together was just a PITA.
+         */
+        decimal lastHigh = 0M;
+        decimal lastLow = 0M;
+        TrendSentiment lastLowSentiment = TrendSentiment.None;
+        TrendSentiment lastHighSentiment = TrendSentiment.None;
+
+        for (int p = 1; p < PriceActions.Length - 1; p++)
+        {
+            decimal high = PriceActions[p].High;
+
+            /* 
+             * Address situation wherein we hit a new high and match it on 2 or more days.
+             * We only want to count the final entry as the high.
+             */
+            decimal prev = PriceActions[p - 1].High;
+            while (high > PriceActions[p - 1].High && high == PriceActions[p + 1].High && p < PriceActions.Length - 2)
+                p++;
+
+            if (high > prev && high > PriceActions[p + 1].High)
+            {
+                TrendSentiment sentiment = TrendSentiment.None;
+
+                if (lastHighSentiment == TrendSentiment.None)
+                    sentiment = TrendSentiment.Bullish;
+                else if (high > lastHigh)
+                    sentiment = TrendSentiment.Bullish;
+                else if (high < lastHigh)
+                    sentiment = TrendSentiment.Bearish;
+                else
+                    sentiment = lastHighSentiment;
+
+                highs.Add(new PriceExtreme(PriceActions[p].High, isHigh: true, isLow: false, sentiment, p));
+                lastHigh = high;
+                lastHighSentiment = sentiment;
+            }
+        }
+
+        for (int p = 1; p < PriceActions.Length - 1; p++)
+        {
+
+            decimal low = PriceActions[p].Low;
+
+            /* 
+             * See note in loop above.
+             */
+            decimal prev = PriceActions[p - 1].Low;
+            while (low < PriceActions[p - 1].Low && low == PriceActions[p + 1].Low && p < PriceActions.Length - 2)
+                p++;
+
+            if (low < prev && low < PriceActions[p + 1].Low)
+            {
+                TrendSentiment sentiment = TrendSentiment.None;
+
+                if (lastLowSentiment == TrendSentiment.None)
+                    sentiment = TrendSentiment.Bearish;
+                else if (low < lastLow)
+                    sentiment = TrendSentiment.Bearish;
+                else if (low > lastLow)
+                    sentiment = TrendSentiment.Bullish;
+                else
+                    sentiment = lastLowSentiment;
+
+                lows.Add(new PriceExtreme(PriceActions[p].Low, isHigh: false, isLow: true, sentiment, p));
+                lastLow = low;
+                lastLowSentiment = sentiment;
+            }
+        }
+
+        Extremes = [.. highs.Union(lows).OrderBy(k => k.Index)];
+
         return this;
+    }
+
+    public PriceExtreme? FindPreviousHigh(int index, TrendSentiment sentiment = TrendSentiment.None)
+    {
+        var prev = Extremes.LastOrDefault(k => k.Index < index && k.IsHigh &&
+            (sentiment == TrendSentiment.None || k.Sentiment == sentiment));
+        return prev.IsDefault ? null : prev;
+    }
+
+    public PriceExtreme? FindPreviousLow(int index, TrendSentiment sentiment = TrendSentiment.None)
+    {
+        var prev = Extremes.LastOrDefault(k => k.Index < index && k.IsLow &&
+            (sentiment == TrendSentiment.None || k.Sentiment == sentiment));
+        return prev.IsDefault ? null : prev;
+    }
+
+    public PriceExtreme? FindPreviousHigh(PriceExtreme extreme, TrendSentiment sentiment = TrendSentiment.None)
+    {
+        int idx = Extremes.IndexOf(extreme);
+        if (idx < 1)
+            return null;
+        for (int i = idx - 1; i >= 0; i--)
+        {
+            if (Extremes[i].IsHigh && (sentiment == TrendSentiment.None || Extremes[i].Sentiment == sentiment))
+                return Extremes[i];
+        }
+        return null;
+    }
+
+    public PriceExtreme? FindPreviousLow(PriceExtreme extreme, TrendSentiment sentiment = TrendSentiment.None)
+    {
+        int idx = Extremes.IndexOf(extreme);
+        if (idx < 1)
+            return null;
+        for (int i = idx - 1; i >= 0; i--)
+        {
+            if (Extremes[i].IsLow && (sentiment == TrendSentiment.None || Extremes[i].Sentiment == sentiment))
+                return Extremes[i];
+        }
+        return null;
     }
 
     public AverageTrueRange? GetAverageTrueRangeForPeriod(int period) => _atrs.FirstOrDefault(k => k.Period == period);
@@ -256,10 +374,6 @@ public class Chart : IEquatable<Chart?>
         return new ChartSpan(this, start, finish);
     }
 
-    public TrendSentiment LookbackSentiment(int position) => position > -1 && position < _lookbackSentiment.Length
-        ? _lookbackSentiment[position]
-        : TrendSentiment.Neutral;
-
     public override bool Equals(object? obj)
     {
         return Equals(obj as Chart);
@@ -268,7 +382,6 @@ public class Chart : IEquatable<Chart?>
     public bool Equals(Chart? other)
     {
         return other is not null &&
-               _lookbackLength == other._lookbackLength &&
                Info.Interval == other.Info.Interval &&
                Info.Symbol == other.Info.Symbol &&
                Length == other.Length &&
@@ -284,6 +397,6 @@ public class Chart : IEquatable<Chart?>
 
     public override int GetHashCode()
     {
-        return GetCacheKey(Info, Trend?.Name, _lookbackLength);
+        return GetCacheKey(Info, Trend?.Name);
     }
 }

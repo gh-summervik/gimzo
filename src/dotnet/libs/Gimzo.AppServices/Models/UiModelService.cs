@@ -1,6 +1,6 @@
 ﻿using Gimzo.Analysis.Technical;
 using Gimzo.Analysis.Technical.Charts;
-using Gimzo.Analysis.Technical.Trends;
+using Gimzo.AppServices.Data;
 using Gimzo.Infrastructure.Database;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
@@ -10,45 +10,18 @@ namespace Gimzo.AppServices.Models;
 
 public sealed class UiModelService(DbDefPair dbDefPair, IMemoryCache memoryCache, ILogger<UiModelService> logger)
 {
-    private readonly DatabaseService _dbService = new(dbDefPair, logger);
+    private readonly DataService _dataService = new(dbDefPair, memoryCache, logger);
     private readonly IMemoryCache _memoryCache = memoryCache;
-    private const int ChartLookback = 60;
-    private const int AverageTrueRangePeriod = 14;
 
-    private static int GetChartCacheKey(string symbol, int lookback = ChartLookback, ChartInterval interval = ChartInterval.Daily) =>
-        HashCode.Combine(symbol.ToUpperInvariant(), lookback, interval);
 
-    private async Task<Chart?> GetChartAsync(string symbol, int lookback = ChartLookback, ChartInterval interval = ChartInterval.Daily)
-    {
-        var cacheKey = GetChartCacheKey(symbol, lookback, interval);
-        Chart? chart;
-        if (_memoryCache.TryGetValue(cacheKey, out var cachedValue) && cachedValue != null)
-            chart = cachedValue as Chart;
-        else
-        {
-            var ohlcs = (await _dbService.GetOhlcAsync(symbol)).ToArray();
-            if (ohlcs.Length == 0)
-                return null;
-            chart = new Chart(symbol.ToUpperInvariant(), lookbackLength: 60)
-                .WithCandles(ohlcs)
-                .WithTrend(new GimzoTrend(ohlcs))
-                .WithMovingAverage(21, MovingAverageType.Exponential)
-                .WithMovingAverage(50, MovingAverageType.Exponential)
-                .WithMovingAverage(200, MovingAverageType.Exponential)
-                .WithAverageTrueRange(AverageTrueRangePeriod)
-                .Build();
-            _memoryCache.Set(cacheKey, chart);
-        }
-        return chart;
-    }
 
     public async Task<CompanyInfo?> GetCompanyInfoAsync(string symbol)
     {
-        var coInfo = await _dbService.GetCompanyInformationAsync(symbol);
+        var coInfo = await _dataService.GetCompanyInformationAsync(symbol);
         if (coInfo == null)
             return null;
 
-        Chart? chart = await GetChartAsync(symbol, ChartLookback, ChartInterval.Daily);
+        Chart? chart = await _dataService.GetChartAsync(symbol, Common.Constants.DefaultChartLookback, ChartInterval.Daily);
 
         decimal? fiftyTwoWeekLow = null;
         decimal? fiftyTwoWeekHigh = null;
@@ -98,7 +71,7 @@ public sealed class UiModelService(DbDefPair dbDefPair, IMemoryCache memoryCache
             Symbol = coInfo.Symbol,
             WebSite = coInfo.WebSite,
             LastOhlc = chart?.Candlesticks.LastOrDefault(),
-            CurrentAverageTrueRange = chart?.GetAverageTrueRangeForPeriod(AverageTrueRangePeriod),
+            CurrentAverageTrueRange = chart?.GetAverageTrueRangeForPeriod(Common.Constants.DefaultAverageTrueRangePeriod),
             FiftyTwoWeekLow = fiftyTwoWeekLow,
             FiftyTwoWeekHigh = fiftyTwoWeekHigh,
             TwentyDayAverageVolume = averageVolume,
@@ -108,10 +81,10 @@ public sealed class UiModelService(DbDefPair dbDefPair, IMemoryCache memoryCache
 
     public async Task<ChartModel?> GetChartModelAsync(string symbol,
         DateOnly start, DateOnly? finish = null,
-        int lookback = ChartLookback,
+        int lookback = Common.Constants.DefaultChartLookback,
         ChartInterval interval = ChartInterval.Daily)
     {
-        var chart = await GetChartAsync(symbol, lookback, interval);
+        var chart = await _dataService.GetChartAsync(symbol, lookback, interval);
 
         if (chart == null || chart.PriceActions.Length == 0)
             return null;
@@ -168,7 +141,7 @@ public sealed class UiModelService(DbDefPair dbDefPair, IMemoryCache memoryCache
         return new ChartModel
         {
             Symbol = symbol.ToUpperInvariant(),
-            Prices = prices.ToArray(),
+            Prices = [.. prices],
             SerializedData = serializedData,
             SerializedTrend = serializedTrend
         };

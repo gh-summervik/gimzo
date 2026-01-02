@@ -4,22 +4,18 @@ public class CombinedWeightedTrend : ITrend
 {
     private readonly WeightedTrend[] _trends;
     private readonly int _length;
-    private string? _name = null;
+    private string? _name;
 
     public CombinedWeightedTrend(params WeightedTrend[] weightedTrends)
     {
-        if ((weightedTrends?.Length ?? 0) == 0)
+        if (weightedTrends.Length == 0)
             throw new ArgumentNullException(nameof(weightedTrends));
-
-        _length = weightedTrends![0].TrendValues.Length;
-
-        if (weightedTrends.Count(t => t.TrendValues.Length != _length) > 0)
+        _length = weightedTrends[0].TrendValues.Length;
+        if (weightedTrends.Any(t => t.TrendValues.Length != _length))
             throw new ArgumentException($"All trends provided to the {nameof(CombinedWeightedTrend)} object must have the same length.");
-
         var weightSum = weightedTrends.Sum(t => t.Weight);
-        if (weightSum != 1D)
+        if (Math.Abs(weightSum - 1D) > 1e-10)
             throw new ArgumentException($"The total weight of trends provided to {nameof(CombinedWeightedTrend)} must equal 1.");
-
         _trends = weightedTrends;
         TrendValues = new double[_length];
     }
@@ -37,19 +33,17 @@ public class CombinedWeightedTrend : ITrend
 
     public void Calculate()
     {
-        for (int i = 0; i < _trends[0].TrendValues.Length; i++)
+        for (int i = 0; i < _length; i++)
             TrendValues[i] = CalculateTrendForPosition(i);
     }
 
     private double CalculateTrendForPosition(int position)
     {
         var value = 0D;
-        if (position < 0 || position > (_length - 1))
+        if (position < 0 || position >= _length)
             return value;
-
         foreach (var trend in _trends)
             value += trend.TrendValues[position];
-
         return value;
     }
 }

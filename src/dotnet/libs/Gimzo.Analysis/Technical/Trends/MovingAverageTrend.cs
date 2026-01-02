@@ -88,7 +88,7 @@ public class MovingAverageTrend : PriceTrendBase, ITrend
         }
     }
 
-    private double CalculateRegressionSlope(double[] values, int startIndex, int length)
+    private static double CalculateRegressionSlope(double[] values, int startIndex, int length)
     {
         double sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
         for (int i = 0; i < length; i++)

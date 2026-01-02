@@ -4,43 +4,6 @@ namespace Gimzo.AppServices.Cli;
 
 public static class CliHelper
 {
-    public static CliArg[] GetDefaultArgDescriptions()
-    {
-        return [
-            new CliArg(["-?", "?", "-h", "--help"], [], false, "Show this help."),
-            new CliArg(["-v", "--verbose"], [], false, "Turn on verbose communication.")
-        ];
-    }
-
-    public static string[] HydrateDefaultAppConfig(string[] args, CliConfigBase config)
-    {
-        List<string> remainingArgs = new(args.Length);
-
-        for (int i = 0; i < args.Length; i++)
-        {
-            string argument = args[i].ToLower();
-
-            switch (argument)
-            {
-                case "?":
-                case "-?":
-                case "-h":
-                case "--help":
-                    config.ShowHelp = true;
-                    break;
-                case "-v":
-                case "--verbose":
-                    config.Verbose = true;
-                    break;
-                default:
-                    remainingArgs.Add(args[i]);
-                    break;
-            }
-        }
-
-        return [.. remainingArgs];
-    }
-
     public static string FormatArguments(CliArg[] cliArgs)
     {
         List<KeyValuePair<string, string>> args = new(cliArgs.Length);

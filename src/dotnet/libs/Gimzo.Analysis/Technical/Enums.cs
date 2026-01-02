@@ -31,13 +31,8 @@ public enum PricePoint
 public enum TrendSentiment
 {
     None = 0,
-    Neutral = 1 << 0,
-    FullBear = 1 << 1,
-    Bearish = 1 << 2,
-    MildBear = 1 << 3,
-    MildBull = 1 << 4,
-    Bullish = 1 << 5,
-    FullBull = 1 << 6
+    Bullish,
+    Bearish
 }
 
 public enum ExtremeType

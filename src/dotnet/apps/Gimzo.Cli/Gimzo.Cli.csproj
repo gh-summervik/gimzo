@@ -26,6 +26,9 @@
 		<None Update="appsettings.json">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
+		<None Update="data\winners.txt">
+		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
 		<None Update="secrets.json">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>

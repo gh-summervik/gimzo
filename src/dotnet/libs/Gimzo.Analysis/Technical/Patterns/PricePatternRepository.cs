@@ -1,16 +1,16 @@
-﻿using System.Reflection;
+﻿//using System.Reflection;
 
-namespace Gimzo.Analysis.Technical.Patterns;
+//namespace Gimzo.Analysis.Technical.Patterns;
 
-internal static class PricePatternRepository
-{
-    private static readonly Type[] _ohlcPatternTypes;
+//internal static class PricePatternRepository
+//{
+//    private static readonly Type[] _ohlcPatternTypes;
 
-    static PricePatternRepository()
-    {
-        _ohlcPatternTypes = [.. Assembly.GetExecutingAssembly()
-            .GetTypes().Where(t => t.IsSubclassOf(typeof(PricePatternBase)))];
-    }
+//    static PricePatternRepository()
+//    {
+//        _ohlcPatternTypes = [.. Assembly.GetExecutingAssembly()
+//            .GetTypes().Where(t => t.IsSubclassOf(typeof(PricePatternBase)))];
+//    }
 
-    public static Type[] GetTypes() => _ohlcPatternTypes;
-}
+//    public static Type[] GetTypes() => _ohlcPatternTypes;
+//}
