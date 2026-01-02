@@ -1,22 +1,22 @@
 ﻿namespace Gimzo.Infrastructure.Database.DataAccessObjects;
 
-internal sealed record ProfitabilityRatio : DaoBase
+internal sealed record ProfitabilityRatios : DaoBase
 {
-    public ProfitabilityRatio() : base()
+    public ProfitabilityRatios() : base()
     {
         CentralIndexKey = "";
         FiscalYear = "";
         FiscalPeriod = "";
     }
 
-    public ProfitabilityRatio(Guid userId) : base(userId)
+    public ProfitabilityRatios(Guid userId) : base(userId)
     {
         CentralIndexKey = "";
         FiscalYear = "";
         FiscalPeriod = "";
     }
 
-    public ProfitabilityRatio(Analysis.Fundamental.ProfitabilityRatios ratios, Guid userId) : base(userId)
+    public ProfitabilityRatios(Analysis.Fundamental.ProfitabilityRatios ratios, Guid userId) : base(userId)
     {
         Symbol = ratios.Symbol;
         CentralIndexKey = ratios.CentralIndexKey;
@@ -60,4 +60,28 @@ internal sealed record ProfitabilityRatio : DaoBase
         !string.IsNullOrWhiteSpace(CentralIndexKey) &&
         !string.IsNullOrWhiteSpace(FiscalYear) &&
         !string.IsNullOrWhiteSpace(FiscalPeriod);
+
+    public Analysis.Fundamental.ProfitabilityRatios ToDomain()
+    {
+        return new()
+        {
+            CashReturnOnAssets = CashReturnOnAssets,
+            CashTurnoverRatio = CashTurnoverRatio,
+            CentralIndexKey = CentralIndexKey,
+            Ebit = Ebit,
+            Ebitda = Ebitda,
+            FiscalPeriod = FiscalPeriod,
+            FiscalYear = FiscalYear,
+            GrossMargin = GrossMargin,
+            OperatingMargin = OperatingMargin,
+            OperatingCashFlowMargin = OperatingCashFlowMargin,
+            ReturnOnEquity = ReturnOnEquity,
+            ReturnOnAssets = ReturnOnAssets,
+            ReturnOnDebt = ReturnOnDebt,
+            PeriodEndDate = PeriodEndDate,
+            ProfitMargin = ProfitMargin,
+            Registrant = Registrant,
+            Symbol = Symbol
+        };
+    }
 }

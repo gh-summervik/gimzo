@@ -70,4 +70,35 @@ internal sealed record KeyMetrics : DaoBase
     public override bool IsValid() => base.IsValid() &&
         !string.IsNullOrWhiteSpace(CentralIndexKey) &&
         !string.IsNullOrWhiteSpace(FiscalYear);
+
+    public Analysis.Fundamental.KeyMetrics ToDomain()
+    {
+        return new()
+        {
+            BookValuePerShare = BookValuePerShare,
+            CapitalExpenditures = CapitalExpenditures,
+            FreeCashFlow = FreeCashFlow,
+            ReturnOnEquity = ReturnOnEquity,
+            OneYearBeta = OneYearBeta,
+            ThreeYearBeta = ThreeYearBeta,
+            FiveYearBeta = FiveYearBeta,
+            CentralIndexKey = CentralIndexKey,
+            DebtToEquityRatio = DebtToEquityRatio,
+            DividendPayoutRatio = DividendPayoutRatio,
+            DividendYield = DividendYield,
+            EarningsGrowthRate = EarningsGrowthRate,
+            EarningsPerShare = EarningsPerShare,
+            EarningsPerShareForecast = EarningsPerShareForecast,
+            Ebitda = Ebitda,
+            EnterpriseValue = EnterpriseValue,
+            FiscalYear = FiscalYear,
+            ForwardPriceToEarningsRatio = ForwardPriceToEarningsRatio,
+            PeriodEndDate = PeriodEndDate,
+            PriceEarningsToGrowthRate = PriceEarningsToGrowthRate,
+            PriceToBookRatio = PriceToBookRatio,
+            PriceToEarningsRatio = PriceToEarningsRatio,
+            Registrant = Registrant,
+            Symbol = Symbol
+        };
+    }
 }

@@ -23,7 +23,7 @@ internal sealed record ShortInterest : DaoBase
         ChangeInShortedSecurities = interest.ChangeInShortedSecurities;
         PercentageChangeInShortedSecurities = interest.PercentageChangeInShortedSecurities;
         AverageDailyVolume = interest.AverageDailyVolume;
-        DaysToConvert = interest.DaysToConvert;
+        DaysToCover = interest.DaysToCover;
         IsStockSplit = interest.IsStockSplit;
     }
 
@@ -36,10 +36,28 @@ internal sealed record ShortInterest : DaoBase
     public long? ChangeInShortedSecurities { get; init; }
     public double? PercentageChangeInShortedSecurities { get; init; }
     public long? AverageDailyVolume { get; init; }
-    public double? DaysToConvert { get; init; }
+    public double? DaysToCover { get; init; }
     public bool? IsStockSplit { get; init; }
 
     public override bool IsValid() => base.IsValid() &&
         !string.IsNullOrWhiteSpace(Symbol) &&
         SettlementDate > new DateOnly(1900, 1, 1);
+
+    public Analysis.Fundamental.ShortInterest ToDomain()
+    {
+        return new()
+        {
+            Symbol = Symbol,
+            AverageDailyVolume = AverageDailyVolume,
+            ChangeInShortedSecurities = ChangeInShortedSecurities,
+            DaysToCover = DaysToCover,
+            IsStockSplit = IsStockSplit,
+            MarketCode = MarketCode,
+            PercentageChangeInShortedSecurities = PercentageChangeInShortedSecurities,
+            PreviousShortedSecurities = PreviousShortedSecurities,
+            SettlementDate = SettlementDate,
+            ShortedSecurities = ShortedSecurities,
+            Title = Title
+        };
+    }
 }

@@ -1,22 +1,22 @@
 ﻿namespace Gimzo.Infrastructure.Database.DataAccessObjects;
 
-internal sealed record EfficiencyRatio : DaoBase
+internal sealed record EfficiencyRatios : DaoBase
 {
-    public EfficiencyRatio() : base()
+    public EfficiencyRatios() : base()
     {
         CentralIndexKey = "";
         FiscalYear = "";
         FiscalPeriod = "";
     }
 
-    public EfficiencyRatio(Guid userId) : base(userId)
+    public EfficiencyRatios(Guid userId) : base(userId)
     {
         CentralIndexKey = "";
         FiscalYear = "";
         FiscalPeriod = "";
     }
 
-    public EfficiencyRatio(Analysis.Fundamental.EfficiencyRatios ratios, Guid userId) : base(userId)
+    public EfficiencyRatios(Analysis.Fundamental.EfficiencyRatios ratios, Guid userId) : base(userId)
     {
         Symbol = ratios.Symbol;
         CentralIndexKey = ratios.CentralIndexKey;
@@ -66,4 +66,32 @@ internal sealed record EfficiencyRatio : DaoBase
         !string.IsNullOrWhiteSpace(CentralIndexKey) &&
         !string.IsNullOrWhiteSpace(FiscalYear) &&
         !string.IsNullOrWhiteSpace(FiscalPeriod);
+
+    public Analysis.Fundamental.EfficiencyRatios ToDomain()
+    {
+        return new()
+        {
+            AccountsPayableTurnoverRatio = AccountsPayableTurnoverRatio,
+            AccountsReceivableTurnoverRatio = AccountsReceivableTurnoverRatio,
+            AssetTurnoverRatio = AssetTurnoverRatio,
+            CapitalIntensityRatio = CapitalIntensityRatio,
+            CentralIndexKey = CentralIndexKey,
+            DaysCashOnHand = DaysCashOnHand,
+            DaysSalesInInventory = DaysSalesInInventory,
+            DaysWorkingCapital = DaysWorkingCapital,
+            EquityMultiplier = EquityMultiplier,
+            FiscalPeriod = FiscalPeriod,
+            FiscalYear = FiscalYear,
+            FixedAssetTurnoverRatio = FixedAssetTurnoverRatio,
+            InventoryToSalesRatio = InventoryToSalesRatio,
+            InventoryTurnoverRatio = InventoryTurnoverRatio,
+            InvestmentTurnoverRatio = InvestmentTurnoverRatio,
+            PeriodEndDate = PeriodEndDate,
+            Registrant = Registrant,
+            SalesToEquityRatio = SalesToEquityRatio,
+            SalesToOperatingIncomeRatio = SalesToOperatingIncomeRatio,
+            Symbol = Symbol,
+            WorkingCapitalTurnoverRatio = WorkingCapitalTurnoverRatio
+        };
+    }
 }

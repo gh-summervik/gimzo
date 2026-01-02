@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using Gimzo.Analysis.Fundamental;
 using Gimzo.Analysis.Technical;
 using Gimzo.Analysis.Technical.Charts;
 using Gimzo.Analysis.Technical.Trends;
@@ -12,13 +13,13 @@ internal sealed partial class DataService
     public Task<IEnumerable<string>> GetSymbolsAsync() =>
          _dbDefPair.GetQueryConnection().QueryAsync<string>("SELECT symbol FROM public.stock_symbols");
 
-    public async Task<Analysis.Fundamental.CompanyInformation?> GetCompanyInformationAsync(string symbol)
+    public async Task<CompanyInformation?> GetCompanyInformationAsync(string symbol)
     {
         ArgumentNullException.ThrowIfNullOrWhiteSpace(symbol, nameof(symbol));
 
         using var queryCtx = _dbDefPair.GetQueryConnection();
-        string sql = $"{SqlRepository.SelectCompanyInfo} WHERE symbol = @Symbol";
-        var dao = queryCtx.QueryFirstOrDefault<Infrastructure.Database.DataAccessObjects.CompanyInformation>(sql, new { Symbol = symbol.ToUpperInvariant() });
+        string sql = $"{SqlRepository.SelectCompanyInfo} WHERE symbol = @Symbol LIMIT 1";
+        var dao = await queryCtx.QueryFirstOrDefaultAsync<Infrastructure.Database.DataAccessObjects.CompanyInformation>(sql, new { Symbol = symbol.ToUpperInvariant() });
         return dao?.ToDomain();
     }
 
@@ -63,4 +64,91 @@ internal sealed partial class DataService
         }
         return chart;
     }
+
+    internal async Task<LiquidityRatios?> GetLatestLiquidityRatiosAsync(string centralIndexKey)
+    {
+        string sql = $@"{SqlRepository.SelectLiquidityRatios}
+WHERE central_index_key = @Cik AND fiscal_period IN ('Q1','Q2','Q3','Q4')
+ORDER BY period_end_date DESC LIMIT 1";
+
+        using var queryCtx = _dbDefPair.GetQueryConnection();
+        var result = await queryCtx.QueryFirstOrDefaultAsync<Infrastructure.Database.DataAccessObjects.LiquidityRatios>(sql,
+            new { Cik = centralIndexKey });
+
+        return result?.ToDomain();
+    }
+
+    internal async Task<SolvencyRatios?> GetLatestSolvencyRatiosAsync(string centralIndexKey)
+    {
+        string sql = $@"{SqlRepository.SelectSolvencyRatios}
+WHERE central_index_key = @Cik AND fiscal_period IN ('Q1','Q2','Q3','Q4')
+ORDER BY period_end_date DESC LIMIT 1";
+
+        using var queryCtx = _dbDefPair.GetQueryConnection();
+        var result = await queryCtx.QueryFirstOrDefaultAsync<Infrastructure.Database.DataAccessObjects.SolvencyRatios>(sql, new { Cik = centralIndexKey });
+
+        return result?.ToDomain();
+    }
+
+    internal async Task<ProfitabilityRatios?> GetLatestProfitabilityRatiosAsync(string centralIndexKey)
+    {
+        string sql = $@"{SqlRepository.SelectProfitabilityRatios}
+WHERE central_index_key = @Cik AND fiscal_period IN ('Q1','Q2','Q3','Q4')
+ORDER BY period_end_date DESC LIMIT 1";
+
+        using var queryCtx = _dbDefPair.GetQueryConnection();
+        var result = await queryCtx.QueryFirstOrDefaultAsync<Infrastructure.Database.DataAccessObjects.ProfitabilityRatios>(sql, new { Cik = centralIndexKey });
+
+        return result?.ToDomain();
+    }
+
+    internal async Task<KeyMetrics?> GetLatestKeyMetricsAsync(string centralIndexKey)
+    {
+        string sql = $@"{SqlRepository.SelectKeyMetrics}
+WHERE central_index_key = @Cik 
+ORDER BY period_end_date DESC LIMIT 1";
+
+        using var queryCtx = _dbDefPair.GetQueryConnection();
+        var result = await queryCtx.QueryFirstOrDefaultAsync<Infrastructure.Database.DataAccessObjects.KeyMetrics>(sql, new { Cik = centralIndexKey });
+
+        return result?.ToDomain();
+    }
+
+    internal async Task<ValuationRatios?> GetLatestValuationRatiosAsync(string centralIndexKey)
+    {
+        string sql = $@"{SqlRepository.SelectValuationRatios}
+WHERE central_index_key = @Cik AND fiscal_period IN ('Q1','Q2','Q3','Q4')
+ORDER BY period_end_date DESC LIMIT 1";
+
+        using var queryCtx = _dbDefPair.GetQueryConnection();
+        var result = await queryCtx.QueryFirstOrDefaultAsync<Infrastructure.Database.DataAccessObjects.ValuationRatios>(sql, new { Cik = centralIndexKey });
+
+        return result?.ToDomain();
+    }
+
+    internal async Task<EfficiencyRatios?> GetLatestEfficiencyRatiosAsync(string centralIndexKey)
+    {
+        string sql = $@"{SqlRepository.SelectEfficiencyRatios}
+WHERE central_index_key = @Cik AND fiscal_period IN ('Q1','Q2','Q3','Q4')
+ORDER BY period_end_date DESC LIMIT 1";
+
+        using var queryCtx = _dbDefPair.GetQueryConnection();
+        var result = await queryCtx.QueryFirstOrDefaultAsync<Infrastructure.Database.DataAccessObjects.EfficiencyRatios>(sql, new { Cik = centralIndexKey });
+
+        return result?.ToDomain();
+    }
+
+    internal async Task<ShortInterest?> GetLatestShortInterestsAsync(string centralIndexKey)
+    {
+        string sql = $@"{SqlRepository.SelectShortInterests} si
+JOIN public.us_companies uc ON uc.symbol = si.symbol
+WHERE uc.central_index_key = @Cik
+ORDER BY si.settlement_date DESC LIMIT 1";
+
+        using var queryCtx = _dbDefPair.GetQueryConnection();
+        var result = await queryCtx.QueryFirstOrDefaultAsync<Infrastructure.Database.DataAccessObjects.ShortInterest>(sql, new { Cik = centralIndexKey });
+
+        return result?.ToDomain();
+    }
+
 }

@@ -96,4 +96,47 @@ internal sealed record CashFlowStatement : DaoBase
         !string.IsNullOrWhiteSpace(CentralIndexKey) &&
         !string.IsNullOrWhiteSpace(FiscalYear) &&
         !string.IsNullOrWhiteSpace(FiscalPeriod);
+
+    public Analysis.Fundamental.CashFlowStatement ToDomain()
+    {
+        return new()
+        {
+            Symbol = Symbol,
+            CentralIndexKey = CentralIndexKey,
+            Registrant = Registrant,
+            AcquisitionOfBusiness = AcquisitionOfBusiness,
+            AcquisitionOfProperty = AcquisitionOfProperty,
+            CashAtEndOfPeriod = CashAtEndOfPeriod,
+            CashFromFinancingActivities = CashFromFinancingActivities,
+            CashFromInvestingActivities = CashFromInvestingActivities,
+            CashFromOperatingActivities = CashFromOperatingActivities,
+            ChangeInAccountsPayable = ChangeInAccountsPayable,
+            ChangeInCash = ChangeInCash,
+            ChangeInAccountsReceivable = ChangeInCash,
+            ChangeInDeferredRevenue = ChangeInDeferredRevenue,
+            ChangeInInventories = ChangeInInventories,
+            ChangeInNonTradeReceivables = ChangeInNonTradeReceivables,
+            ChangeInOtherAssets = ChangeInOtherAssets,
+            ChangeInOtherLiabilities = ChangeInOtherLiabilities,
+            DeferredIncomeTaxExpense = DeferredIncomeTaxExpense,
+            Depreciation = Depreciation,
+            FiscalPeriod = FiscalPeriod,
+            FiscalYear = FiscalYear,
+            IncomeTaxesPaid = IncomeTaxesPaid,
+            InterestPaid = InterestPaid,
+            IssuanceOfCommonStock = IssuanceOfCommonStock,
+            IssuanceOfLongTermDebt = IssuanceOfLongTermDebt,
+            OtherFinancingActivities = OtherFinancingActivities,
+            OtherInvestingActivities = OtherInvestingActivities,
+            OtherNonCashIncomeExpense = OtherNonCashIncomeExpense,
+            PaymentsOfDividends = PaymentsOfDividends,
+            PeriodEndDate = PeriodEndDate,
+            PurchasesOfMarketableSecurities = PurchasesOfMarketableSecurities,
+            RepaymentOfLongTermDebt = RepaymentOfLongTermDebt,
+            RepurchaseOfCommonStock = RepurchaseOfCommonStock,
+            SalesOfMarketableSecurities = SalesOfMarketableSecurities,
+            ShareBasedCompensationExpense = ShareBasedCompensationExpense,
+            TaxWithholdingForShareBasedCompensation = TaxWithholdingForShareBasedCompensation
+        };
+    }
 }

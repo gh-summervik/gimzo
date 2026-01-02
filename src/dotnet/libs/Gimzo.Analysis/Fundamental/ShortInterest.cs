@@ -11,6 +11,6 @@ public sealed class ShortInterest
     public long? ChangeInShortedSecurities { get; init; }
     public double? PercentageChangeInShortedSecurities { get; init; }
     public long? AverageDailyVolume { get; init; }
-    public double? DaysToConvert { get; init; }
+    public double? DaysToCover { get; init; }
     public bool? IsStockSplit { get; init; }
 }

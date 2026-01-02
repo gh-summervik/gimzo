@@ -407,7 +407,7 @@ public class DatabaseIntegrationTests : IClassFixture<IntegrationTestsFixture>
     {
         using var cmdConn = _fixture.GetConnectionPairForDb().CommandConn;
         Assert.NotNull(cmdConn);
-        var dao = new LiquidityRatio
+        var dao = new LiquidityRatios
         {
             Symbol = "TEST",
             CentralIndexKey = "TEST",
@@ -436,7 +436,7 @@ public class DatabaseIntegrationTests : IClassFixture<IntegrationTestsFixture>
         const string WhereClause = "WHERE central_index_key = @CentralIndexKey AND fiscal_year = @FiscalYear AND fiscal_period = @FiscalPeriod";
         // INSERT
         await cmdConn.ExecuteAsync(SqlRepository.InsertLiquidityRatios, dao);
-        var fromDb = await FetchFromDb<LiquidityRatio>(
+        var fromDb = await FetchFromDb<LiquidityRatios>(
             $"{SqlRepository.SelectLiquidityRatios} {WhereClause}",
             dao);
         Assert.NotNull(fromDb);
@@ -466,14 +466,14 @@ public class DatabaseIntegrationTests : IClassFixture<IntegrationTestsFixture>
         var dao2 = dao with { Registrant = nameof(LiquidityRatios_WriteMergeReadDelete_Async) };
         // MERGE
         await cmdConn.ExecuteAsync(SqlRepository.MergeLiquidityRatios, dao2);
-        fromDb = await FetchFromDb<LiquidityRatio>(
+        fromDb = await FetchFromDb<LiquidityRatios>(
             $"{SqlRepository.SelectLiquidityRatios} {WhereClause}",
             dao);
         Assert.NotNull(fromDb);
         Assert.Equal(dao2.Registrant, fromDb.Registrant);
         // DELETE
         await cmdConn.ExecuteAsync($"DELETE FROM public.liquidity_ratios {WhereClause}", dao);
-        fromDb = await FetchFromDb<LiquidityRatio>(
+        fromDb = await FetchFromDb<LiquidityRatios>(
             $"{SqlRepository.SelectLiquidityRatios} {WhereClause}",
             dao);
         Assert.Null(fromDb);
@@ -484,7 +484,7 @@ public class DatabaseIntegrationTests : IClassFixture<IntegrationTestsFixture>
     {
         using var cmdConn = _fixture.GetConnectionPairForDb().CommandConn;
         Assert.NotNull(cmdConn);
-        var dao = new ProfitabilityRatio
+        var dao = new ProfitabilityRatios
         {
             Symbol = "TEST",
             CentralIndexKey = "TEST",
@@ -507,7 +507,7 @@ public class DatabaseIntegrationTests : IClassFixture<IntegrationTestsFixture>
         const string WhereClause = "WHERE central_index_key = @CentralIndexKey AND fiscal_year = @FiscalYear AND fiscal_period = @FiscalPeriod";
         // INSERT
         await cmdConn.ExecuteAsync(SqlRepository.InsertProfitabilityRatios, dao);
-        var fromDb = await FetchFromDb<ProfitabilityRatio>(
+        var fromDb = await FetchFromDb<ProfitabilityRatios>(
             $"{SqlRepository.SelectProfitabilityRatios} {WhereClause}",
             dao);
         Assert.NotNull(fromDb);
@@ -531,14 +531,14 @@ public class DatabaseIntegrationTests : IClassFixture<IntegrationTestsFixture>
         var dao2 = dao with { Registrant = nameof(ProfitabilityRatios_WriteMergeReadDelete_Async) };
         // MERGE
         await cmdConn.ExecuteAsync(SqlRepository.MergeProfitabilityRatios, dao2);
-        fromDb = await FetchFromDb<ProfitabilityRatio>(
+        fromDb = await FetchFromDb<ProfitabilityRatios>(
             $"{SqlRepository.SelectProfitabilityRatios} {WhereClause}",
             dao);
         Assert.NotNull(fromDb);
         Assert.Equal(dao2.Registrant, fromDb.Registrant);
         // DELETE
         await cmdConn.ExecuteAsync($"DELETE FROM public.profitability_ratios {WhereClause}", dao);
-        fromDb = await FetchFromDb<ProfitabilityRatio>(
+        fromDb = await FetchFromDb<ProfitabilityRatios>(
             $"{SqlRepository.SelectProfitabilityRatios} {WhereClause}",
             dao);
         Assert.Null(fromDb);
@@ -549,7 +549,7 @@ public class DatabaseIntegrationTests : IClassFixture<IntegrationTestsFixture>
     {
         using var cmdConn = _fixture.GetConnectionPairForDb().CommandConn;
         Assert.NotNull(cmdConn);
-        var dao = new SolvencyRatio
+        var dao = new SolvencyRatios
         {
             Symbol = "TEST",
             CentralIndexKey = "TEST",
@@ -570,7 +570,7 @@ public class DatabaseIntegrationTests : IClassFixture<IntegrationTestsFixture>
         const string WhereClause = "WHERE central_index_key = @CentralIndexKey AND fiscal_year = @FiscalYear AND fiscal_period = @FiscalPeriod";
         // INSERT
         await cmdConn.ExecuteAsync(SqlRepository.InsertSolvencyRatios, dao);
-        var fromDb = await FetchFromDb<SolvencyRatio>(
+        var fromDb = await FetchFromDb<SolvencyRatios>(
             $"{SqlRepository.SelectSolvencyRatios} {WhereClause}",
             dao);
         Assert.NotNull(fromDb);
@@ -592,14 +592,14 @@ public class DatabaseIntegrationTests : IClassFixture<IntegrationTestsFixture>
         var dao2 = dao with { Registrant = nameof(SolvencyRatios_WriteMergeReadDelete_Async) };
         // MERGE
         await cmdConn.ExecuteAsync(SqlRepository.MergeSolvencyRatios, dao2);
-        fromDb = await FetchFromDb<SolvencyRatio>(
+        fromDb = await FetchFromDb<SolvencyRatios>(
             $"{SqlRepository.SelectSolvencyRatios} {WhereClause}",
             dao);
         Assert.NotNull(fromDb);
         Assert.Equal(dao2.Registrant, fromDb.Registrant);
         // DELETE
         await cmdConn.ExecuteAsync($"DELETE FROM public.solvency_ratios {WhereClause}", dao);
-        fromDb = await FetchFromDb<SolvencyRatio>(
+        fromDb = await FetchFromDb<SolvencyRatios>(
             $"{SqlRepository.SelectSolvencyRatios} {WhereClause}",
             dao);
         Assert.Null(fromDb);
@@ -610,7 +610,7 @@ public class DatabaseIntegrationTests : IClassFixture<IntegrationTestsFixture>
     {
         using var cmdConn = _fixture.GetConnectionPairForDb().CommandConn;
         Assert.NotNull(cmdConn);
-        var dao = new ValuationRatio
+        var dao = new ValuationRatios
         {
             Symbol = "TEST",
             CentralIndexKey = "TEST",
@@ -627,7 +627,7 @@ public class DatabaseIntegrationTests : IClassFixture<IntegrationTestsFixture>
         const string WhereClause = "WHERE central_index_key = @CentralIndexKey AND fiscal_year = @FiscalYear AND fiscal_period = @FiscalPeriod";
         // INSERT
         await cmdConn.ExecuteAsync(SqlRepository.InsertValuationRatios, dao);
-        var fromDb = await FetchFromDb<ValuationRatio>(
+        var fromDb = await FetchFromDb<ValuationRatios>(
             $"{SqlRepository.SelectValuationRatios} {WhereClause}",
             dao);
         Assert.NotNull(fromDb);
@@ -645,14 +645,14 @@ public class DatabaseIntegrationTests : IClassFixture<IntegrationTestsFixture>
         var dao2 = dao with { Registrant = nameof(ValuationRatios_WriteMergeReadDelete_Async) };
         // MERGE
         await cmdConn.ExecuteAsync(SqlRepository.MergeValuationRatios, dao2);
-        fromDb = await FetchFromDb<ValuationRatio>(
+        fromDb = await FetchFromDb<ValuationRatios>(
             $"{SqlRepository.SelectValuationRatios} {WhereClause}",
             dao);
         Assert.NotNull(fromDb);
         Assert.Equal(dao2.Registrant, fromDb.Registrant);
         // DELETE
         await cmdConn.ExecuteAsync($"DELETE FROM public.valuation_ratios {WhereClause}", dao);
-        fromDb = await FetchFromDb<ValuationRatio>(
+        fromDb = await FetchFromDb<ValuationRatios>(
             $"{SqlRepository.SelectValuationRatios} {WhereClause}",
             dao);
         Assert.Null(fromDb);
@@ -1295,7 +1295,7 @@ public class DatabaseIntegrationTests : IClassFixture<IntegrationTestsFixture>
     {
         using var cmdConn = _fixture.GetConnectionPairForDb().CommandConn;
         Assert.NotNull(cmdConn);
-        var dao = new EfficiencyRatio
+        var dao = new EfficiencyRatios
         {
             Symbol = "TEST",
             CentralIndexKey = "TEST",
@@ -1322,7 +1322,7 @@ public class DatabaseIntegrationTests : IClassFixture<IntegrationTestsFixture>
         const string WhereClause = "WHERE central_index_key = @CentralIndexKey AND fiscal_year = @FiscalYear AND fiscal_period = @FiscalPeriod";
         // INSERT
         await cmdConn.ExecuteAsync(SqlRepository.InsertEfficiencyRatios, dao);
-        var fromDb = await FetchFromDb<EfficiencyRatio>(
+        var fromDb = await FetchFromDb<EfficiencyRatios>(
             $"{SqlRepository.SelectEfficiencyRatios} {WhereClause}",
             dao);
         Assert.NotNull(fromDb);
@@ -1350,14 +1350,14 @@ public class DatabaseIntegrationTests : IClassFixture<IntegrationTestsFixture>
         var dao2 = dao with { Registrant = nameof(EfficiencyRatios_WriteMergeReadDelete_Async) };
         // MERGE
         await cmdConn.ExecuteAsync(SqlRepository.MergeEfficiencyRatios, dao2);
-        fromDb = await FetchFromDb<EfficiencyRatio>(
+        fromDb = await FetchFromDb<EfficiencyRatios>(
             $"{SqlRepository.SelectEfficiencyRatios} {WhereClause}",
             dao);
         Assert.NotNull(fromDb);
         Assert.Equal(dao2.Registrant, fromDb.Registrant);
         // DELETE
         await cmdConn.ExecuteAsync($"DELETE FROM public.efficiency_ratios {WhereClause}", dao);
-        fromDb = await FetchFromDb<EfficiencyRatio>(
+        fromDb = await FetchFromDb<EfficiencyRatios>(
             $"{SqlRepository.SelectEfficiencyRatios} {WhereClause}",
             dao);
         Assert.Null(fromDb);
@@ -1379,7 +1379,7 @@ public class DatabaseIntegrationTests : IClassFixture<IntegrationTestsFixture>
             ChangeInShortedSecurities = 10000,
             PercentageChangeInShortedSecurities = 0.111,
             AverageDailyVolume = 500000,
-            DaysToConvert = 0.2,
+            DaysToCover = 0.2,
             IsStockSplit = false
         };
         const string WhereClause = "WHERE symbol = @Symbol AND settlement_date = @SettlementDate";
@@ -1398,7 +1398,7 @@ public class DatabaseIntegrationTests : IClassFixture<IntegrationTestsFixture>
         Assert.Equal(dao.ChangeInShortedSecurities, fromDb.ChangeInShortedSecurities);
         Assert.Equal(dao.PercentageChangeInShortedSecurities, fromDb.PercentageChangeInShortedSecurities);
         Assert.Equal(dao.AverageDailyVolume, fromDb.AverageDailyVolume);
-        Assert.Equal(dao.DaysToConvert, fromDb.DaysToConvert);
+        Assert.Equal(dao.DaysToCover, fromDb.DaysToCover);
         Assert.Equal(dao.IsStockSplit, fromDb.IsStockSplit);
         var dao2 = dao with { Title = nameof(ShortInterests_WriteMergeReadDelete_Async) };
         // MERGE

@@ -1,22 +1,22 @@
 ﻿namespace Gimzo.Infrastructure.Database.DataAccessObjects;
 
-internal sealed record LiquidityRatio : DaoBase
+internal sealed record LiquidityRatios : DaoBase
 {
-    public LiquidityRatio() : base()
+    public LiquidityRatios() : base()
     {
         CentralIndexKey = "";
         FiscalYear = "";
         FiscalPeriod = "";
     }
 
-    public LiquidityRatio(Guid userId) : base(userId)
+    public LiquidityRatios(Guid userId) : base(userId)
     {
         CentralIndexKey = "";
         FiscalYear = "";
         FiscalPeriod = "";
     }
 
-    public LiquidityRatio(Analysis.Fundamental.LiquidityRatios ratios, Guid userId) : base(userId)
+    public LiquidityRatios(Analysis.Fundamental.LiquidityRatios ratios, Guid userId) : base(userId)
     {
         Symbol = ratios.Symbol;
         CentralIndexKey = ratios.CentralIndexKey;
@@ -71,4 +71,34 @@ internal sealed record LiquidityRatio : DaoBase
         !string.IsNullOrWhiteSpace(CentralIndexKey) &&
         !string.IsNullOrWhiteSpace(FiscalYear) &&
         !string.IsNullOrWhiteSpace(FiscalPeriod);
+
+    public Analysis.Fundamental.LiquidityRatios ToDomain()
+    {
+        return new()
+        {
+            CashConversionCycle = CashConversionCycle,
+            CashFlowAdequacyRatio = CashFlowAdequacyRatio,
+            CashRatio = CashRatio,
+            CashToCurrentAssetsRatio = CashToCurrentAssetsRatio,
+            CashToCurrentLiabilitiesRatio = CashToCurrentLiabilitiesRatio,
+            CashToWorkingCapitalRatio = CashToWorkingCapitalRatio,
+            CentralIndexKey = CentralIndexKey,
+            FiscalYear = FiscalYear,
+            FiscalPeriod = FiscalPeriod,
+            CurrentRatio = CurrentRatio,
+            DaysOfInventoryOutstanding = DaysOfInventoryOutstanding,
+            DaysOfSalesOutstanding = DaysOfSalesOutstanding,
+            DaysPayableOutstanding = DaysPayableOutstanding,
+            InventoryToWorkingCapitalRatio = InventoryToWorkingCapitalRatio,
+            NetDebt = NetDebt,
+            PeriodEndDate = PeriodEndDate,
+            QuickRatio = QuickRatio,
+            Registrant = Registrant,
+            SalesToCurrentAssetsRatio = SalesToCurrentAssetsRatio,
+            SalesToWorkingCapitalRatio = SalesToWorkingCapitalRatio,
+            Symbol = Symbol,
+            WorkingCapital = WorkingCapital,
+            WorkingCapitalToDebtRatio = WorkingCapitalToDebtRatio
+        };
+    }
 }

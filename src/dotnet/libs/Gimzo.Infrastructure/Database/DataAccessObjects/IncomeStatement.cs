@@ -65,4 +65,31 @@ internal sealed record IncomeStatement : DaoBase
         !string.IsNullOrWhiteSpace(CentralIndexKey) &&
         !string.IsNullOrWhiteSpace(FiscalYear) &&
         !string.IsNullOrWhiteSpace(FiscalPeriod);
+
+    public Analysis.Fundamental.IncomeStatement ToDomain()
+    {
+        return new()
+        {
+            Symbol = Symbol,
+            CentralIndexKey = CentralIndexKey,
+            Registrant = Registrant,
+            CostOfRevenue = CostOfRevenue,
+            EarningsPerShareBasic = EarningsPerShareBasic,
+            EarningsPerShareDiluted = EarningsPerShareDiluted,
+            PeriodEndDate = PeriodEndDate,
+            Revenue = Revenue,
+            FiscalPeriod = FiscalPeriod,
+            FiscalYear = FiscalYear,
+            GeneralAdminExpenses = GeneralAdminExpenses,
+            GrossProfit = GrossProfit,
+            InterestExpense = InterestExpense,
+            InterestIncome = InterestIncome,
+            NetIncome = NetIncome,
+            OperatingExpenses = OperatingExpenses,
+            OperatingIncome = OperatingIncome,
+            ResearchDevelopmentExpenses = ResearchDevelopmentExpenses,
+            WeightedAverageSharesOutstandingBasic = WeightedAverageSharesOutstandingBasic,
+            WeightedAverageSharesOutstandingDiluted = WeightedAverageSharesOutstandingDiluted
+        };
+    }
 }

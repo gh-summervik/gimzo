@@ -544,7 +544,7 @@ public readonly record struct EfficiencyRatios(string Symbol, string CentralInde
 public readonly record struct ShortInterest(string Symbol, string? Title, string? MarketCode,
     DateOnly SettlementDate, long? ShortedSecurities, long? PreviousShortedSecurities,
     long? ChangeInShortedSecurities, double? PercentageChangeInShortedSecurities,
-    long? AverageDailyVolume, double? DaysToConvert, bool? IsStockSplit)
+    long? AverageDailyVolume, double? DaysToCover, bool? IsStockSplit)
 {
     public Analysis.Fundamental.ShortInterest ToDomain()
     {
@@ -553,7 +553,7 @@ public readonly record struct ShortInterest(string Symbol, string? Title, string
             Symbol = Symbol,
             AverageDailyVolume = AverageDailyVolume,
             ChangeInShortedSecurities = ChangeInShortedSecurities,
-            DaysToConvert = DaysToConvert,
+            DaysToCover = DaysToCover,
             IsStockSplit = IsStockSplit,
             MarketCode = MarketCode,
             PercentageChangeInShortedSecurities = PercentageChangeInShortedSecurities,

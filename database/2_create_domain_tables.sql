@@ -575,7 +575,7 @@ CREATE TABLE IF NOT EXISTS public.short_interests (
     change_in_shorted_securities BIGINT,
     percentage_change_in_shorted_securities DOUBLE PRECISION,
     average_daily_volume BIGINT,
-    days_to_convert DOUBLE PRECISION,
+    days_to_cover DOUBLE PRECISION,
     is_stock_split BOOLEAN,
     created_by UUID NOT NULL,
     updated_by UUID NOT NULL,

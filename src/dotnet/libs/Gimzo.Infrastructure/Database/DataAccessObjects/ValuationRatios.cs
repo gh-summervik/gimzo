@@ -1,22 +1,22 @@
 ﻿namespace Gimzo.Infrastructure.Database.DataAccessObjects;
 
-internal sealed record ValuationRatio : DaoBase
+internal sealed record ValuationRatios : DaoBase
 {
-    public ValuationRatio() : base()
+    public ValuationRatios() : base()
     {
         CentralIndexKey = "";
         FiscalYear = "";
         FiscalPeriod = "";
     }
 
-    public ValuationRatio(Guid userId) : base(userId)
+    public ValuationRatios(Guid userId) : base(userId)
     {
         CentralIndexKey = "";
         FiscalYear = "";
         FiscalPeriod = "";
     }
 
-    public ValuationRatio(Analysis.Fundamental.ValuationRatios ratios, Guid userId) : base(userId)
+    public ValuationRatios(Analysis.Fundamental.ValuationRatios ratios, Guid userId) : base(userId)
     {
         Symbol = ratios.Symbol;
         CentralIndexKey = ratios.CentralIndexKey;
@@ -47,4 +47,22 @@ internal sealed record ValuationRatio : DaoBase
         !string.IsNullOrWhiteSpace(CentralIndexKey) &&
         !string.IsNullOrWhiteSpace(FiscalYear) &&
         !string.IsNullOrWhiteSpace(FiscalPeriod);
+
+    public Analysis.Fundamental.ValuationRatios ToDomain()
+    {
+        return new()
+        {
+            BookValuePerShare = BookValuePerShare,
+            CentralIndexKey = CentralIndexKey,
+            DividendPayoutRatio = DividendPayoutRatio,
+            RetentionRatio = RetentionRatio,
+            NetFixedAssets = NetFixedAssets,
+            DividendsPerShare = DividendsPerShare,
+            FiscalPeriod = FiscalPeriod,
+            FiscalYear = FiscalYear,
+            Registrant = Registrant,
+            Symbol = Symbol,
+            PeriodEndDate = PeriodEndDate
+        };
+    }
 }

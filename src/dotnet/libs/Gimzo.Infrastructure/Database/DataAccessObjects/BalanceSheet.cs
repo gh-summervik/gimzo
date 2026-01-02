@@ -87,4 +87,42 @@ internal sealed record BalanceSheet : DaoBase
         !string.IsNullOrWhiteSpace(CentralIndexKey) &&
         !string.IsNullOrWhiteSpace(FiscalYear) &&
         !string.IsNullOrWhiteSpace(FiscalPeriod);
+
+    public Analysis.Fundamental.BalanceSheet ToDomain()
+    {
+        return new()
+        {
+            Symbol = Symbol,
+            CentralIndexKey = CentralIndexKey,
+            Registrant = Registrant,
+            AccountsPayable = AccountsPayable,
+            AccountsReceivable = AccountsReceivable,
+            AccumulatedOtherComprehensiveIncome = AccountsReceivable,
+            Cash = Cash,
+            CommonStock = CommonStock,
+            DeferredRevenue = DeferredRevenue,
+            ShortTermDebt = ShortTermDebt,
+            OtherLiabilitiesCurrent = OtherLiabilitiesCurrent,
+            TotalAssetsNonCurrent = TotalAssetsNonCurrent,
+            FiscalPeriod = FiscalPeriod,
+            FiscalYear = FiscalYear,
+            Inventories = Inventories,
+            LongTermDebt = LongTermDebt,
+            MarketableSecuritiesCurrent = MarketableSecuritiesCurrent,
+            MarketableSecuritiesNonCurrent = MarketableSecuritiesNonCurrent,
+            NonTradeReceivables = NonTradeReceivables,
+            OtherAssetsCurrent = OtherAssetsCurrent,
+            OtherAssetsNonCurrent = OtherAssetsNonCurrent,
+            OtherLiabilitiesNonCurrent = OtherLiabilitiesNonCurrent,
+            PeriodEndDate = PeriodEndDate,
+            PropertyPlantEquipment = PropertyPlantEquipment,
+            RetainedEarnings = RetainedEarnings,
+            TotalAssets = TotalAssets,
+            TotalAssetsCurrent = TotalAssetsCurrent,
+            TotalLiabilities = TotalLiabilities,
+            TotalLiabilitiesCurrent = TotalLiabilitiesCurrent,
+            TotalLiabilitiesNonCurrent = TotalLiabilitiesNonCurrent,
+            TotalShareholdersEquity = TotalShareholdersEquity
+        };
+    }
 }

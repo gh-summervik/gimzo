@@ -1,22 +1,22 @@
 ﻿namespace Gimzo.Infrastructure.Database.DataAccessObjects;
 
-internal sealed record SolvencyRatio : DaoBase
+internal sealed record SolvencyRatios : DaoBase
 {
-    public SolvencyRatio() : base()
+    public SolvencyRatios() : base()
     {
         CentralIndexKey = "";
         FiscalYear = "";
         FiscalPeriod = "";
     }
 
-    public SolvencyRatio(Guid userId) : base(userId)
+    public SolvencyRatios(Guid userId) : base(userId)
     {
         CentralIndexKey = "";
         FiscalYear = "";
         FiscalPeriod = "";
     }
 
-    public SolvencyRatio(Analysis.Fundamental.SolvencyRatios ratios, Guid userId) : base(userId)
+    public SolvencyRatios(Analysis.Fundamental.SolvencyRatios ratios, Guid userId) : base(userId)
     {
         Symbol = ratios.Symbol;
         CentralIndexKey = ratios.CentralIndexKey;
@@ -55,4 +55,26 @@ internal sealed record SolvencyRatio : DaoBase
         !string.IsNullOrWhiteSpace(CentralIndexKey) &&
         !string.IsNullOrWhiteSpace(FiscalYear) &&
         !string.IsNullOrWhiteSpace(FiscalPeriod);
+
+    public Analysis.Fundamental.SolvencyRatios ToDomain()
+    {
+        return new()
+        {
+            AssetCoverageRatio = AssetCoverageRatio,
+            InterestCoverageRatio = InterestCoverageRatio,
+            DebtCoverageRatio = DebtCoverageRatio,
+            CashFlowToDebtRatio = CashFlowToDebtRatio,
+            CentralIndexKey = CentralIndexKey,
+            FiscalYear = FiscalYear,
+            FiscalPeriod = FiscalPeriod,
+            DebtToAssetsRatio = DebtToAssetsRatio,
+            DebtToCapitalRatio = DebtToCapitalRatio,
+            DebtToEquityRatio = DebtToEquityRatio,
+            DebtToIncomeRatio = DebtToIncomeRatio,
+            EquityRatio = EquityRatio,
+            PeriodEndDate = PeriodEndDate,
+            Registrant = Registrant,
+            Symbol = Symbol
+        };
+    }
 }

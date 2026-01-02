@@ -36,4 +36,19 @@ internal sealed record Dividend : DaoBase
     public override bool IsValid() => base.IsValid() &&
         !string.IsNullOrWhiteSpace(Symbol) &&
         RecordDate > new DateOnly(1900, 1, 1);
+
+    public Analysis.Fundamental.Dividend ToDomain()
+    {
+        return new()
+        {
+            Amount = Amount,
+            DeclarationDate = DeclarationDate,
+            ExDate = ExDate,
+            RecordDate = RecordDate,
+            PaymentDate = PaymentDate,
+            Symbol = Symbol,
+            Registrant = Registrant,
+            Type = Type
+        };
+    }
 }

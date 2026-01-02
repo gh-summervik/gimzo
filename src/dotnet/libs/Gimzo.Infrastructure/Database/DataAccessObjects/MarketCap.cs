@@ -42,4 +42,21 @@ internal sealed record MarketCap : DaoBase
     public override bool IsValid() => base.IsValid() &&
         !string.IsNullOrWhiteSpace(CentralIndexKey) &&
         !string.IsNullOrWhiteSpace(FiscalYear);
+
+    public Analysis.Fundamental.MarketCap ToDomain()
+    {
+        return new()
+        {
+            Symbol = Symbol,
+            CentralIndexKey = CentralIndexKey,
+            Registrant = Registrant,
+            FiscalYear = FiscalYear,
+            Value = Value,
+            ChangeInMarketCap = ChangeInMarketCap,
+            ChangeInSharesOutstanding = ChangeInSharesOutstanding,
+            PercentageChangeInMarketCap = PercentageChangeInMarketCap,
+            PercentageChangeInSharesOutstanding = PercentageChangeInSharesOutstanding,
+            SharesOutstanding = SharesOutstanding
+        };
+    }
 }

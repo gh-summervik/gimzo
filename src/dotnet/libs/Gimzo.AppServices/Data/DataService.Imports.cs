@@ -424,7 +424,7 @@ DELETE FROM public.valuation_ratios WHERE symbol = @Symbol;";
 
         using var cmdCtx = _dbDefPair.GetCommandConnection();
 
-        foreach (var chunk in ratios.Select(k => new Infrastructure.Database.DataAccessObjects.EfficiencyRatio(k, processId)).Chunk(ChunkSize))
+        foreach (var chunk in ratios.Select(k => new Infrastructure.Database.DataAccessObjects.EfficiencyRatios(k, processId)).Chunk(ChunkSize))
             await cmdCtx.ExecuteAsync(SqlRepository.MergeEfficiencyRatios, chunk);
     }
 
@@ -435,7 +435,7 @@ DELETE FROM public.valuation_ratios WHERE symbol = @Symbol;";
 
         using var cmdCtx = _dbDefPair.GetCommandConnection();
 
-        foreach (var chunk in ratios.Select(k => new Infrastructure.Database.DataAccessObjects.LiquidityRatio(k, processId)).Chunk(ChunkSize))
+        foreach (var chunk in ratios.Select(k => new Infrastructure.Database.DataAccessObjects.LiquidityRatios(k, processId)).Chunk(ChunkSize))
             await cmdCtx.ExecuteAsync(SqlRepository.MergeLiquidityRatios, chunk);
     }
 
@@ -446,7 +446,7 @@ DELETE FROM public.valuation_ratios WHERE symbol = @Symbol;";
 
         using var cmdCtx = _dbDefPair.GetCommandConnection();
 
-        foreach (var chunk in ratios.Select(k => new Infrastructure.Database.DataAccessObjects.ProfitabilityRatio(k, processId)).Chunk(ChunkSize))
+        foreach (var chunk in ratios.Select(k => new Infrastructure.Database.DataAccessObjects.ProfitabilityRatios(k, processId)).Chunk(ChunkSize))
             await cmdCtx.ExecuteAsync(SqlRepository.MergeProfitabilityRatios, chunk);
     }
 
@@ -457,7 +457,7 @@ DELETE FROM public.valuation_ratios WHERE symbol = @Symbol;";
 
         using var cmdCtx = _dbDefPair.GetCommandConnection();
 
-        foreach (var chunk in ratios.Select(k => new Infrastructure.Database.DataAccessObjects.SolvencyRatio(k, processId)).Chunk(ChunkSize))
+        foreach (var chunk in ratios.Select(k => new Infrastructure.Database.DataAccessObjects.SolvencyRatios(k, processId)).Chunk(ChunkSize))
             await cmdCtx.ExecuteAsync(SqlRepository.MergeSolvencyRatios, chunk);
     }
 
@@ -468,7 +468,7 @@ DELETE FROM public.valuation_ratios WHERE symbol = @Symbol;";
 
         using var cmdCtx = _dbDefPair.GetCommandConnection();
 
-        foreach (var chunk in ratios.Select(k => new Infrastructure.Database.DataAccessObjects.ValuationRatio(k, processId)).Chunk(ChunkSize))
+        foreach (var chunk in ratios.Select(k => new Infrastructure.Database.DataAccessObjects.ValuationRatios(k, processId)).Chunk(ChunkSize))
             await cmdCtx.ExecuteAsync(SqlRepository.MergeValuationRatios, chunk);
     }
 
@@ -481,4 +481,5 @@ DELETE FROM public.valuation_ratios WHERE symbol = @Symbol;";
         using var cmdCtx = _dbDefPair.GetCommandConnection();
         await cmdCtx.ExecuteAsync(SqlRepository.MergeProcess, process);
     }
+
 }

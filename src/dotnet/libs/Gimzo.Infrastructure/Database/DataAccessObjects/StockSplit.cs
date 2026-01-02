@@ -30,4 +30,16 @@ internal sealed record StockSplit : DaoBase
     public override bool IsValid() => base.IsValid() &&
         !string.IsNullOrWhiteSpace(CentralIndexKey) &&
         ExecutionDate > new DateOnly(1900, 1, 1);
+
+    public Analysis.Fundamental.StockSplit ToDomain()
+    {
+        return new()
+        {
+            CentralIndexKey = CentralIndexKey,
+            ExecutionDate = ExecutionDate,
+            Multiplier = Multiplier,
+            Registrant = Registrant,
+            Symbol = Symbol
+        };
+    }
 }

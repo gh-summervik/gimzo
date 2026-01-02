@@ -52,4 +52,23 @@ internal sealed record ExecutiveCompensation : DaoBase
         !string.IsNullOrWhiteSpace(Name) &&
         !string.IsNullOrWhiteSpace(Position) &&
         !string.IsNullOrWhiteSpace(FiscalYear);
+
+    public Analysis.Fundamental.ExecutiveCompensation ToDomain()
+    {
+        return new()
+        {
+            Symbol = Symbol,
+            Bonus = Bonus,
+            StockAwards = StockAwards,
+            CentralIndexKey = CentralIndexKey,
+            FiscalYear = FiscalYear,
+            IncentivePlanCompensation = IncentivePlanCompensation,
+            OtherCompensation = OtherCompensation,
+            Name = Name,
+            Position = Position,
+            Registrant = Registrant,
+            Salary = Salary,
+            TotalCompensation = TotalCompensation
+        };
+    }
 }

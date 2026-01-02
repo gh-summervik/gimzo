@@ -52,4 +52,21 @@ internal sealed record EarningsRelease : DaoBase
     public override bool IsValid() => base.IsValid() &&
         !string.IsNullOrWhiteSpace(CentralIndexKey) &&
         !string.IsNullOrWhiteSpace(FiscalQuarterEndDate);
+
+    public Analysis.Fundamental.EarningsRelease ToDomain()
+    {
+        return new()
+        {
+            CentralIndexKey = CentralIndexKey,
+            ConferenceCallTime = ConferenceCallTime?.DateTime,
+            EarningsPerShare = EarningsPerShare,
+            EarningsPerShareForecast = EarningsPerShareForecast,
+            FiscalQuarterEndDate = FiscalQuarterEndDate,
+            MarketCap = MarketCap,
+            NumberOfForecasts = NumberOfForecasts,
+            PercentageSurprise = PercentageSurprise,
+            RegistrantName = RegistrantName,
+            Symbol = Symbol
+        };
+    }
 }

@@ -32,4 +32,16 @@ internal sealed record EmployeeCount : DaoBase
     public override bool IsValid() => base.IsValid() &&
         !string.IsNullOrWhiteSpace(CentralIndexKey) &&
         !string.IsNullOrWhiteSpace(FiscalYear);
+
+    public Analysis.Fundamental.EmployeeCount ToDomain()
+    {
+        return new()
+        {
+            Symbol = Symbol,
+            CentralIndexKey = CentralIndexKey,
+            Registrant = Registrant,
+            FiscalYear = FiscalYear,
+            Count = Count
+        };
+    }
 }
