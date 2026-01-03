@@ -16,13 +16,14 @@ public sealed class CompanyFundamentalAnalyzer
     {
         var defaultWeights = new Dictionary<string, double>
         {
-            ["BalanceSheet"] = 0.25,
-            ["IncomeStatement"] = 0.20,
-            ["CashFlow"] = 0.15,
-            ["Earnings"] = 0.15,
+            ["BalanceSheet"] = 0.20,
+            ["IncomeStatement"] = 0.15,
+            ["CashFlow"] = 0.10,
+            ["Earnings"] = 0.10,
             ["Valuation"] = 0.10,
             ["Efficiency"] = 0.10,
-            ["RiskSentiment"] = 0.05
+            ["Growth"] = 0.15,
+            ["RiskSentiment"] = 0.10
         };
 
         _weights = (customWeights ?? defaultWeights).ToFrozenDictionary();
@@ -35,7 +36,8 @@ public sealed class CompanyFundamentalAnalyzer
         EarningsAssessment earnings,
         ValuationAssessment valuation,
         EfficiencyAssessment efficiency,
-        RiskSentimentAssessment riskSentiment)
+        RiskSentimentAssessment riskSentiment,
+        GrowthAssessment growth)
     {
         var subScores = new Dictionary<string, int>
         {
@@ -45,7 +47,8 @@ public sealed class CompanyFundamentalAnalyzer
             ["Earnings"] = earnings.Score1To99,
             ["Valuation"] = valuation.Score1To99,
             ["Efficiency"] = efficiency.Score1To99,
-            ["RiskSentiment"] = riskSentiment.Score1To99
+            ["RiskSentiment"] = riskSentiment.Score1To99,
+            ["Growth"] = growth.Score1To99
         };
 
         double weightedSum = 0.0;

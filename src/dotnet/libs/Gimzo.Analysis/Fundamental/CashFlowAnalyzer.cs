@@ -5,7 +5,8 @@ public readonly record struct CashFlowAssessment(
     string Assessment,
     double? OperatingCashFlowMargin,
     double? CashReturnOnAssets,
-    double? CashTurnoverRatio);
+    double? CashTurnoverRatio,
+    bool HasEarningsQualityBoost);
 
 public sealed class CashFlowHealthAnalyzer
 {
@@ -36,7 +37,14 @@ public sealed class CashFlowHealthAnalyzer
         double sCashRoa = profitability.CashReturnOnAssets.HasValue ? NormalizeCashRoa(profitability.CashReturnOnAssets.Value) : 0.0;
         double sTurnover = profitability.CashTurnoverRatio.HasValue ? NormalizeCashTurnover(profitability.CashTurnoverRatio.Value) : 0.0;
 
-        double composite = (sOcf + sCashRoa + sTurnover) / 3.0;
+        bool qualityBoost = profitability.OperatingCashFlowMargin.HasValue &&
+                                    profitability.ProfitMargin.HasValue &&
+                                    profitability.OperatingCashFlowMargin.Value > profitability.ProfitMargin.Value;
+
+        double sQuality = qualityBoost ? 1.0 : 0.0;
+
+        double divisor = qualityBoost ? 4.0 : 3.0;
+        double composite = (sOcf + sCashRoa + sTurnover + sQuality) / divisor;
         int score = (int)Math.Round(composite * 98 + 1);
 
         string assessment = score >= 85 ? "Exceptional cash generation" :
@@ -46,11 +54,8 @@ public sealed class CashFlowHealthAnalyzer
                             score >= 25 ? "Weak" :
                             "Poor/Negative cash flow";
 
-        return new CashFlowAssessment(
-            score,
-            assessment,
-            profitability.OperatingCashFlowMargin,
-            profitability.CashReturnOnAssets,
-            profitability.CashTurnoverRatio);
+        return new CashFlowAssessment(score, assessment,
+                    profitability.OperatingCashFlowMargin, profitability.CashReturnOnAssets,
+                    profitability.CashTurnoverRatio, qualityBoost);
     }
 }

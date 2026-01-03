@@ -6,7 +6,8 @@ public readonly record struct ValuationAssessment(
     double? PriceToBookRatio,
     double? DividendYield,
     double? DividendPayoutRatio,
-    double? RetentionRatio);
+    double? RetentionRatio,
+    double? FreeCashFlowYieldPct);
 
 public sealed class ValuationHealthAnalyzer
 {
@@ -38,6 +39,13 @@ public sealed class ValuationHealthAnalyzer
            value > 0 ? 0.4 :
            0.2;
 
+    private static double NormalizeFcfYield(double value)
+        => value >= 10 ? 1.0 :
+           value >= 8 ? 0.85 :
+           value >= 5 ? 0.65 :
+           value >= 2 ? 0.4 :
+           value > 0 ? 0.2 : 0.0;
+
     public ValuationAssessment Assess(KeyMetrics key, ValuationRatios? valuation = null)
     {
         double sPb = key.PriceToBookRatio.HasValue ? NormalizePb(key.PriceToBookRatio.Value) : 0.0;
@@ -45,7 +53,13 @@ public sealed class ValuationHealthAnalyzer
         double sPayout = key.DividendPayoutRatio.HasValue ? NormalizePayout(key.DividendPayoutRatio.Value) : 0.0;
         double sRetention = valuation?.RetentionRatio.HasValue == true ? NormalizeRetention(valuation.RetentionRatio.Value) : 0.0;
 
-        double composite = (sPb + sYield + sPayout + sRetention) / (sRetention > 0 ? 4.0 : 3.0);
+        double? fcfYieldPct = key.EnterpriseValue.HasValue && key.EnterpriseValue > 0 && key.FreeCashFlow.HasValue
+                    ? (double)(key.FreeCashFlow.Value / key.EnterpriseValue.Value * 100)
+                    : null;
+
+        double sFcf = fcfYieldPct.HasValue ? NormalizeFcfYield(fcfYieldPct.Value) : 0.0;
+
+        double composite = (sPb + sYield + sPayout + sRetention + sFcf) / 5.0;
         int score = (int)Math.Round(composite * 98 + 1);
 
         string assessment = score >= 85 ? "Deep value" :
@@ -54,12 +68,7 @@ public sealed class ValuationHealthAnalyzer
                             score >= 40 ? "Fully valued" :
                             "Expensive";
 
-        return new ValuationAssessment(
-            score,
-            assessment,
-            key.PriceToBookRatio,
-            key.DividendYield,
-            key.DividendPayoutRatio,
-            valuation?.RetentionRatio);
+        return new ValuationAssessment(score, assessment, key.PriceToBookRatio, key.DividendYield,
+             key.DividendPayoutRatio, valuation?.RetentionRatio, fcfYieldPct);
     }
 }

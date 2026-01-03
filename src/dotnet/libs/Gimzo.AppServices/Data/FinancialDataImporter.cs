@@ -160,14 +160,14 @@ public sealed class FinancialDataImporter(FinancialDataApiClient apiClient,
                 }
 
                 var allPrices = fdnEodPrices.Select(k =>
-                    new Gimzo.Analysis.Technical.Charts.Ohlc(k.Symbol, k.Date.GetValueOrDefault(),
+                    new Ohlc(k.Symbol, k.Date.GetValueOrDefault(),
                         k.Open.GetValueOrDefault(),
                         k.High.GetValueOrDefault(),
                         k.Low.GetValueOrDefault(),
                         k.Close.GetValueOrDefault(),
                         k.Volume.GetValueOrDefault()))
                     .Union(yahooEodPrices.Select(k =>
-                        new Gimzo.Analysis.Technical.Charts.Ohlc(k.Meta.Symbol,
+                        new Ohlc(k.Meta.Symbol,
                             DateOnly.FromDateTime(k.Date),
                             (decimal)k.Open, (decimal)k.High,
                             (decimal)k.Low, (decimal)k.Close, k.Volume))).ToImmutableArray();
@@ -310,7 +310,6 @@ public sealed class FinancialDataImporter(FinancialDataApiClient apiClient,
             await cmdCtx.ExecuteAsync(RemoveExpiredIgnoreRecordsSql, symbolList.Select(k => new { Symbol = k }));
         }
     }
-
 
     internal async Task<DbMetaInfo> GetDbMetaInfoAsync(IReadOnlyCollection<string>? schemas = null)
     {

@@ -10,6 +10,8 @@ namespace Gimzo.AppServices.Models;
 public sealed class UiModelService(DbDefPair dbDefPair, IMemoryCache memoryCache, ILogger<UiModelService> logger)
     :ServiceBase(dbDefPair,memoryCache)
 {
+    private readonly ILogger<UiModelService> _logger = logger;
+
     public async Task<CompanyInfo?> GetCompanyInfoAsync(string symbol)
     {
         var coInfo = await GetCompanyInformationAsync(symbol);
