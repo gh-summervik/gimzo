@@ -1,23 +1,19 @@
 ﻿using Gimzo.AppServices.Backtesting;
-using Gimzo.AppServices.Data;
 using Gimzo.Common;
 using Gimzo.Infrastructure.Database;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Gimzo.AppServices.Reports;
 
-public sealed class ReportService(DbDefPair dbDefPair, IMemoryCache memoryCache, ILogger<ReportService> logger)
+public sealed class ReportService(DbDefPair dbDefPair, IMemoryCache memoryCache, 
+    ILogger<ReportService> logger) : ServiceBase(dbDefPair, memoryCache)
 {
-    private readonly DbDefPair _dbDefPair = dbDefPair;
-    private readonly IMemoryCache _memoryCache = memoryCache;
     private readonly ILogger<ReportService> _logger = logger;
 
-    public Task<IEnumerable<string>> GetAllSymbolsAsync()
+    public async Task<IReadOnlyCollection<string>> GetAllSymbolsAsync()
     {
-        var dataService = new DataService(_dbDefPair, _memoryCache, _logger);
-        return dataService.GetSymbolsAsync();
+        return [.. await GetSymbolsAsync()];
     }
 
     public async Task CreateExtremeReportAsync(string symbol, FileInfo outputFile, bool overwrite = false)
@@ -28,11 +24,9 @@ public sealed class ReportService(DbDefPair dbDefPair, IMemoryCache memoryCache,
         if (outputFile.Exists && !overwrite)
             throw new Exception($"{outputFile.Name} already exists.");
 
-        var dataService = new DataService(_dbDefPair, _memoryCache, _logger);
-
         const string Header = "Date,High,Low,High Sentiment,Low Sentiment";
 
-        var chart = await dataService.GetChartAsync(symbol);
+        var chart = await GetChartAsync(symbol);
 
         if (chart != null && chart.PriceActions.Length > 0 && chart.Extremes.Length > 0)
         {
@@ -65,11 +59,9 @@ public sealed class ReportService(DbDefPair dbDefPair, IMemoryCache memoryCache,
         if (outputFile.Exists && !overwrite)
             throw new Exception($"{outputFile.Name} already exists.");
 
-        var dataService = new DataService(_dbDefPair, _memoryCache, _logger);
-
         const string Header = "Date,Open,High,Low,Close,Volume,Trend";
 
-        var chart = await dataService.GetChartAsync(symbol);
+        var chart = await GetChartAsync(symbol);
 
         if (chart != null && chart.PriceActions.Length > 0)
         {

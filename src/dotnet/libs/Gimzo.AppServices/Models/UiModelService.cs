@@ -1,6 +1,5 @@
 ﻿using Gimzo.Analysis.Technical;
 using Gimzo.Analysis.Technical.Charts;
-using Gimzo.AppServices.Data;
 using Gimzo.Infrastructure.Database;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
@@ -9,19 +8,15 @@ using System.Text.Json;
 namespace Gimzo.AppServices.Models;
 
 public sealed class UiModelService(DbDefPair dbDefPair, IMemoryCache memoryCache, ILogger<UiModelService> logger)
+    :ServiceBase(dbDefPair,memoryCache)
 {
-    private readonly DataService _dataService = new(dbDefPair, memoryCache, logger);
-    private readonly IMemoryCache _memoryCache = memoryCache;
-
-
-
     public async Task<CompanyInfo?> GetCompanyInfoAsync(string symbol)
     {
-        var coInfo = await _dataService.GetCompanyInformationAsync(symbol);
+        var coInfo = await GetCompanyInformationAsync(symbol);
         if (coInfo == null)
             return null;
 
-        Chart? chart = await _dataService.GetChartAsync(symbol, Common.Constants.DefaultChartLookback, ChartInterval.Daily);
+        Chart? chart = await GetChartAsync(symbol, Common.Constants.DefaultChartLookback, ChartInterval.Daily);
 
         decimal? fiftyTwoWeekLow = null;
         decimal? fiftyTwoWeekHigh = null;
@@ -84,7 +79,7 @@ public sealed class UiModelService(DbDefPair dbDefPair, IMemoryCache memoryCache
         int lookback = Common.Constants.DefaultChartLookback,
         ChartInterval interval = ChartInterval.Daily)
     {
-        var chart = await _dataService.GetChartAsync(symbol, lookback, interval);
+        var chart = await GetChartAsync(symbol, lookback, interval);
 
         if (chart == null || chart.PriceActions.Length == 0)
             return null;

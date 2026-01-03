@@ -1,6 +1,4 @@
-﻿using System.Collections.ObjectModel;
-
-namespace Gimzo.Analysis.Fundamental;
+﻿namespace Gimzo.Analysis.Fundamental;
 
 public sealed class CompanyAnalysisOrchestrator
 {

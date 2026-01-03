@@ -1,5 +1,6 @@
-﻿using Gimzo.AppServices.Backtesting;
-using Gimzo.AppServices.Cli;
+﻿using Gimzo.AppServices;
+using Gimzo.AppServices.Analysis;
+using Gimzo.AppServices.Backtesting;
 using Gimzo.AppServices.Data;
 using Gimzo.AppServices.Reports;
 using Gimzo.Common;
@@ -78,6 +79,11 @@ try
         await importer.InitializeImportAsync(process, config.Weekday, config.Saturday, config.Sunday);
         await importer.ImportAsync();
         apiClient.Dispose();
+
+        // do fundamental analysis here.
+        //var analysisService = new CompanyAnalysisService(dbDefPairs![0],
+        //    serviceProvider.GetRequiredService<IMemoryCache>(),
+        //    serviceProvider.GetRequiredService<ILogger<CompanyAnalysisService>>());
     }
 
     if (config.Csv)
@@ -171,6 +177,39 @@ try
         Console.WriteLine($"Overall PF        : {(totalGrossLoss > 0M ? totalGrossWin / totalGrossLoss : 999999M):F2}");
         Console.WriteLine($"Total trades      : {totalTrades}");
     }
+
+    if (config.Analyze)
+    {
+        var reportService = new ReportService(dbDefPairs![0],
+            serviceProvider.GetRequiredService<IMemoryCache>(),
+            serviceProvider.GetRequiredService<ILogger<ReportService>>());
+
+        var analysisService = new CompanyAnalysisService(dbDefPairs![0],
+            serviceProvider.GetRequiredService<IMemoryCache>(),
+            serviceProvider.GetRequiredService<ILogger<CompanyAnalysisService>>());
+
+        var symbols = string.IsNullOrWhiteSpace(config.Symbol)
+            ? (await reportService.GetAllSymbolsAsync()).ToArray()
+            : [config.Symbol];
+
+        Dictionary<string, int> scores = new();
+
+        foreach (var symbol in symbols)
+        {
+            var score = await analysisService.GetSiloScoreForSymbolAsync(symbol);
+            if (score == null)
+                continue;
+            scores.Add(symbol, score.Value.Score1To99);
+            if (symbols.Length > 1)
+                Console.WriteLine($"{symbol}\t\t{score.Value.Score1To99}");
+        }
+
+        var sorted = scores.OrderByDescending(k => k.Value);
+
+        foreach (var kvp in sorted)
+            Console.WriteLine($"{kvp.Key}: {kvp.Value}");
+    }
+
     exitCode = 0;
 }
 catch (ArgumentException exc)
@@ -189,35 +228,6 @@ finally
     LogHelper.LogInfo(logger, "Completed in {time}", timer.Elapsed.ToGeneralText());
     Thread.Sleep(500); // let the logger catch up.
     Environment.Exit(exitCode);
-}
-
-void ShowHelp()
-{
-    CliArg[] args =
-    [
-        new CliArg(["-i","--import"], [], false, "Import from financialdata.net."),
-        new CliArg(["-sat","--saturday"], [], false, "Force the Saturday import workflow."),
-        new CliArg(["-sun", "--sunday"], [], false, "Force the Sunday import workflow."),
-        new CliArg(["--weekday"], [], false, "Force the Weekday import workflow."),
-        new CliArg(["-r", "--csv", "--report"], ["symbol","report name", "output file name"], false, "Produce CSV file with specified report."),
-        new CliArg(["-b", "--backtest"],["scenario name"], false, "Runs a backtesting scenario."),
-        new CliArg(["-r", "--report"],["symbol","name of report","output file name"], false, "Produce a given report"),
-        new CliArg(["-?", "?", "-h", "--help", "help"], [], false, "Show this help.")
-    ];
-
-    Console.WriteLine($"{config.AppName} {config.AppVersion}".Trim());
-    Console.WriteLine();
-    if (!string.IsNullOrWhiteSpace(config.Description))
-    {
-        Console.WriteLine(config.Description);
-        Console.WriteLine();
-    }
-    Console.WriteLine(CliHelper.FormatArguments(args));
-    Console.WriteLine($"\t{config.AppName} will perform the workflow according to the current day of week,");
-    Console.WriteLine("\tbut you can override this behavior with the --[weekday|sat|sun] options.");
-    Console.WriteLine();
-    Console.WriteLine("\tOn a first run, use the `--weekday` argument to ensure best behavior.");
-    Console.WriteLine($"\tYou can run them all, as in `{config.AppName} --import --weekday --sat --sun`");
 }
 
 void ParseArguments(string[] args, out string[] childArgs)
@@ -260,8 +270,8 @@ void ParseArguments(string[] args, out string[] childArgs)
                 if (a < args.Length - 3)
                 {
                     config.Csv = true;
-                    config.ReportName = args[++a];
-                    config.Symbol = args[++a];
+                    config.ReportName = args[++a].ToLowerInvariant();
+                    config.Symbol = args[++a].ToUpperInvariant();
                     config.OutputFileName = args[++a];
                 }
                 else
@@ -282,6 +292,12 @@ void ParseArguments(string[] args, out string[] childArgs)
                 else
                     throw new ArgumentException($"{args[a]} must be followed by a scenario name.");
                 break;
+            case "-a":
+            case "--analyze":
+                config.Analyze = true;
+                if (a < args.Length - 1)
+                    config.Symbol = args[++a].ToUpperInvariant();
+                break;
             default:
                 throw new ArgumentException($"Unknown argument: {args[a]}");
         }
@@ -294,6 +310,35 @@ void ParseArguments(string[] args, out string[] childArgs)
     }
 }
 
+void ShowHelp()
+{
+    CliArg[] args =
+    [
+        new CliArg(["-i","--import"], [], false, "Import from financialdata.net."),
+        new CliArg(["-sat","--saturday"], [], false, "Force the Saturday import workflow."),
+        new CliArg(["-sun", "--sunday"], [], false, "Force the Sunday import workflow."),
+        new CliArg(["--weekday"], [], false, "Force the Weekday import workflow."),
+        new CliArg(["-r", "--csv", "--report"], ["symbol","report name", "output file name"], false, "Produce CSV file with specified report."),
+        new CliArg(["-b", "--backtest"],["scenario name"], false, "Runs a backtesting scenario."),
+        new CliArg(["-r", "--report"],["symbol","name of report","output file name"], false, "Produce a given report."),
+        new CliArg(["-a", "--analyze"],["symbol (optional)"], false, "Get fundamental scores."),
+        new CliArg(["-?", "?", "-h", "--help", "help"], [], false, "Show this help.")
+    ];
+
+    Console.WriteLine($"{config.AppName} {config.AppVersion}".Trim());
+    Console.WriteLine();
+    if (!string.IsNullOrWhiteSpace(config.Description))
+    {
+        Console.WriteLine(config.Description);
+        Console.WriteLine();
+    }
+    Console.WriteLine(CliHelper.FormatArguments(args));
+    Console.WriteLine($"\t{config.AppName} will perform the workflow according to the current day of week,");
+    Console.WriteLine("\tbut you can override this behavior with the --[weekday|sat|sun] options.");
+    Console.WriteLine();
+    Console.WriteLine("\tOn a first run, use the `--weekday` argument to ensure best behavior.");
+    Console.WriteLine($"\tYou can run them all, as in `{config.AppName} --import --weekday --sat --sun`");
+}
 class Config(string appName, string appVersion, string? description)
 {
     public string AppName { get; } = appName;
@@ -309,6 +354,7 @@ class Config(string appName, string appVersion, string? description)
     public string? OutputFileName { get; set; }
     public string? Symbol { get; set; }
     public bool Backtest { get; set; }
+    public bool Analyze { get; set; }
     public string? Scenario { get; set; }
     public string? ReportName { get; set; }
     public bool OverwriteOutputFile { get; set; }
@@ -316,8 +362,8 @@ class Config(string appName, string appVersion, string? description)
     public bool IsValid(out string message)
     {
         message = "";
-        if (!Csv && !Import && !Backtest)
-            message = "Either csv, import, or backtest must be specified.";
+        if (!Csv && !Import && !Backtest && !Analyze)
+            message = "Either csv, import, backtest, or analyze must be specified.";
         else if ((Weekday || Saturday || Sunday) && !Import)
             message = "When specifying a day of the week, the import flag (--import) is required.";
         else if (Csv && (string.IsNullOrWhiteSpace(Symbol) || string.IsNullOrWhiteSpace(OutputFileName)))

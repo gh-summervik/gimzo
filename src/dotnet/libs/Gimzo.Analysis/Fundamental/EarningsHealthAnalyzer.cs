@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Gimzo.Analysis.Fundamental;
+﻿namespace Gimzo.Analysis.Fundamental;
 
 public readonly record struct EarningsAssessment(
     int Score1To99,

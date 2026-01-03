@@ -1,6 +1,6 @@
 ﻿using System.Text;
 
-namespace Gimzo.AppServices.Cli;
+namespace Gimzo.AppServices;
 
 public static class CliHelper
 {

@@ -1,5 +1,6 @@
 ﻿using Dapper;
 using Gimzo.Analysis.Fundamental;
+using Gimzo.Analysis.Technical.Charts;
 using Gimzo.Common;
 using Gimzo.Infrastructure;
 using Gimzo.Infrastructure.Database;
@@ -9,18 +10,17 @@ using Microsoft.Extensions.Logging;
 using OoplesFinance.YahooFinanceAPI;
 using OoplesFinance.YahooFinanceAPI.Enums;
 using OoplesFinance.YahooFinanceAPI.Models;
+using System.Collections.Immutable;
 
 namespace Gimzo.AppServices.Data;
 
 public sealed class FinancialDataImporter(FinancialDataApiClient apiClient,
     DbDefPair dbDefPair,
     IMemoryCache memoryCache,
-    ILogger<FinancialDataImporter> logger)
+    ILogger<FinancialDataImporter> logger) : ServiceBase(dbDefPair, memoryCache)
 {
     private readonly FinancialDataApiClient _fdnApiClient = apiClient;
     private readonly YahooClient _yahooClient = new();
-    private readonly DataService _dataService = new(dbDefPair, memoryCache, logger);
-    private readonly DbDefPair _dbDefPair = dbDefPair;
     private readonly ILogger<FinancialDataImporter> _logger = logger;
     private readonly DateOnly _today = TimeHelper.TodayEastern;
     private DbMetaInfo _metaInfo = new();
@@ -43,12 +43,12 @@ public sealed class FinancialDataImporter(FinancialDataApiClient apiClient,
         _forceSaturday = forceSaturday;
         _forceSunday = forceSunday;
 
-        await _dataService.SaveProcess(_process.ToDao());
+        await SaveProcess(_process.ToDao());
 
         // this must happen before the fetch of meta info; meta info includes ignored symbols.
-        await _dataService.RemovedExpiredIgnoredSymbolsAsync();
+        await RemovedExpiredIgnoredSymbolsAsync();
 
-        _metaInfo = await _dataService.GetDbMetaInfoAsync();
+        _metaInfo = await GetDbMetaInfoAsync();
         _initialized = true;
         LogHelper.LogInfo(_logger, "Import initialized");
     }
@@ -80,15 +80,16 @@ public sealed class FinancialDataImporter(FinancialDataApiClient apiClient,
 
         var ignoreTasks = new[]
         {
-            _dataService.AddDelistedSymbolsToIgnoreListAsync(_process!.ProcessId),
-            _dataService.AddSymbolsWithPricesOutsideRangeToIgnoreListAsync(_process!.ProcessId, 10M, 2_000M),
-            _dataService.AddSymbolsWithShortChartsToIgnoreListAsync(_process!.ProcessId, 200)
+            AddDelistedSymbolsToIgnoreListAsync(_process!.ProcessId),
+            AddSymbolsWithPricesOutsideRangeToIgnoreListAsync(_process!.ProcessId, 10M, 2_000M),
+            AddSymbolsWithShortChartsToIgnoreListAsync(_process!.ProcessId, 200)
         };
         await Task.WhenAll(ignoreTasks);
 
-        await _dataService.DeleteDataForIgnoredSymbolsAsync();
+        await DeleteDataForIgnoredSymbolsAsync();
 
-        await _dataService.SaveProcess(_process!.ToDao(DateTimeOffset.UtcNow));
+        
+        await SaveProcess(_process!.ToDao(DateTimeOffset.UtcNow));
     }
 
     internal async Task DoWeekdayWorkAsync()
@@ -104,7 +105,7 @@ public sealed class FinancialDataImporter(FinancialDataApiClient apiClient,
 
         LogHelper.LogInfo(_logger, "Saving {count} symbols.", stockSymbols.Length);
 
-        await _dataService.SaveStockSymbolsAsync(stockSymbols, _process!.ProcessId);
+        await SaveStockSymbolsAsync(stockSymbols, _process!.ProcessId);
 
         List<Security> securityList = new(10_000);
         LogHelper.LogInfo(_logger, "Fetching security information.");
@@ -169,17 +170,17 @@ public sealed class FinancialDataImporter(FinancialDataApiClient apiClient,
                         new Gimzo.Analysis.Technical.Charts.Ohlc(k.Meta.Symbol,
                             DateOnly.FromDateTime(k.Date),
                             (decimal)k.Open, (decimal)k.High,
-                            (decimal)k.Low, (decimal)k.Close, k.Volume)));
+                            (decimal)k.Low, (decimal)k.Close, k.Volume))).ToImmutableArray();
 
                 LogHelper.LogInfo(_logger, "Saving price data for {ticker} - {i}/{count}", ticker, i, count);
 
-                await _dataService.SaveEodPricesAsync(allPrices, _process!.ProcessId);
+                await SaveEodPricesAsync(allPrices, _process!.ProcessId);
             }
         }
 
         LogHelper.LogInfo(_logger, "Saving security info for {count} symbols.", securityList.Count);
 
-        await _dataService.SaveSecuritiesAsync(securityList, _process!.ProcessId);
+        await SaveSecuritiesAsync(securityList, _process!.ProcessId);
     }
 
     internal async Task DoSaturdayWorkAsync()
@@ -189,7 +190,7 @@ public sealed class FinancialDataImporter(FinancialDataApiClient apiClient,
 
         var symbols = await GetSymbolsFromDatabaseAsync();
 
-        int count = symbols.Length;
+        int count = symbols.Count;
         int i = 0;
 
         foreach (var symbol in symbols)
@@ -198,35 +199,35 @@ public sealed class FinancialDataImporter(FinancialDataApiClient apiClient,
             LogHelper.LogInfo(_logger, "Processing {symbol} - {i}/{count}", symbol, i, count);
             var coInfoModel = await _fdnApiClient.GetCompanyInformationAsync(symbol);
             if (coInfoModel.HasValue)
-                await _dataService.SaveCompanyInfoAsync(coInfoModel.Value.ToDomain(), _process!.ProcessId);
+                await SaveCompanyInfoAsync(coInfoModel.Value.ToDomain(), _process!.ProcessId);
 
             var incStmtsModels = await _fdnApiClient.GetIncomeStatementsAsync(symbol);
             if (incStmtsModels.Length > 0)
-                await _dataService.SaveIncomeStatementsAsync(incStmtsModels.Select(k => k.ToDomain()), _process!.ProcessId);
+                await SaveIncomeStatementsAsync(incStmtsModels.Select(k => k.ToDomain()).ToImmutableArray(), _process!.ProcessId);
 
             var bsStmtsModels = await _fdnApiClient.GetBalanceSheetStatementsAsync(symbol);
             if (bsStmtsModels.Length > 0)
-                await _dataService.SaveBalanceSheetsAsync(bsStmtsModels.Select(k => k.ToDomain()), _process!.ProcessId);
+                await SaveBalanceSheetsAsync(bsStmtsModels.Select(k => k.ToDomain()).ToImmutableArray(), _process!.ProcessId);
 
             var cfStmtsModels = await _fdnApiClient.GetCashFlowStatementsAsync(symbol);
             if (cfStmtsModels.Length > 0)
-                await _dataService.SaveCashFlowStatementsAsync(cfStmtsModels.Select(k => k.ToDomain()), _process!.ProcessId);
+                await SaveCashFlowStatementsAsync(cfStmtsModels.Select(k => k.ToDomain()).ToImmutableArray(), _process!.ProcessId);
 
             var divsModels = await _fdnApiClient.GetDividendsAsync(symbol);
             if (divsModels.Length > 0)
-                await _dataService.SaveDividendsAsync(divsModels.Select(k => k.ToDomain()), _process!.ProcessId);
+                await SaveDividendsAsync(divsModels.Select(k => k.ToDomain()).ToImmutableArray(), _process!.ProcessId);
 
             var splitsModels = await _fdnApiClient.GetStockSplitsAsync(symbol);
             if (splitsModels.Length > 0)
-                await _dataService.SaveSplitsAsync(splitsModels.Select(k => k.ToDomain()), _process!.ProcessId);
+                await SaveSplitsAsync(splitsModels.Select(k => k.ToDomain()).ToImmutableArray(), _process!.ProcessId);
 
             var earningsReleasesModels = await _fdnApiClient.GetEarningsReleasesAsync(symbol);
             if (earningsReleasesModels.Length > 0)
-                await _dataService.SaveEarningReleasesAsync(earningsReleasesModels.Select(k => k.ToDomain()), _process!.ProcessId);
+                await SaveEarningReleasesAsync(earningsReleasesModels.Select(k => k.ToDomain()).ToImmutableArray(), _process!.ProcessId);
 
             var shortsModels = await _fdnApiClient.GetShortInterestAsync(symbol);
             if (shortsModels.Length > 0)
-                await _dataService.SaveShortInterestsAsync(shortsModels.Select(k => k.ToDomain()), _process!.ProcessId);
+                await SaveShortInterestsAsync(shortsModels.Select(k => k.ToDomain()).ToImmutableArray(), _process!.ProcessId);
         }
     }
 
@@ -237,7 +238,7 @@ public sealed class FinancialDataImporter(FinancialDataApiClient apiClient,
 
         var symbols = await GetSymbolsFromDatabaseAsync();
 
-        int count = symbols.Length;
+        int count = symbols.Count;
         int i = 0;
 
         foreach (var symbol in symbols)
@@ -248,46 +249,493 @@ public sealed class FinancialDataImporter(FinancialDataApiClient apiClient,
 
             var metricsModel = await _fdnApiClient.GetKeyMetricsAsync(symbol);
             if (metricsModel.Length > 0)
-                await _dataService.SaveKeyMetricsAsync(metricsModel.Select(k => k.ToDomain()), _process!.ProcessId);
+                await SaveKeyMetricsAsync(metricsModel.Select(k => k.ToDomain()).ToImmutableArray(), _process!.ProcessId);
 
             var marketCapsModel = await _fdnApiClient.GetMarketCapAsync(symbol);
             if (marketCapsModel.Length > 0)
-                await _dataService.SaveMarketCapsAsync(marketCapsModel.Select(k => k.ToDomain()), _process!.ProcessId);
+                await SaveMarketCapsAsync(marketCapsModel.Select(k => k.ToDomain()).ToImmutableArray(), _process!.ProcessId);
 
             var empCountsModel = await _fdnApiClient.GetEmployeeCountAsync(symbol);
             if (empCountsModel.Length > 0)
-                await _dataService.SaveEmployeeCountsAsync(empCountsModel.Select(k => k.ToDomain()), _process!.ProcessId);
+                await SaveEmployeeCountsAsync(empCountsModel.Select(k => k.ToDomain()).ToImmutableArray(), _process!.ProcessId);
 
             var compsModel = await _fdnApiClient.GetExecutiveCompensationAsync(symbol);
             if (compsModel.Length > 0)
-                await _dataService.SaveExecCompensationAsync(compsModel.Select(k => k.ToDomain()), _process!.ProcessId);
+                await SaveExecCompensationAsync(compsModel.Select(k => k.ToDomain()).ToImmutableArray(), _process!.ProcessId);
 
             var efficiencyRatiosModel = await _fdnApiClient.GetEfficiencyRatiosAsync(symbol);
             if (efficiencyRatiosModel.Length > 0)
-                await _dataService.SaveEfficiencyRatiosAsync(efficiencyRatiosModel.Select(k => k.ToDomain()), _process!.ProcessId);
+                await SaveEfficiencyRatiosAsync(efficiencyRatiosModel.Select(k => k.ToDomain()).ToImmutableArray(), _process!.ProcessId);
 
             var liquidityModel = await _fdnApiClient.GetLiquidityRatiosAsync(symbol);
             if (liquidityModel.Length > 0)
-                await _dataService.SaveLiquidityRatiosAsync(liquidityModel.Select(k => k.ToDomain()), _process!.ProcessId);
+                await SaveLiquidityRatiosAsync(liquidityModel.Select(k => k.ToDomain()).ToImmutableArray(), _process!.ProcessId);
 
             var profitabilityModel = await _fdnApiClient.GetProfitabilityRatiosAsync(symbol);
             if (profitabilityModel.Length > 0)
-                await _dataService.SaveProfitabilityRatiosAsync(profitabilityModel.Select(k => k.ToDomain()), _process!.ProcessId);
+                await SaveProfitabilityRatiosAsync(profitabilityModel.Select(k => k.ToDomain()).ToImmutableArray(), _process!.ProcessId);
 
             var solvencyModel = await _fdnApiClient.GetSolvencyRatiosAsync(symbol);
             if (solvencyModel.Length > 0)
-                await _dataService.SaveSolvencyRatiosAsync(solvencyModel.Select(k => k.ToDomain()), _process!.ProcessId);
+                await SaveSolvencyRatiosAsync(solvencyModel.Select(k => k.ToDomain()).ToImmutableArray(), _process!.ProcessId);
 
             var valuationsModel = await _fdnApiClient.GetValuationRatiosAsync(symbol);
             if (valuationsModel.Length > 0)
-                await _dataService.SaveValuationRatiosAsync(valuationsModel.Select(k => k.ToDomain()), _process!.ProcessId);
+                await SaveValuationRatiosAsync(valuationsModel.Select(k => k.ToDomain()).ToImmutableArray(), _process!.ProcessId);
         }
     }
 
-    private async Task<string[]> GetSymbolsFromDatabaseAsync()
+    private async Task<IReadOnlyCollection<string>> GetSymbolsFromDatabaseAsync()
     {
         const string FetchSymbolsSql = @"SELECT symbol from public.stock_symbols";
         using var queryCtx = _dbDefPair.GetQueryConnection();
         return [.. (await queryCtx.QueryAsync<string>(FetchSymbolsSql))];
     }
+
+    public async Task RemovedExpiredIgnoredSymbolsAsync()
+    {
+        const string SelectSymbolsToRemove = @"SELECT symbol FROM public.ignored_symbols WHERE expiration <= @Now";
+        const string RemoveExpiredIgnoreRecordsSql = @"DELETE FROM public.ignored_symbols WHERE symbol = @Symbol";
+
+        using var queryCtx = _dbDefPair.GetQueryConnection();
+
+        var symbolList = (await queryCtx.QueryAsync<string>(SelectSymbolsToRemove, new { Now = TimeHelper.TodayEastern })).ToArray();
+
+        if (symbolList.Length == 0)
+            LogHelper.LogInfo(_logger, "No ignored symbols to remove.");
+        else
+        {
+            LogHelper.LogInfo(_logger, "Removing {count} symbol(s) from ignore list.", symbolList.Length);
+            using var cmdCtx = _dbDefPair.GetCommandConnection();
+            await cmdCtx.ExecuteAsync(RemoveExpiredIgnoreRecordsSql, symbolList.Select(k => new { Symbol = k }));
+        }
+    }
+
+
+    internal async Task<DbMetaInfo> GetDbMetaInfoAsync(IReadOnlyCollection<string>? schemas = null)
+    {
+        if ((schemas?.Count ?? 0) == 0)
+            schemas = ["public"];
+
+        const string TcSql = @"
+SELECT
+table_name as Table,
+(xpath('/row/count/text()', query_to_xml(format('SELECT COUNT(*) FROM ONLY %I.%I', table_schema, table_name), TRUE, TRUE, '')))[1]::text::bigint AS count
+FROM
+information_schema.tables
+WHERE
+table_schema = @schema
+AND table_type = 'BASE TABLE'";
+        const string IgSql = "SELECT symbol FROM public.ignored_symbols";
+
+        using var queryCtx = _dbDefPair.GetQueryConnection();
+        var ignoredSymbols = (await queryCtx.QueryAsync<string>(IgSql)).ToArray();
+
+        var tableCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        foreach (var schema in schemas!.Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            var tableResults = await queryCtx.QueryAsync<(string Table, long Count)>(TcSql, new { schema = schema.ToLowerInvariant() });
+            foreach (var (Table, Count) in tableResults)
+                tableCounts[$"{schema}.{Table}"] = (int)Count;
+        }
+
+        return new DbMetaInfo
+        {
+            TableCounts = tableCounts,
+            IgnoredSymbols = ignoredSymbols
+        };
+    }
+
+    public async Task SaveStockSymbolsAsync(IReadOnlyCollection<Security> securities, Guid processId)
+    {
+        if (processId.Equals(Guid.Empty))
+            processId = Constants.SystemId;
+
+        using var cmdCtx = _dbDefPair.GetCommandConnection();
+        foreach (var chunk in securities.Select(k => new Infrastructure.Database.DataAccessObjects.StockSymbol()
+        {
+            Symbol = k.Symbol,
+            Registrant = k.Registrant,
+            CreatedBy = processId,
+            UpdatedBy = processId
+        }).Chunk(Constants.DefaultChunkSize))
+        {
+            await cmdCtx.ExecuteAsync(SqlRepository.MergeStockSymbols, chunk);
+        }
+    }
+
+    public async Task SaveSecuritiesAsync(IReadOnlyCollection<Security> securities, Guid processId)
+    {
+        if (processId.Equals(Guid.Empty))
+            processId = Constants.SystemId;
+
+        using var cmdCtx = _dbDefPair.GetCommandConnection();
+        foreach (var chunk in securities.Select(k => new Infrastructure.Database.DataAccessObjects.SecurityInformation()
+        {
+            Symbol = k.Symbol,
+            Cusip = k.Cusip,
+            Figi = k.Figi,
+            Isin = k.Isin,
+            Issuer = k.Issuer,
+            Type = k.SecurityType,
+            CreatedBy = processId,
+            UpdatedBy = processId
+        }).Chunk(Constants.DefaultChunkSize))
+        {
+            await cmdCtx.ExecuteAsync(SqlRepository.MergeSecurityInformation, chunk);
+        }
+    }
+
+    public async Task SaveEodPricesAsync(IReadOnlyCollection<Ohlc> prices, Guid processId)
+    {
+        if (processId.Equals(Guid.Empty))
+            processId = Constants.SystemId;
+
+        using var cmdCtx = _dbDefPair.GetCommandConnection();
+
+        foreach (var chunk in prices.Select(k =>
+            new Infrastructure.Database.DataAccessObjects.EodPrice(processId)
+            {
+                Date = k.Date,
+                Open = k.Open,
+                High = k.High,
+                Low = k.Low,
+                Close = k.Close,
+                Volume = k.Volume,
+                Symbol = k.Symbol,
+                CreatedBy = processId,
+                UpdatedBy = processId
+            }).Chunk(Constants.DefaultChunkSize))
+        {
+            await cmdCtx.ExecuteAsync(SqlRepository.MergeEodPrices, chunk);
+        }
+    }
+
+    public async Task SaveCompanyInfoAsync(Gimzo.Analysis.Fundamental.CompanyInformation company, Guid processId)
+    {
+        if (processId.Equals(Guid.Empty))
+            processId = Constants.SystemId;
+
+        using var cmdCtx = _dbDefPair.GetCommandConnection();
+
+        await cmdCtx.ExecuteAsync(SqlRepository.MergeCompanyInfo,
+            new Infrastructure.Database.DataAccessObjects.CompanyInformation(company, processId));
+    }
+
+    public async Task SaveIncomeStatementsAsync(IReadOnlyCollection<Gimzo.Analysis.Fundamental.IncomeStatement> statements, Guid processId)
+    {
+        if (processId.Equals(Guid.Empty))
+            processId = Constants.SystemId;
+
+        using var cmdCtx = _dbDefPair.GetCommandConnection();
+
+        foreach (var chunk in statements.Select(k => new Infrastructure.Database.DataAccessObjects.IncomeStatement(k, processId)).Chunk(Constants.DefaultChunkSize))
+            await cmdCtx.ExecuteAsync(SqlRepository.MergeIncomeStatements, chunk);
+    }
+
+    public async Task SaveBalanceSheetsAsync(IReadOnlyCollection<Gimzo.Analysis.Fundamental.BalanceSheet> statements, Guid processId)
+    {
+        if (processId.Equals(Guid.Empty))
+            processId = Constants.SystemId;
+
+        using var cmdCtx = _dbDefPair.GetCommandConnection();
+
+        foreach (var chunk in statements.Select(k => new Infrastructure.Database.DataAccessObjects.BalanceSheet(k, processId)).Chunk(Constants.DefaultChunkSize))
+            await cmdCtx.ExecuteAsync(SqlRepository.MergeBalanceSheets, chunk);
+    }
+
+    public async Task SaveCashFlowStatementsAsync(IReadOnlyCollection<Gimzo.Analysis.Fundamental.CashFlowStatement> statements, Guid processId)
+    {
+        if (processId.Equals(Guid.Empty))
+            processId = Constants.SystemId;
+
+        using var cmdCtx = _dbDefPair.GetCommandConnection();
+
+        foreach (var chunk in statements.Select(k => new Infrastructure.Database.DataAccessObjects.CashFlowStatement(k, processId)).Chunk(Constants.DefaultChunkSize))
+            await cmdCtx.ExecuteAsync(SqlRepository.MergeCashFlowStatements, chunk);
+    }
+
+    public async Task SaveDividendsAsync(IReadOnlyCollection<Gimzo.Analysis.Fundamental.Dividend> dividends, Guid processId)
+    {
+        if (processId.Equals(Guid.Empty))
+            processId = Constants.SystemId;
+
+        using var cmdCtx = _dbDefPair.GetCommandConnection();
+
+        foreach (var chunk in dividends.Select(k => new Infrastructure.Database.DataAccessObjects.Dividend(k, processId)).Chunk(Constants.DefaultChunkSize))
+            await cmdCtx.ExecuteAsync(SqlRepository.MergeDividends, chunk);
+    }
+
+    public async Task SaveSplitsAsync(IReadOnlyCollection<Gimzo.Analysis.Fundamental.StockSplit> splits, Guid processId)
+    {
+        if (processId.Equals(Guid.Empty))
+            processId = Constants.SystemId;
+
+        using var cmdCtx = _dbDefPair.GetCommandConnection();
+
+        foreach (var chunk in splits.Select(k => new Infrastructure.Database.DataAccessObjects.StockSplit(k, processId)).Chunk(Constants.DefaultChunkSize))
+            await cmdCtx.ExecuteAsync(SqlRepository.MergeStockSplits, chunk);
+    }
+
+    public async Task SaveEarningReleasesAsync(IReadOnlyCollection<Gimzo.Analysis.Fundamental.EarningsRelease> releases, Guid processId)
+    {
+        if (processId.Equals(Guid.Empty))
+            processId = Constants.SystemId;
+
+        using var cmdCtx = _dbDefPair.GetCommandConnection();
+
+        foreach (var chunk in releases.Select(k => new Infrastructure.Database.DataAccessObjects.EarningsRelease(k, processId)).Chunk(Constants.DefaultChunkSize))
+            await cmdCtx.ExecuteAsync(SqlRepository.MergeEarningsReleases, chunk);
+    }
+
+    public async Task SaveShortInterestsAsync(IReadOnlyCollection<Gimzo.Analysis.Fundamental.ShortInterest> shortInterests, Guid processId)
+    {
+        if (processId.Equals(Guid.Empty))
+            processId = Constants.SystemId;
+
+        using var cmdCtx = _dbDefPair.GetCommandConnection();
+
+        foreach (var chunk in shortInterests.Select(k => new Infrastructure.Database.DataAccessObjects.ShortInterest(k, processId)).Chunk(Constants.DefaultChunkSize))
+            await cmdCtx.ExecuteAsync(SqlRepository.MergeShortInterests, chunk);
+    }
+
+    /// <summary>
+    /// Finds symbols with most recent pricing data greater than 10 days older than
+    /// max eod pricing data found and adds them to the ignored list.
+    /// </summary>
+    public async Task AddDelistedSymbolsToIgnoreListAsync(Guid processId)
+    {
+        LogHelper.LogInfo(_logger, "Adding delisted symbols to ignore list.");
+        if (processId.Equals(Guid.Empty))
+            processId = Constants.SystemId;
+
+        const string MaxPriceDateSql = @"SELECT MAX(date_eod) FROM public.eod_prices;";
+        using var queryCtx = _dbDefPair.GetQueryConnection();
+        var maxDate = await queryCtx.QuerySingleOrDefaultAsync<DateOnly?>(MaxPriceDateSql);
+        if (!maxDate.HasValue || maxDate.Equals(DateOnly.MinValue))
+            throw new Exception("Could not find max date for eod prices.");
+
+        const string FindDelistedSql = @"
+SELECT symbol
+FROM public.eod_prices
+GROUP BY symbol
+HAVING MAX(date_eod) <= @MaxDate - INTERVAL '10 days'";
+
+        var symbols = (await queryCtx.QueryAsync<string>(FindDelistedSql, new { maxDate })).ToArray();
+
+        if (symbols.Length > 0)
+            await InsertIgnoredSymbolsAsync("Delisted", processId, symbols, expiration: null);
+    }
+
+    public async Task AddSymbolsWithPricesOutsideRangeToIgnoreListAsync(Guid processId, decimal min = 10M, decimal max = 2_000M)
+    {
+        LogHelper.LogInfo(_logger, "Adding to ignore list symbols with prices outside range.");
+        if (processId.Equals(Guid.Empty))
+            processId = Constants.SystemId;
+
+        const string Sql = @"
+SELECT symbol
+FROM public.eod_prices
+WHERE date_eod >= CURRENT_DATE - INTERVAL '6 months'
+GROUP BY symbol
+HAVING AVG(close) < @Min OR AVG(close) > @Max";
+
+        using var queryCtx = _dbDefPair.GetQueryConnection();
+        var symbols = (await queryCtx.QueryAsync<string>(Sql, new { Min = min, Max = max })).ToArray();
+
+        if (symbols.Length > 0)
+            await InsertIgnoredSymbolsAsync("Price outside supported range", processId, symbols,
+                expiration: TimeHelper.TodayEastern.AddWeekdays(100));
+    }
+
+    public async Task AddSymbolsWithShortChartsToIgnoreListAsync(Guid processId, int minDaysOfData = 200)
+    {
+        LogHelper.LogInfo(_logger, "Adding symbols with short charts to ignore list");
+        const string Sql = @"
+SELECT symbol, COUNT(*) AS Count, @MinDays AS Min, @MinDays - COUNT(*) AS Delta
+FROM public.eod_prices
+GROUP BY symbol
+HAVING COUNT(*) < @MinDays";
+
+        using var queryCtx = _dbDefPair.GetQueryConnection();
+        var results = (await queryCtx.QueryAsync<EodCount>(Sql, new { MinDays = minDaysOfData })).ToArray();
+
+        foreach (var dt in results.Select(k => k.Expiration).Distinct())
+            await InsertIgnoredSymbolsAsync("Insufficient data", processId,
+                [.. results.Where(k => k.Expiration.Equals(dt)).Select(k => k.Symbol)],
+                dt);
+    }
+
+    private record struct EodCount(string Symbol, int Count, int Min, int Delta)
+    {
+        public readonly DateOnly Expiration => TimeHelper.TodayEastern.AddWeekdays(Delta);
+    };
+
+    /// <summary>
+    /// Insert into the database a collection of symbols to ignore.
+    /// The symbols share the same reason and the same expiration.
+    /// </summary>
+    public async Task InsertIgnoredSymbolsAsync(string reason, Guid processId,
+        IReadOnlyCollection<string> symbols, DateOnly? expiration = null)
+    {
+        if (symbols.Count > 0)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(reason);
+            if (processId.Equals(Guid.Empty))
+                processId = Constants.SystemId;
+
+            var daos = symbols.Select(k => new Infrastructure.Database.DataAccessObjects.IgnoredSymbol(processId)
+            {
+                Reason = reason,
+                Expiration = expiration,
+                Symbol = k,
+                CreatedBy = processId,
+                UpdatedBy = processId
+            }).ToImmutableArray();
+            using var cmdCtx = _dbDefPair.GetCommandConnection();
+            foreach (var chunk in daos.Chunk(Constants.DefaultChunkSize))
+                await cmdCtx.ExecuteAsync(SqlRepository.MergeIgnoredSymbol, chunk);
+        }
+    }
+
+    /// <summary>
+    /// Removes from the database all data related to ignored symbols.
+    /// </summary>
+    public async Task DeleteDataForIgnoredSymbolsAsync()
+    {
+        LogHelper.LogInfo(_logger, "Deleting data for ignored symbols");
+
+        const string GetIgnoredSymbolsSql = @"SELECT symbol FROM public.ignored_symbols";
+        using var queryCtx = _dbDefPair.GetQueryConnection();
+        var symbols = await queryCtx.QueryAsync<string>(GetIgnoredSymbolsSql);
+        using var cmdCtx = _dbDefPair.GetCommandConnection();
+
+        foreach (var table in new string[] {
+            "public.balance_sheets",
+            "public.cash_flow_statements",
+            "public.dividends",
+            "public.earnings_releases",
+            "public.efficiency_ratios",
+            "public.employee_counts",
+            "public.eod_prices",
+            "public.executive_compensations",
+            "public.income_statements",
+            "public.key_metrics",
+            "public.liquidity_ratios",
+            "public.market_caps",
+            "public.profitability_ratios",
+            "public.security_information",
+            "public.short_interests",
+            "public.solvency_ratios",
+            "public.stock_splits",
+            "public.stock_symbols",
+            "public.us_companies",
+            "public.valuation_ratios"
+        })
+        {
+            string sql = $"DELETE FROM {table} WHERE symbol = @Symbol";
+            foreach (var symbol in symbols)
+                await cmdCtx.ExecuteAsync(sql, new { symbol });
+        }
+    }
+
+    public async Task SaveKeyMetricsAsync(IReadOnlyCollection<Gimzo.Analysis.Fundamental.KeyMetrics> metrics, Guid processId)
+    {
+        if (processId.Equals(Guid.Empty))
+            processId = Constants.SystemId;
+
+        using var cmdCtx = _dbDefPair.GetCommandConnection();
+
+        foreach (var chunk in metrics.Select(k => new Infrastructure.Database.DataAccessObjects.KeyMetrics(k, processId)).Chunk(Constants.DefaultChunkSize))
+            await cmdCtx.ExecuteAsync(SqlRepository.MergeKeyMetrics, chunk);
+    }
+
+    public async Task SaveMarketCapsAsync(IReadOnlyCollection<Gimzo.Analysis.Fundamental.MarketCap> marketCaps, Guid processId)
+    {
+        if (processId.Equals(Guid.Empty))
+            processId = Constants.SystemId;
+
+        using var cmdCtx = _dbDefPair.GetCommandConnection();
+
+        foreach (var chunk in marketCaps.Select(k => new Infrastructure.Database.DataAccessObjects.MarketCap(k, processId)).Chunk(Constants.DefaultChunkSize))
+            await cmdCtx.ExecuteAsync(SqlRepository.MergeMarketCaps, chunk);
+    }
+
+    public async Task SaveEmployeeCountsAsync(IReadOnlyCollection<Gimzo.Analysis.Fundamental.EmployeeCount> empCounts, Guid processId)
+    {
+        if (processId.Equals(Guid.Empty))
+            processId = Constants.SystemId;
+
+        using var cmdCtx = _dbDefPair.GetCommandConnection();
+
+        foreach (var chunk in empCounts.Select(k => new Infrastructure.Database.DataAccessObjects.EmployeeCount(k, processId)).Chunk(Constants.DefaultChunkSize))
+            await cmdCtx.ExecuteAsync(SqlRepository.MergeEmployeeCounts, chunk);
+    }
+
+    public async Task SaveExecCompensationAsync(IReadOnlyCollection<Gimzo.Analysis.Fundamental.ExecutiveCompensation> comps, Guid processId)
+    {
+        if (processId.Equals(Guid.Empty))
+            processId = Constants.SystemId;
+
+        using var cmdCtx = _dbDefPair.GetCommandConnection();
+
+        foreach (var chunk in comps.Select(k => new Infrastructure.Database.DataAccessObjects.ExecutiveCompensation(k, processId)).Chunk(Constants.DefaultChunkSize))
+            await cmdCtx.ExecuteAsync(SqlRepository.MergeExecutiveCompensations, chunk);
+    }
+
+    public async Task SaveEfficiencyRatiosAsync(IReadOnlyCollection<Gimzo.Analysis.Fundamental.EfficiencyRatios> ratios, Guid processId)
+    {
+        if (processId.Equals(Guid.Empty))
+            processId = Constants.SystemId;
+
+        using var cmdCtx = _dbDefPair.GetCommandConnection();
+
+        foreach (var chunk in ratios.Select(k => new Infrastructure.Database.DataAccessObjects.EfficiencyRatios(k, processId)).Chunk(Constants.DefaultChunkSize))
+            await cmdCtx.ExecuteAsync(SqlRepository.MergeEfficiencyRatios, chunk);
+    }
+
+    public async Task SaveLiquidityRatiosAsync(IReadOnlyCollection<Gimzo.Analysis.Fundamental.LiquidityRatios> ratios, Guid processId)
+    {
+        if (processId.Equals(Guid.Empty))
+            processId = Constants.SystemId;
+
+        using var cmdCtx = _dbDefPair.GetCommandConnection();
+
+        foreach (var chunk in ratios.Select(k => new Infrastructure.Database.DataAccessObjects.LiquidityRatios(k, processId)).Chunk(Constants.DefaultChunkSize))
+            await cmdCtx.ExecuteAsync(SqlRepository.MergeLiquidityRatios, chunk);
+    }
+
+    public async Task SaveProfitabilityRatiosAsync(IReadOnlyCollection<Gimzo.Analysis.Fundamental.ProfitabilityRatios> ratios, Guid processId)
+    {
+        if (processId.Equals(Guid.Empty))
+            processId = Constants.SystemId;
+
+        using var cmdCtx = _dbDefPair.GetCommandConnection();
+
+        foreach (var chunk in ratios.Select(k => new Infrastructure.Database.DataAccessObjects.ProfitabilityRatios(k, processId)).Chunk(Constants.DefaultChunkSize))
+            await cmdCtx.ExecuteAsync(SqlRepository.MergeProfitabilityRatios, chunk);
+    }
+
+    public async Task SaveSolvencyRatiosAsync(IReadOnlyCollection<Gimzo.Analysis.Fundamental.SolvencyRatios> ratios, Guid processId)
+    {
+        if (processId.Equals(Guid.Empty))
+            processId = Constants.SystemId;
+
+        using var cmdCtx = _dbDefPair.GetCommandConnection();
+
+        foreach (var chunk in ratios.Select(k => new Infrastructure.Database.DataAccessObjects.SolvencyRatios(k, processId)).Chunk(Constants.DefaultChunkSize))
+            await cmdCtx.ExecuteAsync(SqlRepository.MergeSolvencyRatios, chunk);
+    }
+
+    public async Task SaveValuationRatiosAsync(IReadOnlyCollection<Gimzo.Analysis.Fundamental.ValuationRatios> ratios, Guid processId)
+    {
+        if (processId.Equals(Guid.Empty))
+            processId = Constants.SystemId;
+
+        using var cmdCtx = _dbDefPair.GetCommandConnection();
+
+        foreach (var chunk in ratios.Select(k => new Infrastructure.Database.DataAccessObjects.ValuationRatios(k, processId)).Chunk(Constants.DefaultChunkSize))
+            await cmdCtx.ExecuteAsync(SqlRepository.MergeValuationRatios, chunk);
+    }
+
 }

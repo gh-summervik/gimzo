@@ -1,20 +1,17 @@
-﻿using Gimzo.AppServices.Data;
+﻿using Dapper;
+using Gimzo.Analysis.Fundamental;
 using Gimzo.Infrastructure.Database;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
-using Gimzo.Analysis.Fundamental;
 
 namespace Gimzo.AppServices.Analysis;
 
 public sealed class CompanyAnalysisService(
     DbDefPair dbDefPair,
     IMemoryCache memoryCache,
-    ILogger<CompanyAnalysisService> logger)
+    ILogger<CompanyAnalysisService> logger) : ServiceBase(dbDefPair, memoryCache)
 {
-    private readonly DbDefPair _dbDefPair = dbDefPair;
-    private readonly IMemoryCache _memoryCache = memoryCache;
     private readonly ILogger<CompanyAnalysisService> _logger = logger;
-    private readonly DataService _dataService = new(dbDefPair, memoryCache, logger);
 
     private readonly BalanceSheetHealthAnalyzer _balanceAnalyzer = new();
     private readonly IncomeStatementHealthAnalyzer _incomeAnalyzer = new();
@@ -25,15 +22,15 @@ public sealed class CompanyAnalysisService(
     private readonly RiskSentimentHealthAnalyzer _riskAnalyzer = new();
     private readonly CompanyFundamentalAnalyzer _compositeAnalyzer = new();
 
-    public async Task<CompanySiloScore?> GetSiloScoreAsync(string centralIndexKey)
+    public async Task<CompanySiloScore?> GetSiloScoreForSymbolAsync(string symbol)
     {
-        LiquidityRatios? liquidity = await _dataService.GetLatestLiquidityRatiosAsync(centralIndexKey);
-        SolvencyRatios? solvency = await _dataService.GetLatestSolvencyRatiosAsync(centralIndexKey);
-        ProfitabilityRatios? profitability = await _dataService.GetLatestProfitabilityRatiosAsync(centralIndexKey);
-        KeyMetrics? keyMetrics = await _dataService.GetLatestKeyMetricsAsync(centralIndexKey);
-        ValuationRatios? valuation = await _dataService.GetLatestValuationRatiosAsync(centralIndexKey);
-        EfficiencyRatios? efficiency = await _dataService.GetLatestEfficiencyRatiosAsync(centralIndexKey);
-        ShortInterest? shortInterest = await _dataService.GetLatestShortInterestsAsync(centralIndexKey);
+        LiquidityRatios? liquidity = await GetLatestLiquidityRatiosAsync(symbol);
+        SolvencyRatios? solvency = await GetLatestSolvencyRatiosAsync(symbol);
+        ProfitabilityRatios? profitability = await GetLatestProfitabilityRatiosAsync(symbol);
+        KeyMetrics? keyMetrics = await GetLatestKeyMetricsAsync(symbol);
+        ValuationRatios? valuation = await GetLatestValuationRatiosAsync(symbol);
+        EfficiencyRatios? efficiency = await GetLatestEfficiencyRatiosAsync(symbol);
+        ShortInterest? shortInterest = await GetLatestShortInterestAsync(symbol);
 
         if (liquidity is null || solvency is null || profitability is null || keyMetrics is null || efficiency is null)
             return null;
@@ -50,4 +47,88 @@ public sealed class CompanyAnalysisService(
 
         return _compositeAnalyzer.ComputeSiloScore(balance, income, cashFlow, earnings, val, eff, risk);
     }
+
+    internal async Task<LiquidityRatios?> GetLatestLiquidityRatiosAsync(string symbol)
+    {
+        string sql = $@"{SqlRepository.SelectLiquidityRatios}
+WHERE symbol = @Symbol AND fiscal_period IN ('Q1','Q2','Q3','Q4')
+ORDER BY period_end_date DESC LIMIT 1";
+
+        using var queryCtx = _dbDefPair.GetQueryConnection();
+        var result = await queryCtx.QueryFirstOrDefaultAsync<Infrastructure.Database.DataAccessObjects.LiquidityRatios>(sql,
+            new { symbol });
+
+        return result?.ToDomain();
+    }
+
+    internal async Task<SolvencyRatios?> GetLatestSolvencyRatiosAsync(string symbol)
+    {
+        string sql = $@"{SqlRepository.SelectSolvencyRatios}
+WHERE symbol = @Symbol AND fiscal_period IN ('Q1','Q2','Q3','Q4')
+ORDER BY period_end_date DESC LIMIT 1";
+
+        using var queryCtx = _dbDefPair.GetQueryConnection();
+        var result = await queryCtx.QueryFirstOrDefaultAsync<Infrastructure.Database.DataAccessObjects.SolvencyRatios>(sql, new { symbol });
+
+        return result?.ToDomain();
+    }
+
+    internal async Task<ProfitabilityRatios?> GetLatestProfitabilityRatiosAsync(string symbol)
+    {
+        string sql = $@"{SqlRepository.SelectProfitabilityRatios}
+WHERE symbol = @Symbol AND fiscal_period IN ('Q1','Q2','Q3','Q4')
+ORDER BY period_end_date DESC LIMIT 1";
+
+        using var queryCtx = _dbDefPair.GetQueryConnection();
+        var result = await queryCtx.QueryFirstOrDefaultAsync<Infrastructure.Database.DataAccessObjects.ProfitabilityRatios>(sql, new { symbol });
+
+        return result?.ToDomain();
+    }
+
+    internal async Task<KeyMetrics?> GetLatestKeyMetricsAsync(string symbol)
+    {
+        string sql = $@"{SqlRepository.SelectKeyMetrics}
+WHERE symbol = @Symbol ORDER BY period_end_date DESC LIMIT 1";
+
+        using var queryCtx = _dbDefPair.GetQueryConnection();
+        var result = await queryCtx.QueryFirstOrDefaultAsync<Infrastructure.Database.DataAccessObjects.KeyMetrics>(sql, new { symbol });
+
+        return result?.ToDomain();
+    }
+
+    internal async Task<ValuationRatios?> GetLatestValuationRatiosAsync(string symbol)
+    {
+        string sql = $@"{SqlRepository.SelectValuationRatios}
+WHERE symbol = @Symbol AND fiscal_period IN ('Q1','Q2','Q3','Q4')
+ORDER BY period_end_date DESC LIMIT 1";
+
+        using var queryCtx = _dbDefPair.GetQueryConnection();
+        var result = await queryCtx.QueryFirstOrDefaultAsync<Infrastructure.Database.DataAccessObjects.ValuationRatios>(sql, new { symbol });
+
+        return result?.ToDomain();
+    }
+
+    internal async Task<EfficiencyRatios?> GetLatestEfficiencyRatiosAsync(string symbol)
+    {
+        string sql = $@"{SqlRepository.SelectEfficiencyRatios}
+WHERE symbol = @Symbol AND fiscal_period IN ('Q1','Q2','Q3','Q4')
+ORDER BY period_end_date DESC LIMIT 1";
+
+        using var queryCtx = _dbDefPair.GetQueryConnection();
+        var result = await queryCtx.QueryFirstOrDefaultAsync<Infrastructure.Database.DataAccessObjects.EfficiencyRatios>(sql, new { symbol });
+
+        return result?.ToDomain();
+    }
+
+    internal async Task<ShortInterest?> GetLatestShortInterestAsync(string symbol)
+    {
+        string sql = $@"{SqlRepository.SelectShortInterests} WHERE symbol = @Symbol
+ORDER BY settlement_date DESC LIMIT 1";
+
+        using var queryCtx = _dbDefPair.GetQueryConnection();
+        var result = await queryCtx.QueryFirstOrDefaultAsync<Infrastructure.Database.DataAccessObjects.ShortInterest>(sql, new { symbol });
+
+        return result?.ToDomain();
+    }
+
 }

@@ -1,5 +1,4 @@
 ﻿using Gimzo.Analysis.Technical.Charts;
-using Gimzo.AppServices.Data;
 using Gimzo.Infrastructure.Database;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
@@ -11,10 +10,9 @@ namespace Gimzo.AppServices.Backtesting;
 
 public sealed partial class BacktestingService(DbDefPair dbDefPair,
     IMemoryCache memoryCache,
-    ILogger<BacktestingService> logger)
+    ILogger<BacktestingService> logger) : ServiceBase(dbDefPair, memoryCache)
 {
     private readonly ILogger<BacktestingService> _logger = logger;
-    private readonly DataService _dataService = new(dbDefPair, memoryCache, logger);
     private const int DefaultQty = 1;
 
     private static class Scenarios

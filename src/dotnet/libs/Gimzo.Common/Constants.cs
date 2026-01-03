@@ -6,6 +6,7 @@ public static class Constants
 {
     public const int DefaultChartLookback = 60;
     public const int DefaultAverageTrueRangePeriod = 14;
+    public const int DefaultChunkSize = 1_000;
 
     /// <summary>
     /// The number of digits to the right of the decimal point in money calculations.

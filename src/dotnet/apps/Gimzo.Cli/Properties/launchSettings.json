@@ -2,7 +2,7 @@
   "profiles": {
     "Gimzo.Cli": {
       "commandName": "Project",
-      "commandLineArgs": "-b pxf -o"
+      "commandLineArgs": "-a MSFT"
     }
   }
 }

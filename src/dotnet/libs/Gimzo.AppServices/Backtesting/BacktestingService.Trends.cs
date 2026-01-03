@@ -4,7 +4,7 @@ public partial class BacktestingService
 {
     private async Task<Ledger?> ExecuteGimzoTrendDivergenceAsync(string symbol, int period)
     {
-        var chart = await _dataService.GetChartAsync(symbol);
+        var chart = await GetChartAsync(symbol);
         if (chart == null)
             return null;
 
@@ -48,7 +48,7 @@ public partial class BacktestingService
     private async Task<Ledger?> ExecuteGimzoTrendFollowAsync(string symbol, int period)
     {
         
-        var chart = await _dataService.GetChartAsync(symbol);
+        var chart = await GetChartAsync(symbol);
         if (chart == null)
             return null;
 
