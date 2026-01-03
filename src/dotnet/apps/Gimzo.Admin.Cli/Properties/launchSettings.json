@@ -1,6 +1,6 @@
 {
   "profiles": {
-    "Gimzo.Cli": {
+    "Gimzo.Admin.Cli": {
       "commandName": "Project",
       "commandLineArgs": "-i --cleanup"
     }

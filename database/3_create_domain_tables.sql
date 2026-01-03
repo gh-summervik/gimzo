@@ -142,6 +142,7 @@ CREATE TABLE IF NOT EXISTS public.us_companies (
     ein TEXT,
     sic_code TEXT,
     sic_description TEXT,
+    sic_title TEXT,
     fiscal_year_end TEXT,
     state_of_incorporation TEXT,
     phone_number TEXT,

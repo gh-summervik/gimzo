@@ -22,10 +22,19 @@ if [ -d "$target_directory" ]; then
     rm -rf "$target_directory"
 fi
 
-dotnet publish -c Release "$source_directory/Gimzo.Cli/Gimzo.Cli.csproj" -o "$target_directory"
+mkdir -p "$target_directory"
 
+# Publish Admin CLI
+dotnet publish -c Release "$source_directory/Gimzo.Admin.Cli/Gimzo.Admin.Cli.csproj" -o "$target_directory"
 if [ $? -ne 0 ]; then
-    echo "dotnet publish failed."
+    echo "Publish Gimzo.Admin.Cli failed."
+    exit 1
+fi
+
+# Publish Runtime CLI
+dotnet publish -c Release "$source_directory/Gimzo.Runtime.Cli/Gimzo.Runtime.Cli.csproj" -o "$target_directory"
+if [ $? -ne 0 ]; then
+    echo "Publish Gimzo.Runtime.Cli failed."
     exit 1
 fi
 

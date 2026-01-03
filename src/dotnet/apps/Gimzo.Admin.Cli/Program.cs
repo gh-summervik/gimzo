@@ -374,14 +374,14 @@ class Config(string appName, string appVersion, string? description)
             message = "When specifying a day of the week, the import flag (--import) is required.";
         else if (Csv && (string.IsNullOrWhiteSpace(Symbol) || string.IsNullOrWhiteSpace(OutputFileName)))
             message = "When specifying CSV, both symbol and an output file name are required.";
-        
+
         if (!string.IsNullOrWhiteSpace(OutputFileName))
         {
             var fInfo = new FileInfo(OutputFileName);
             if (!fInfo.Extension.ToLowerInvariant().Equals(".csv"))
                 message = "The output file must be of type csv.";
         }
-        
+
         if (Backtest && string.IsNullOrWhiteSpace(Scenario))
             message = "Scenario must be specified when backtest is chosen.";
         if (Cleanup && !Import)
