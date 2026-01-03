@@ -53,31 +53,33 @@ public sealed class FinancialDataImporter(FinancialDataApiClient apiClient,
         LogHelper.LogInfo(_logger, "Import initialized");
     }
 
-    public async Task ImportAsync()
+    public async Task ImportAsync(bool cleanupOnly = false)
     {
         if (!_initialized)
             throw new Exception($"Import not initialized; call {nameof(InitializeImportAsync)} first.");
 
-        if (_forceSunday | _forceSaturday | _forceWeekday)
+        if (!cleanupOnly)
         {
-            if (_forceWeekday)
-                await DoWeekdayWorkAsync();
-            if (_forceSaturday)
-                await DoSaturdayWorkAsync();
-            if (_forceSunday)
-                await DoSundayWorkAsync();
-        }
-        else
-        {
-            var t = _today.DayOfWeek switch
+            if (_forceSunday | _forceSaturday | _forceWeekday)
             {
-                DayOfWeek.Sunday => DoSundayWorkAsync(),
-                DayOfWeek.Saturday => DoSaturdayWorkAsync(),
-                _ => DoWeekdayWorkAsync()
-            };
-            await t;
+                if (_forceWeekday)
+                    await DoWeekdayWorkAsync();
+                if (_forceSaturday)
+                    await DoSaturdayWorkAsync();
+                if (_forceSunday)
+                    await DoSundayWorkAsync();
+            }
+            else
+            {
+                var t = _today.DayOfWeek switch
+                {
+                    DayOfWeek.Sunday => DoSundayWorkAsync(),
+                    DayOfWeek.Saturday => DoSaturdayWorkAsync(),
+                    _ => DoWeekdayWorkAsync()
+                };
+                await t;
+            }
         }
-
         var ignoreTasks = new[]
         {
             AddDelistedSymbolsToIgnoreListAsync(_process!.ProcessId),
@@ -87,7 +89,6 @@ public sealed class FinancialDataImporter(FinancialDataApiClient apiClient,
         await Task.WhenAll(ignoreTasks);
 
         await DeleteDataForIgnoredSymbolsAsync();
-
         
         await SaveProcess(_process!.ToDao(DateTimeOffset.UtcNow));
     }
@@ -504,11 +505,11 @@ AND table_type = 'BASE TABLE'";
     /// </summary>
     public async Task AddDelistedSymbolsToIgnoreListAsync(Guid processId)
     {
-        LogHelper.LogInfo(_logger, "Adding delisted symbols to ignore list.");
+        LogHelper.LogInfo(_logger, "Adding to ignore list delisted symbols.");
         if (processId.Equals(Guid.Empty))
             processId = Constants.SystemId;
 
-        const string MaxPriceDateSql = @"SELECT MAX(date_eod) FROM public.eod_prices;";
+        const string MaxPriceDateSql = @"SELECT MAX(date_eod) FROM public.eod_prices";
         using var queryCtx = _dbDefPair.GetQueryConnection();
         var maxDate = await queryCtx.QuerySingleOrDefaultAsync<DateOnly?>(MaxPriceDateSql);
         if (!maxDate.HasValue || maxDate.Equals(DateOnly.MinValue))
@@ -520,10 +521,20 @@ FROM public.eod_prices
 GROUP BY symbol
 HAVING MAX(date_eod) <= @MaxDate - INTERVAL '10 days'";
 
-        var symbols = (await queryCtx.QueryAsync<string>(FindDelistedSql, new { maxDate })).ToArray();
+        var symbols = (await queryCtx.QueryAsync<string>(FindDelistedSql, new { maxDate })).ToImmutableArray();
 
         if (symbols.Length > 0)
             await InsertIgnoredSymbolsAsync("Delisted", processId, symbols, expiration: null);
+
+        const string FindEmptyPricesSql = @"
+SELECT s.symbol
+FROM public.stock_symbols s
+LEFT JOIN public.eod_prices p ON s.symbol = p.symbol
+WHERE p.symbol IS NULL";
+        
+        symbols = (await queryCtx.QueryAsync<string>(FindEmptyPricesSql)).ToImmutableArray();
+        if (symbols.Length > 0)
+            await InsertIgnoredSymbolsAsync("No price data", processId, symbols, expiration: null);
     }
 
     public async Task AddSymbolsWithPricesOutsideRangeToIgnoreListAsync(Guid processId, decimal min = 10M, decimal max = 2_000M)
@@ -549,7 +560,7 @@ HAVING AVG(close) < @Min OR AVG(close) > @Max";
 
     public async Task AddSymbolsWithShortChartsToIgnoreListAsync(Guid processId, int minDaysOfData = 200)
     {
-        LogHelper.LogInfo(_logger, "Adding symbols with short charts to ignore list");
+        LogHelper.LogInfo(_logger, "Adding to ignore list symbols with short charts.");
         const string Sql = @"
 SELECT symbol, COUNT(*) AS Count, @MinDays AS Min, @MinDays - COUNT(*) AS Delta
 FROM public.eod_prices

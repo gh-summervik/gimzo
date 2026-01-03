@@ -77,7 +77,7 @@ try
         LogHelper.LogInfo(logger, "New process started; id: {id}", process.ProcessId);
 
         await importer.InitializeImportAsync(process, config.Weekday, config.Saturday, config.Sunday);
-        await importer.ImportAsync();
+        await importer.ImportAsync(config.Cleanup);
         apiClient.Dispose();
 
         // do fundamental analysis here.
@@ -139,9 +139,11 @@ try
             {
                 var ledgerFileName = $"gimzo_ledger_{symbol}_{DateTime.Now:yyyyMMddHHmm}.csv";
 
-                string fullPath = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-                    ? Path.Combine("C:", "temp", "gimzo", ledgerFileName)
-                    : Path.Combine("/c", "temp", "gimzo", ledgerFileName);
+                string baseDir = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                    ? Path.Combine("C:", "temp", "gimzo")
+                    : Path.Combine("/", "c", "temp", "gimzo");
+
+                string fullPath = Path.Combine(baseDir, ledgerFileName);
 
                 await reportService.WriteLedgerAsync(ledger, new FileInfo(fullPath), true);
                 var perf = ledger.GetPerformance();
@@ -253,6 +255,9 @@ void ParseArguments(string[] args, out string[] childArgs)
             case "-i":
                 config.Import = true;
                 break;
+            case "--cleanup":
+                config.Cleanup = true;
+                break;
             case "--saturday":
             case "--sat":
                 config.Saturday = true;
@@ -348,6 +353,7 @@ class Config(string appName, string appVersion, string? description)
     public bool ShowHelp { get; set; }
     public bool Import { get; set; }
     public bool Csv { get; set; }
+    public bool Cleanup { get; set; }
     public bool Weekday { get; set; }
     public bool Saturday { get; set; }
     public bool Sunday { get; set; }
@@ -362,20 +368,24 @@ class Config(string appName, string appVersion, string? description)
     public bool IsValid(out string message)
     {
         message = "";
-        if (!Csv && !Import && !Backtest && !Analyze)
-            message = "Either csv, import, backtest, or analyze must be specified.";
+        if (!Csv && !Import && !Backtest && !Analyze && !Cleanup)
+            message = "Either csv, import, backtest, analyze, or cleanup must be specified.";
         else if ((Weekday || Saturday || Sunday) && !Import)
             message = "When specifying a day of the week, the import flag (--import) is required.";
         else if (Csv && (string.IsNullOrWhiteSpace(Symbol) || string.IsNullOrWhiteSpace(OutputFileName)))
             message = "When specifying CSV, both symbol and an output file name are required.";
-        else if (!string.IsNullOrWhiteSpace(OutputFileName))
+        
+        if (!string.IsNullOrWhiteSpace(OutputFileName))
         {
             var fInfo = new FileInfo(OutputFileName);
             if (!fInfo.Extension.ToLowerInvariant().Equals(".csv"))
                 message = "The output file must be of type csv.";
         }
-        else if (Backtest && string.IsNullOrWhiteSpace(Scenario))
+        
+        if (Backtest && string.IsNullOrWhiteSpace(Scenario))
             message = "Scenario must be specified when backtest is chosen.";
+        if (Cleanup && !Import)
+            message = "Cleanup is not valid without import.";
 
         return string.IsNullOrWhiteSpace(message);
     }

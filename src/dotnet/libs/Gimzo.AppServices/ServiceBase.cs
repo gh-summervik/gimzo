@@ -8,10 +8,18 @@ using Microsoft.Extensions.Caching.Memory;
 
 namespace Gimzo.AppServices;
 
-public abstract class ServiceBase(DbDefPair dbDefPair, IMemoryCache memoryCache)
+public abstract class ServiceBase
 {
-    protected readonly DbDefPair _dbDefPair = dbDefPair;
-    protected readonly IMemoryCache _memoryCache = memoryCache;
+    protected readonly DbDefPair _dbDefPair;
+    protected readonly IMemoryCache _memoryCache;
+
+    public ServiceBase(DbDefPair dbDefPair, IMemoryCache memoryCache)
+    {
+        _dbDefPair = dbDefPair;
+        _memoryCache = memoryCache;
+        SqlMapper.AddTypeHandler(new DateOnlyTypeHandler());
+        SqlMapper.AddTypeHandler(new NullableDateOnlyTypeHandler());
+    }
 
     internal async Task SaveProcess(Infrastructure.Database.DataAccessObjects.Process process)
     {
