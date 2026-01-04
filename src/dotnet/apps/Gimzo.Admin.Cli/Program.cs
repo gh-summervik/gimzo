@@ -10,6 +10,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -177,27 +178,51 @@ try
 
     if (config.Analyze)
     {
-        var analysisService = new CompanyAnalysisService(dbDefPairs![0],
+        var companyAnalysisService = new CompanyAnalysisService(dbDefPairs![0],
             serviceProvider.GetRequiredService<IMemoryCache>(),
             serviceProvider.GetRequiredService<ILogger<CompanyAnalysisService>>());
 
         if (string.IsNullOrWhiteSpace(config.Symbol))
         {
-            var allScores = await analysisService.GetAllSiloScoresAsync();
+            string baseDir = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                ? Path.Combine("C:", "temp", "gimzo")
+                : Path.Combine("/", "c", "temp", "gimzo");
 
-            if (allScores.Count > 0)
+            var allCompanyScores = (await companyAnalysisService.GetAllSiloScoresAsync()).ToImmutableArray();
+
+            if (allCompanyScores.Length > 0)
             {
-                string baseDir = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-                    ? Path.Combine("C:", "temp", "gimzo")
-                    : Path.Combine("/", "c", "temp", "gimzo");
+                await using var f = File.Create(Path.Combine(baseDir, "company_value_ranking.txt"));
 
-                string fullPath = Path.Combine(baseDir, "value_ranking.txt");
-
-                await using var f = File.Create(fullPath);
-
-                foreach (var r in allScores)
+                foreach (var r in allCompanyScores)
                 {
                     var line = $"{r.Symbol.PadLeft(7, ' ')}:\tb:{r.Percentile}\ta:{r.Score}";
+                    Console.WriteLine(line);
+                    await f.WriteLineAsync(line);
+                }
+
+                await f.FlushAsync();
+                f.Close();
+            }
+
+            var industryAnalysisService = new IndustryAnalysisService(dbDefPairs![0],
+                serviceProvider.GetRequiredService<IMemoryCache>(),
+                serviceProvider.GetRequiredService<ILogger<IndustryAnalysisService>>());
+
+            var allIndustryScores = (await industryAnalysisService.GetAllIndustryScoresAsync()).ToImmutableArray();
+
+            if (allIndustryScores.Length > 0)
+            {
+                await using var f = File.Create(Path.Combine(baseDir, "industry_value_ranking.txt"));
+
+                foreach (var r in allIndustryScores)
+                {
+                    int key = Convert.ToInt32(r.SicCode);
+                    if (key == 0)
+                        continue;
+
+                    var title = $"{r.SicCode} ({Constants.SicTitles[key]})"; // maybe this dictionary should be keyed on a string.
+                    var line = $"{r.Rank.ToString().PadLeft(3,'0')}  {r.ValueBillions.ToString("#,##0.00").PadLeft(25,' ')}B\t\t{title}";
                     Console.WriteLine(line);
                     await f.WriteLineAsync(line);
                 }
@@ -208,7 +233,7 @@ try
         }
         else
         {
-            var score = await analysisService.GetSiloScoreForSymbolAsync(config.Symbol);
+            var score = await companyAnalysisService.GetSiloScoreForSymbolAsync(config.Symbol);
             Console.WriteLine($"{config.Symbol}\t{score}");
         }
     }

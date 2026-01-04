@@ -253,30 +253,7 @@ LIMIT 5";
     {
         const string Sql = @"
     WITH ranked AS (
-        SELECT
-            symbol,
-            central_index_key,
-            registrant,
-            fiscal_year,
-            fiscal_period,
-            period_end_date,
-            working_capital,
-            current_ratio,
-            cash_ratio,
-            quick_ratio,
-            days_of_inventory_outstanding,
-            days_of_sales_outstanding,
-            days_payable_outstanding,
-            cash_conversion_cycle,
-            sales_to_working_capital_ratio,
-            cash_to_current_liabilities_ratio,
-            working_capital_to_debt_ratio,
-            cash_flow_adequacy_ratio,
-            sales_to_current_assets_ratio,
-            cash_to_current_assets_ratio,
-            cash_to_working_capital_ratio,
-            inventory_to_working_capital_ratio,
-            net_debt,
+        SELECT *,
             ROW_NUMBER() OVER (PARTITION BY symbol ORDER BY period_end_date DESC) AS rn
         FROM public.liquidity_ratios
         WHERE fiscal_period IN ('Q1','Q2','Q3','Q4')
@@ -352,22 +329,7 @@ LIMIT 5";
     {
         const string Sql = @"
     WITH ranked AS (
-        SELECT
-            symbol,
-            central_index_key,
-            registrant,
-            fiscal_year,
-            fiscal_period,
-            period_end_date,
-            equity_ratio,
-            debt_coverage_ratio,
-            asset_coverage_ratio,
-            interest_coverage_ratio,
-            debt_to_equity_ratio,
-            debt_to_assets_ratio,
-            debt_to_capital_ratio,
-            debt_to_income_ratio,
-            cash_flow_to_debt_ratio,
+        SELECT *,
             ROW_NUMBER() OVER (PARTITION BY symbol ORDER BY period_end_date DESC) AS rn
         FROM public.solvency_ratios
         WHERE fiscal_period IN ('Q1','Q2','Q3','Q4')
@@ -427,24 +389,7 @@ LIMIT 5";
     {
         const string Sql = @"
     WITH ranked AS (
-        SELECT
-            symbol,
-            central_index_key,
-            registrant,
-            fiscal_year,
-            fiscal_period,
-            period_end_date,
-            ebit,
-            ebitda,
-            profit_margin,
-            gross_margin,
-            operating_margin,
-            operating_cash_flow_margin,
-            return_on_equity,
-            return_on_assets,
-            return_on_debt,
-            cash_return_on_assets,
-            cash_turnover_ratio,
+        SELECT *,
             ROW_NUMBER() OVER (PARTITION BY symbol ORDER BY period_end_date DESC) AS rn
         FROM public.profitability_ratios
         WHERE fiscal_period IN ('Q1','Q2','Q3','Q4')
@@ -508,31 +453,7 @@ LIMIT 5";
     {
         const string Sql = @"
     WITH ranked AS (
-        SELECT
-            symbol,
-            central_index_key,
-            registrant,
-            fiscal_year,
-            period_end_date,
-            earnings_per_share,
-            earnings_per_share_forecast,
-            price_to_earnings_ratio,
-            forward_price_to_earnings_ratio,
-            earnings_growth_rate,
-            price_earnings_to_growth_rate,
-            book_value_per_share,
-            price_to_book_ratio,
-            ebitda,
-            enterprise_value,
-            dividend_yield,
-            dividend_payout_ratio,
-            debt_to_equity_ratio,
-            capital_expenditures,
-            free_cash_flow,
-            return_on_equity,
-            one_year_beta,
-            three_year_beta,
-            five_year_beta,
+        SELECT *,
             ROW_NUMBER() OVER (PARTITION BY symbol ORDER BY period_end_date DESC) AS rn
         FROM public.key_metrics
     )
@@ -609,18 +530,7 @@ LIMIT 5";
     {
         const string Sql = @"
     WITH ranked AS (
-        SELECT
-            symbol,
-            central_index_key,
-            registrant,
-            fiscal_year,
-            fiscal_period,
-            period_end_date,
-            dividends_per_share,
-            dividend_payout_ratio,
-            book_value_per_share,
-            retention_ratio,
-            net_fixed_assets,
+        SELECT *,
             ROW_NUMBER() OVER (PARTITION BY symbol ORDER BY period_end_date DESC) AS rn
         FROM public.valuation_ratios
         WHERE fiscal_period IN ('Q1','Q2','Q3','Q4')
@@ -672,28 +582,7 @@ LIMIT 5";
     {
         const string Sql = @"
     WITH ranked AS (
-        SELECT
-            symbol,
-            central_index_key,
-            registrant,
-            fiscal_year,
-            fiscal_period,
-            period_end_date,
-            asset_turnover_ratio,
-            inventory_turnover_ratio,
-            accounts_receivable_turnover_ratio,
-            accounts_payable_turnover_ratio,
-            equity_multiplier,
-            days_sales_in_inventory,
-            fixed_asset_turnover_ratio,
-            days_working_capital,
-            working_capital_turnover_ratio,
-            days_cash_on_hand,
-            capital_intensity_ratio,
-            sales_to_equity_ratio,
-            inventory_to_sales_ratio,
-            investment_turnover_ratio,
-            sales_to_operating_income_ratio,
+        SELECT *,
             ROW_NUMBER() OVER (PARTITION BY symbol ORDER BY period_end_date DESC) AS rn
         FROM public.efficiency_ratios
         WHERE fiscal_period IN ('Q1','Q2','Q3','Q4')
@@ -765,10 +654,7 @@ LIMIT 5";
     {
         const string Sql = @"
     WITH ranked AS (
-        SELECT
-            symbol,
-            settlement_date,
-            days_to_cover,
+        SELECT *,
             ROW_NUMBER() OVER (PARTITION BY symbol ORDER BY settlement_date DESC) AS rn
         FROM public.short_interests
     )
@@ -803,11 +689,7 @@ LIMIT 5";
     {
         const string Sql = @"
     WITH ranked AS (
-        SELECT
-            symbol,
-            period_end_date,
-            revenue,
-            earnings_per_share_diluted,
+        SELECT *,
             ROW_NUMBER() OVER (PARTITION BY symbol ORDER BY period_end_date DESC) AS rn
         FROM public.income_statements
         WHERE fiscal_period IN ('Q1','Q2','Q3','Q4')
@@ -839,16 +721,6 @@ LIMIT 5";
         }
 
         return daos.Select(d => d.ToDomain()).ToImmutableArray();
-    }
-
-    private async Task<IReadOnlyDictionary<string, string?>> GetAllSicCodesAsync()
-    {
-        const string Sql = "SELECT symbol, sic_code FROM public.us_companies WHERE sic_code IS NOT NULL";
-
-        using var queryCtx = _dbDefPair.GetQueryConnection();
-        var rows = await queryCtx.QueryAsync<dynamic>(Sql);
-
-        return rows.ToFrozenDictionary(r => (string)r.symbol, r => (string?)r.sic_code);
     }
 
     private int ComputeAbsoluteScore(
@@ -1066,4 +938,13 @@ LIMIT 5";
 //    }
 
 //    return [..results.OrderByDescending(r => r.BlendedScore)];
+//}
+//private async Task<IReadOnlyDictionary<string, string?>> GetAllSicCodesAsync()
+//{
+//    const string Sql = "SELECT symbol, sic_code FROM public.us_companies WHERE sic_code IS NOT NULL";
+
+//    using var queryCtx = _dbDefPair.GetQueryConnection();
+//    var rows = await queryCtx.QueryAsync<dynamic>(Sql);
+
+//    return rows.ToFrozenDictionary(r => (string)r.symbol, r => (string?)r.sic_code);
 //}
