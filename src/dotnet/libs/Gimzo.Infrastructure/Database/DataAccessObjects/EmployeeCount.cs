@@ -4,12 +4,14 @@ internal sealed record EmployeeCount : DaoBase
 {
     public EmployeeCount() : base()
     {
+        Symbol = "";
         CentralIndexKey = "";
         FiscalYear = "";
     }
 
     public EmployeeCount(Guid userId) : base(userId)
     {
+        Symbol = "";
         CentralIndexKey = "";
         FiscalYear = "";
     }
@@ -23,9 +25,9 @@ internal sealed record EmployeeCount : DaoBase
         Count = count.Count;
     }
 
+    public string Symbol { get; init; }
     public string CentralIndexKey { get; init; }
     public string FiscalYear { get; init; }
-    public string? Symbol { get; init; }
     public string? Registrant { get; init; }
     public int? Count { get; init; }
 

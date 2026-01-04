@@ -1,11 +1,10 @@
 ﻿namespace Gimzo.Analysis.Fundamental;
 
-public sealed class CompanyInformation
+public record struct CompanyInformation
 {
-    public CompanyInformation() { }
+    public required string Symbol { get; init; }
     public required string CentralIndexKey { get; init; }
     public required string Exchange { get; init; }
-    public required string Symbol { get; init; }
     public string? Registrant { get; init; }
     public string? Isin { get; init; }
     public string? Lei { get; init; }

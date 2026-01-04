@@ -4,11 +4,13 @@ internal sealed record StockSplit : DaoBase
 {
     public StockSplit() : base()
     {
+        Symbol = "";
         CentralIndexKey = "";
     }
 
     public StockSplit(Guid userId) : base(userId)
     {
+        Symbol = "";
         CentralIndexKey = "";
     }
 
@@ -17,13 +19,13 @@ internal sealed record StockSplit : DaoBase
         Symbol = split.Symbol;
         CentralIndexKey = split.CentralIndexKey;
         Registrant = split.Registrant;
-        ExecutionDate = split.ExecutionDate;
+        ExecutionDate = split.ExecutionDate.GetValueOrDefault();
         Multiplier = split.Multiplier;
     }
 
+    public string Symbol { get; init; }
     public string CentralIndexKey { get; init; }
     public DateOnly ExecutionDate { get; init; }
-    public string? Symbol { get; init; }
     public string? Registrant { get; init; }
     public double? Multiplier { get; init; }
 

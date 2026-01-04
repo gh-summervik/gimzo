@@ -4,9 +4,9 @@ public readonly record struct RiskSentimentAssessment(
     int Score,
     string Assessment,
     double? OneYearBeta,
-    double? DaysToCover);  // from latest short interest
+    double? DaysToCover);
 
-public sealed class RiskSentimentHealthAnalyzer
+public static class RiskSentimentHealthAnalyzer
 {
     private static double NormalizeBeta(double value)
         => value <= 0.8 ? 1.0 :

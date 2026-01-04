@@ -42,31 +42,33 @@ public sealed class UiModelService(DbDefPair dbDefPair, IMemoryCache memoryCache
             lastTrendValue = chart.TrendValues[^1];
         }
 
+        var info = coInfo.Value;
+
         return new()
         {
-            BusinessAddress = coInfo.BusinessAddress,
-            CentralIndexKey = coInfo.CentralIndexKey,
-            ChiefExecutiveOfficer = coInfo.ChiefExecutiveOfficer,
-            DateFounding = coInfo.DateFounding,
-            Description = coInfo.Description,
-            Ein = coInfo.Ein,
-            Exchange = coInfo.Exchange,
-            FiscalYearEnd = coInfo.FiscalYearEnd,
-            FormerName = coInfo.FormerName,
-            Industry = coInfo.Industry,
-            Isin = coInfo.Isin,
-            Lei = coInfo.Lei,
-            MailingAddress = coInfo.MailingAddress,
-            MarketCap = coInfo.MarketCap,
-            NumberEmployees = coInfo.NumberEmployees,
-            PhoneNumber = coInfo.PhoneNumber,
-            Registrant = coInfo.Registrant,
-            SharesIssued = coInfo.SharesIssued,
-            SharesOutstanding = coInfo.SharesOutstanding,
-            Sic = coInfo.SicCode == null ? null : $"{coInfo.SicCode} ({coInfo.SicDescription})",
-            StateOfIncorporation = coInfo.StateOfIncorporation,
-            Symbol = coInfo.Symbol,
-            WebSite = coInfo.WebSite,
+            BusinessAddress = info.BusinessAddress,
+            CentralIndexKey = info.CentralIndexKey,
+            ChiefExecutiveOfficer = info.ChiefExecutiveOfficer,
+            DateFounding = info.DateFounding,
+            Description = info.Description,
+            Ein = info.Ein,
+            Exchange = info.Exchange,
+            FiscalYearEnd = info.FiscalYearEnd,
+            FormerName = info.FormerName,
+            Industry = info.Industry,
+            Isin = info.Isin,
+            Lei = info.Lei,
+            MailingAddress = info.MailingAddress,
+            MarketCap = info.MarketCap,
+            NumberEmployees = info.NumberEmployees,
+            PhoneNumber = info.PhoneNumber,
+            Registrant = info.Registrant,
+            SharesIssued = info.SharesIssued,
+            SharesOutstanding = info.SharesOutstanding,
+            Sic = info.SicCode == null ? null : $"{info.SicCode} ({info.SicDescription})",
+            StateOfIncorporation = info.StateOfIncorporation,
+            Symbol = info.Symbol,
+            WebSite = info.WebSite,
             LastOhlc = chart?.Candlesticks.LastOrDefault(),
             CurrentAverageTrueRange = chart?.GetAverageTrueRangeForPeriod(Common.Constants.DefaultAverageTrueRangePeriod),
             FiftyTwoWeekLow = fiftyTwoWeekLow,
@@ -143,170 +145,4 @@ public sealed class UiModelService(DbDefPair dbDefPair, IMemoryCache memoryCache
             SerializedTrend = serializedTrend
         };
     }
-
-    //public async Task<ChartModel?> GetChartModelAsync(string symbol,
-    //DateOnly start, DateOnly? finish = null,
-    //int lookback = ChartLookback,
-    //ChartInterval interval = ChartInterval.Daily)
-    //{
-    //    var chart = await GetChartAsync(symbol, lookback, interval);
-
-    //    if (chart == null || chart.PriceActions.Length == 0)
-    //        return null;
-
-    //    if (start < chart.PriceActions[0].Date)
-    //        start = chart.PriceActions[0].Date;
-
-    //    if (!finish.HasValue || finish > chart.PriceActions[^1].Date)
-    //        finish = chart.PriceActions[^1].Date;
-
-    //    start = chart.GetNearestDate(start) ?? chart.PriceActions[0].Date;
-    //    finish = chart.GetNearestDate(finish.GetValueOrDefault()) ?? chart.PriceActions[^1].Date;
-
-    //    var startIdx = chart.GetIndexOfDate(start);
-    //    var finishIdx = chart.GetIndexOfDate(finish.Value);
-
-    //    var span = chart.GetSpan(startIdx, finishIdx);
-
-    //    var prices = span.PriceActions;
-
-    //    var epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-
-    //    var candleData = prices.Select(p => new
-    //    {
-    //        x = (long)(p.Date.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc) - epoch).TotalMilliseconds,
-    //        y = new[] { p.Open, p.High, p.Low, p.Close }
-    //    }).ToArray();
-
-    //    var series = new List<object> { new { name = "Candlestick", type = "candlestick", data = candleData } };
-
-    //    var timestamps = candleData.Select(d => d.x).ToArray();
-
-    //    foreach (var kvp in span.MovingAverages)
-    //    {
-    //        var name = $"{kvp.Key.Type}{kvp.Key.Period}";
-    //        var color = kvp.Key.Period switch
-    //        {
-    //            21 => "#00FF00",  // Green for short-term
-    //            50 => "#0000FF",  // Blue for medium
-    //            200 => "#FF0000", // Red for long-term
-    //            _ => "#808080"   // Gray fallback
-    //        };
-    //        var maData = timestamps.Select((ts, i) => new { x = ts, y = kvp.Value[i] }).ToArray();
-    //        series.Add(new { name, type = "line", data = maData, color });
-    //    }
-
-    //    var serializedData = JsonSerializer.Serialize(series);
-
-    //    return new ChartModel
-    //    {
-    //        Symbol = symbol.ToUpperInvariant(),
-    //        Prices = prices.ToArray(),
-    //        SerializedData = serializedData
-    //    };
-    //}
-    //public async Task<ChartModel?> GetChartModelAsync(string symbol,
-    //DateOnly start, DateOnly? finish = null,
-    //int lookback = ChartLookback,
-    //ChartInterval interval = ChartInterval.Daily)
-    //{
-    //    var chart = await GetChartAsync(symbol, lookback, interval);
-
-    //    if (chart == null || chart.PriceActions.Length == 0)
-    //        return null;
-
-    //    if (start < chart.PriceActions[0].Date)
-    //        start = chart.PriceActions[0].Date;
-
-    //    if (!finish.HasValue || finish > chart.PriceActions[^1].Date)
-    //        finish = chart.PriceActions[^1].Date;
-
-    //    start = chart.GetNearestDate(start) ?? chart.PriceActions[0].Date;
-    //    finish = chart.GetNearestDate(finish.GetValueOrDefault()) ?? chart.PriceActions[^1].Date;
-
-    //    var startIdx = chart.GetIndexOfDate(start);
-    //    var finishIdx = chart.GetIndexOfDate(finish.Value);
-
-    //    var span = chart.GetSpan(startIdx, finishIdx);
-
-    //    var prices = span.PriceActions;
-
-    //    var epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-
-    //    var candleData = prices.Select(p => new
-    //    {
-    //        x = (long)(p.Date.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc) - epoch).TotalMilliseconds,
-    //        y = new[] { p.Open, p.High, p.Low, p.Close }
-    //    }).ToArray();
-
-    //    var series = new List<object> { new { name = "Candlestick", type = "candlestick", data = candleData } };
-
-    //    var timestamps = candleData.Select(d => d.x).ToArray();
-
-    //    foreach (var kvp in span.MovingAverages)
-    //    {
-    //        var name = $"{kvp.Key.Type}{kvp.Key.Period}";
-    //        var maData = timestamps.Select((ts, i) => new { x = ts, y = kvp.Value[i] }).ToArray();
-    //        series.Add(new { name, type = "line", data = maData });
-    //    }
-
-    //    var serializedData = JsonSerializer.Serialize(series);
-
-    //    return new ChartModel
-    //    {
-    //        Symbol = symbol.ToUpperInvariant(),
-    //        Prices = prices.ToArray(),
-    //        SerializedData = serializedData
-    //    };
-    //}
-
-    //public async Task<ChartModel?> GetChartModelAsync(string symbol,
-    //    DateOnly start, DateOnly? finish = null,
-    //    int lookback = ChartLookback, 
-    //    ChartInterval interval = ChartInterval.Daily)
-    //{
-    //    var chart = await GetChartAsync(symbol, lookback, interval);
-
-    //    if (chart == null || chart.PriceActions.Length == 0)
-    //        return null;
-
-    //    if (start < chart.PriceActions[0].Date)
-    //        start = chart.PriceActions[0].Date; 
-
-    //    if (!finish.HasValue || finish > chart.PriceActions[^1].Date)
-    //        finish = chart.PriceActions[^1].Date;
-
-    //    start = chart.GetNearestDate(start) ?? chart.PriceActions[0].Date;
-    //    finish = chart.GetNearestDate(finish.GetValueOrDefault()) ?? chart.PriceActions[^1].Date;
-
-    //    var startIdx = chart.GetIndexOfDate(start);
-    //    var finishIdx = chart.GetIndexOfDate(finish.Value);
-
-    //    var span = chart.GetSpan(startIdx, finishIdx);
-
-    //    var prices = span.PriceActions;
-
-    //    var epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-
-    //    var candleData = prices.Select(p => new
-    //    {
-    //        x = (long)(p.Date.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc) - epoch).TotalMilliseconds,
-    //        y = new[] { p.Open, p.High, p.Low, p.Close }
-    //    });
-
-    //    foreach (var kvp in span.MovingAverages)
-    //    {
-    //        var name = $"{kvp.Key.Type}{kvp.Key.Period}";
-    //        var maData = timestamps.Select((ts, i) => new { x = ts, y = kvp.Value[i] }).ToArray();
-    //        series.Add(new { name, type = "line", data = maData });
-    //    }
-    //    var serializedData = JsonSerializer.Serialize(candleData);
-
-    //    return new ChartModel
-    //    {
-    //        Symbol = symbol.ToUpperInvariant(),
-    //        Prices = prices.ToArray(),
-    //        SerializedData = serializedData
-    //    };
-    //}
 }

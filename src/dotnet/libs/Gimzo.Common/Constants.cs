@@ -3,7 +3,6 @@ using System.ComponentModel;
 
 namespace Gimzo.Common;
 
-
 public enum LogicalOperator
 {
     [Description("AND")]
@@ -40,10 +39,11 @@ public static class Constants
         }
     }
 
+    // TODO: Should this be keyed on a string?
     /*
-* Taken from: https://www.sec.gov/search-filings/standard-industrial-classification-sic-code-list
-* on 03-Jan-2026.
-*/
+     * Taken from: https://www.sec.gov/search-filings/standard-industrial-classification-sic-code-list
+     * on 03-Jan-2026.
+     */
     public static readonly IReadOnlyDictionary<int, string> SicTitles =
         new Dictionary<int, string>
     {
@@ -493,4 +493,3 @@ public static class Constants
         { 9995, "NON-OPERATING ESTABLISHMENTS" }
     }.ToFrozenDictionary();
 }
-

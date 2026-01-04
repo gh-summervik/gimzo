@@ -4,6 +4,7 @@ internal sealed record EfficiencyRatios : DaoBase
 {
     public EfficiencyRatios() : base()
     {
+        Symbol = "";
         CentralIndexKey = "";
         FiscalYear = "";
         FiscalPeriod = "";
@@ -11,6 +12,7 @@ internal sealed record EfficiencyRatios : DaoBase
 
     public EfficiencyRatios(Guid userId) : base(userId)
     {
+        Symbol = "";
         CentralIndexKey = "";
         FiscalYear = "";
         FiscalPeriod = "";
@@ -41,10 +43,10 @@ internal sealed record EfficiencyRatios : DaoBase
         SalesToOperatingIncomeRatio = ratios.SalesToOperatingIncomeRatio;
     }
 
+    public string Symbol { get; init; }
     public string CentralIndexKey { get; init; }
     public string FiscalYear { get; init; }
     public string FiscalPeriod { get; init; }
-    public string? Symbol { get; init; }
     public string? Registrant { get; init; }
     public DateOnly? PeriodEndDate { get; init; }
     public double? AssetTurnoverRatio { get; init; }

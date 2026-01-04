@@ -4,6 +4,7 @@ internal sealed record SolvencyRatios : DaoBase
 {
     public SolvencyRatios() : base()
     {
+        Symbol = "";
         CentralIndexKey = "";
         FiscalYear = "";
         FiscalPeriod = "";
@@ -11,6 +12,7 @@ internal sealed record SolvencyRatios : DaoBase
 
     public SolvencyRatios(Guid userId) : base(userId)
     {
+        Symbol = "";
         CentralIndexKey = "";
         FiscalYear = "";
         FiscalPeriod = "";
@@ -35,10 +37,10 @@ internal sealed record SolvencyRatios : DaoBase
         CashFlowToDebtRatio = ratios.CashFlowToDebtRatio;
     }
 
+    public string Symbol { get; init; }
     public string CentralIndexKey { get; init; }
     public string FiscalYear { get; init; }
     public string FiscalPeriod { get; init; }
-    public string? Symbol { get; init; }
     public string? Registrant { get; init; }
     public DateOnly? PeriodEndDate { get; init; }
     public double? EquityRatio { get; init; }

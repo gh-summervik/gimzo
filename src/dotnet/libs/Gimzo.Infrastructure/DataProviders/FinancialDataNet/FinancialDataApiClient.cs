@@ -1632,8 +1632,6 @@ public sealed class FinancialDataApiClient(string apiKey, ILogger<FinancialDataA
         { "thin-film renewables (solar and glass)", "Thin-film Renewables" },
     };
 
-
-
     public void Dispose()
     {
         _httpClient.Dispose();

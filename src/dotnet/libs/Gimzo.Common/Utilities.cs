@@ -27,6 +27,19 @@ public static class EnumUtilities
     }
 }
 
+public static class OsHelper
+{
+    public static bool IsWindows() => System.Runtime.InteropServices.RuntimeInformation.
+        IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows);
+
+    public static bool IsLinux() => System.Runtime.InteropServices.RuntimeInformation.
+        IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Linux);
+
+    public static bool IsMacOs() => System.Runtime.InteropServices.RuntimeInformation.
+        IsOSPlatform(System.Runtime.InteropServices.OSPlatform.FreeBSD);
+}
+
+
 #pragma warning disable CA2254 // Template should be a static expression
 public static class LogHelper
 {

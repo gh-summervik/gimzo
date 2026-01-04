@@ -1,11 +1,11 @@
 namespace Gimzo.Analysis.Fundamental;
 
-public sealed class IncomeStatement
+public record struct IncomeStatement
 {
+    public required string Symbol { get; init; }
     public required string CentralIndexKey { get; init; }
     public required string FiscalYear { get; init; }
     public required string FiscalPeriod { get; init; }
-    public string? Symbol { get; init; }
     public string? Registrant { get; init; }
     public DateOnly? PeriodEndDate { get; init; }
     public decimal? Revenue { get; init; }

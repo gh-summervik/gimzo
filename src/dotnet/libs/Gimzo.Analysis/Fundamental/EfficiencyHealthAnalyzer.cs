@@ -8,7 +8,7 @@ public readonly record struct EfficiencyAssessment(
     double? AccountsReceivableTurnoverRatio,
     double? FixedAssetTurnoverRatio);
 
-public sealed class EfficiencyHealthAnalyzer
+public static class EfficiencyHealthAnalyzer
 {
     private static double NormalizeTurnover(double value)
         => value >= 2.0 ? 1.0 :

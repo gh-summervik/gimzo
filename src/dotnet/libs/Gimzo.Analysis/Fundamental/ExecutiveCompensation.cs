@@ -1,12 +1,12 @@
 namespace Gimzo.Analysis.Fundamental;
 
-public sealed class ExecutiveCompensation
+public record struct ExecutiveCompensation
 {
+    public required string Symbol { get; init; }
     public required string CentralIndexKey { get; init; }
     public required string Name { get; init; }
     public required string Position { get; init; }
     public required string FiscalYear { get; init; }
-    public string? Symbol { get; init; }
     public string? Registrant { get; init; }
     public decimal? Salary { get; init; }
     public decimal? Bonus { get; init; }

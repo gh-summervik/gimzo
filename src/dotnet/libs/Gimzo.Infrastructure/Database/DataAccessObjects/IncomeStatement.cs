@@ -4,6 +4,7 @@ internal sealed record IncomeStatement : DaoBase
 {
     public IncomeStatement() : base()
     {
+        Symbol = "";
         CentralIndexKey = "";
         FiscalYear = "";
         FiscalPeriod = "";
@@ -11,6 +12,7 @@ internal sealed record IncomeStatement : DaoBase
 
     public IncomeStatement(Guid userId) : base(userId)
     {
+        Symbol = "";
         CentralIndexKey = "";
         FiscalYear = "";
         FiscalPeriod = "";
@@ -40,10 +42,10 @@ internal sealed record IncomeStatement : DaoBase
         WeightedAverageSharesOutstandingDiluted = stmt.WeightedAverageSharesOutstandingDiluted;
     }
 
+    public string Symbol { get; init; }
     public string CentralIndexKey { get; init; }
     public string FiscalYear { get; init; }
     public string FiscalPeriod { get; init; }
-    public string? Symbol { get; init; }
     public string? Registrant { get; init; }
     public DateOnly? PeriodEndDate { get; init; }
     public decimal? Revenue { get; init; }

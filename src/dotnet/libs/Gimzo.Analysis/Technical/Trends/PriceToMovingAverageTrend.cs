@@ -55,7 +55,7 @@ public class PriceToMovingAverageTrend : PriceTrendBase, ITrend
         }
     }
 
-    private double CalculateStandardDeviation(double[] values)
+    private static double CalculateStandardDeviation(double[] values)
     {
         if (values.Length <= 1)
             return 0.0;
@@ -64,7 +64,7 @@ public class PriceToMovingAverageTrend : PriceTrendBase, ITrend
         return Math.Sqrt(sumOfSquares / values.Length);
     }
 
-    private double CalculateRegressionSlope(double[] values, int startIndex, int length)
+    private static double CalculateRegressionSlope(double[] values, int startIndex, int length)
     {
         if (length <= 1)
             return 0.0;

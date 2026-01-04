@@ -1,6 +1,5 @@
 ﻿namespace Gimzo.Analysis.Fundamental;
 
-// New analyzer
 public readonly record struct GrowthAssessment(
     int Score,
     string Assessment,
@@ -12,7 +11,7 @@ public sealed record QuarterlyIncome(
     decimal? Revenue,
     decimal? EarningsPerShareDiluted);
 
-public sealed class GrowthHealthAnalyzer
+public static class GrowthHealthAnalyzer
 {
     private static double NormalizeRevenueGrowth(double value)
         => value >= 30 ? 1.0 :

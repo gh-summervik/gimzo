@@ -17,7 +17,7 @@ internal sealed record ShortInterest : DaoBase
         Symbol = interest.Symbol;
         Title = interest.Title;
         MarketCode = interest.MarketCode;
-        SettlementDate = interest.SettlementDate;
+        SettlementDate = interest.SettlementDate.GetValueOrDefault();
         ShortedSecurities = interest.ShortedSecurities;
         PreviousShortedSecurities = interest.PreviousShortedSecurities;
         ChangeInShortedSecurities = interest.ChangeInShortedSecurities;

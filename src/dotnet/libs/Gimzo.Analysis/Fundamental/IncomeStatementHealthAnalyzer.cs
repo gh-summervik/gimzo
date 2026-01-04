@@ -10,7 +10,7 @@ public readonly record struct IncomeStatementAssessment(
     double? ReturnOnAssets,
     double? ApproximateRoic);
 
-public sealed class IncomeStatementHealthAnalyzer
+public static class IncomeStatementHealthAnalyzer
 {
     private static double NormalizeMargin(double value)   // 0-1 fraction or percent? assuming fraction
         => value >= 0.40 ? 1.0 :

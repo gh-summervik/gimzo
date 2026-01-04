@@ -30,7 +30,7 @@ internal abstract record class AuditBase
     }
 
     /// <summary>
-    /// Gets the DateTimeOffset for when this record was created.
+    /// Gets the DateTimeOffset for the time of this record's creation.
     /// </summary>
     public DateTimeOffset CreatedAt
     {
@@ -73,7 +73,7 @@ internal abstract record class DaoBase : AuditBase
     }
 
     /// <summary>
-    /// Gets the DateTimeOffset for when this record was last updated.
+    /// Gets the DateTimeOffset for the time this record was last updated.
     /// </summary>
     public DateTimeOffset UpdatedAt
     {

@@ -4,6 +4,7 @@ internal sealed record BalanceSheet : DaoBase
 {
     public BalanceSheet() : base()
     {
+        Symbol = "";
         CentralIndexKey = "";
         FiscalYear = "";
         FiscalPeriod = "";
@@ -11,6 +12,7 @@ internal sealed record BalanceSheet : DaoBase
 
     public BalanceSheet(Guid userId) : base(userId)
     {
+        Symbol = "";
         CentralIndexKey = "";
         FiscalYear = "";
         FiscalPeriod = "";
@@ -51,10 +53,10 @@ internal sealed record BalanceSheet : DaoBase
         TotalShareholdersEquity = sheet.TotalShareholdersEquity;
     }
 
+    public string Symbol { get; init; }
     public string CentralIndexKey { get; init; }
     public string FiscalYear { get; init; }
     public string FiscalPeriod { get; init; }
-    public string? Symbol { get; init; }
     public string? Registrant { get; init; }
     public DateOnly? PeriodEndDate { get; init; }
     public decimal? Cash { get; init; }

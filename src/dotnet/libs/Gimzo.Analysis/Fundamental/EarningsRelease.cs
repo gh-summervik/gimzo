@@ -1,10 +1,10 @@
 namespace Gimzo.Analysis.Fundamental;
 
-public sealed class EarningsRelease
+public record struct EarningsRelease
 {
+    public required string Symbol { get; init; }
     public required string CentralIndexKey { get; init; }
     public required string FiscalQuarterEndDate { get; init; }
-    public string? Symbol { get; init; }
     public string? RegistrantName { get; init; }
     public decimal? MarketCap { get; init; }
     public decimal? EarningsPerShare { get; init; }

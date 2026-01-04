@@ -27,10 +27,10 @@ public abstract class ServiceBase
         await cmdCtx.ExecuteAsync(SqlRepository.MergeProcess, process);
     }
 
-    public Task<IEnumerable<string>> GetSymbolsAsync() =>
+    internal Task<IEnumerable<string>> GetSymbolsAsync() =>
         _dbDefPair.GetQueryConnection().QueryAsync<string>("SELECT symbol FROM public.stock_symbols");
 
-    public async Task<CompanyInformation?> GetCompanyInformationAsync(string symbol)
+    protected async Task<CompanyInformation?> GetCompanyInformationAsync(string symbol)
     {
         ArgumentNullException.ThrowIfNullOrWhiteSpace(symbol, nameof(symbol));
 
@@ -40,7 +40,7 @@ public abstract class ServiceBase
         return dao?.ToDomain();
     }
 
-    public async Task<IReadOnlyCollection<Ohlc>> GetOhlcAsync(string symbol)
+    internal async Task<IReadOnlyCollection<Ohlc>> GetOhlcAsync(string symbol)
     {
         ArgumentNullException.ThrowIfNullOrWhiteSpace(symbol, nameof(symbol));
         using var queryCtx = _dbDefPair.GetQueryConnection();
@@ -59,7 +59,7 @@ public abstract class ServiceBase
         ChartInterval interval = ChartInterval.Daily) =>
             HashCode.Combine(symbol.ToUpperInvariant(), lookback, interval);
 
-    public async Task<Chart?> GetChartAsync(string symbol,
+    internal async Task<Chart?> GetChartAsync(string symbol,
         int lookback = Common.Constants.DefaultChartLookback,
         ChartInterval interval = ChartInterval.Daily)
     {

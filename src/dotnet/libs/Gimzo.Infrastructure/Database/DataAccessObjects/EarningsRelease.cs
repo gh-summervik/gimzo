@@ -6,12 +6,14 @@ internal sealed record EarningsRelease : DaoBase
 
     public EarningsRelease() : base()
     {
+        Symbol = "";
         CentralIndexKey = "";
         FiscalQuarterEndDate = "";
     }
 
     public EarningsRelease(Guid userId) : base(userId)
     {
+        Symbol = "";
         CentralIndexKey = "";
         FiscalQuarterEndDate = "";
     }
@@ -30,9 +32,9 @@ internal sealed record EarningsRelease : DaoBase
         ConferenceCallTime = release.ConferenceCallTime;
     }
 
+    public string Symbol { get; init; }
     public string CentralIndexKey { get; init; }
     public string FiscalQuarterEndDate { get; init; }
-    public string? Symbol { get; init; }
     public string? RegistrantName { get; init; }
     public decimal? MarketCap { get; init; }
     public decimal? EarningsPerShare { get; init; }

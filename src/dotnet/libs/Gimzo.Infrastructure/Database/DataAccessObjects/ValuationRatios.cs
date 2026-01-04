@@ -4,6 +4,7 @@ internal sealed record ValuationRatios : DaoBase
 {
     public ValuationRatios() : base()
     {
+        Symbol = "";
         CentralIndexKey = "";
         FiscalYear = "";
         FiscalPeriod = "";
@@ -11,6 +12,7 @@ internal sealed record ValuationRatios : DaoBase
 
     public ValuationRatios(Guid userId) : base(userId)
     {
+        Symbol = "";
         CentralIndexKey = "";
         FiscalYear = "";
         FiscalPeriod = "";
@@ -31,10 +33,10 @@ internal sealed record ValuationRatios : DaoBase
         NetFixedAssets = ratios.NetFixedAssets;
     }
 
+    public string Symbol { get; init; }
     public string CentralIndexKey { get; init; }
     public string FiscalYear { get; init; }
     public string FiscalPeriod { get; init; }
-    public string? Symbol { get; init; }
     public string? Registrant { get; init; }
     public DateOnly? PeriodEndDate { get; init; }
     public decimal? DividendsPerShare { get; init; }

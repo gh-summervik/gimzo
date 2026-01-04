@@ -1,6 +1,6 @@
 ﻿namespace Gimzo.Analysis.Fundamental;
 
-public sealed class ProfitabilityRatios
+public record struct ProfitabilityRatios
 {
     public required string CentralIndexKey { get; init; }
     public required string FiscalYear { get; init; }

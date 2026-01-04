@@ -9,7 +9,7 @@ public readonly record struct ValuationAssessment(
     double? RetentionRatio,
     double? FreeCashFlowYieldPct);
 
-public sealed class ValuationHealthAnalyzer
+public static class ValuationHealthAnalyzer
 {
     private static double NormalizePb(double value)  // lower better
         => value <= 1.0 ? 1.0 :
@@ -51,7 +51,7 @@ public sealed class ValuationHealthAnalyzer
         double sPb = key.PriceToBookRatio.HasValue ? NormalizePb(key.PriceToBookRatio.Value) : 0.0;
         double sYield = key.DividendYield.HasValue ? NormalizeYield(key.DividendYield.Value) : 0.0;
         double sPayout = key.DividendPayoutRatio.HasValue ? NormalizePayout(key.DividendPayoutRatio.Value) : 0.0;
-        double sRetention = valuation?.RetentionRatio.HasValue == true ? NormalizeRetention(valuation.RetentionRatio.Value) : 0.0;
+        double sRetention = valuation?.RetentionRatio.HasValue == true ? NormalizeRetention(valuation.Value.RetentionRatio.Value) : 0.0;
 
         double? fcfYieldPct = key.EnterpriseValue.HasValue && key.EnterpriseValue > 0 && key.FreeCashFlow.HasValue
                     ? (double)(key.FreeCashFlow.Value / key.EnterpriseValue.Value * 100)

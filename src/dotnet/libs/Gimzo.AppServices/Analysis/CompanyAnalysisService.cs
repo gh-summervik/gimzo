@@ -44,16 +44,16 @@ public sealed class CompanyAnalysisService(
         if (liquidity is null || solvency is null || profitability is null || keyMetrics is null || efficiency is null)
             return null;
 
-        BalanceSheetAssessment balance = BalanceSheetHealthAnalyzer.Assess(liquidity, solvency);
-        IncomeStatementAssessment income = IncomeStatementHealthAnalyzer.Assess(profitability, efficiency);
-        CashFlowAssessment cashFlow = CashFlowHealthAnalyzer.Assess(profitability);
-        EarningsAssessment earnings = EarningsHealthAnalyzer.Assess(keyMetrics);
-        ValuationAssessment val = ValuationHealthAnalyzer.Assess(keyMetrics, valuation);
-        EfficiencyAssessment eff = EfficiencyHealthAnalyzer.Assess(efficiency);
+        BalanceSheetAssessment balance = BalanceSheetHealthAnalyzer.Assess(liquidity.Value, solvency.Value);
+        IncomeStatementAssessment income = IncomeStatementHealthAnalyzer.Assess(profitability.Value, efficiency.Value);
+        CashFlowAssessment cashFlow = CashFlowHealthAnalyzer.Assess(profitability.Value);
+        EarningsAssessment earnings = EarningsHealthAnalyzer.Assess(keyMetrics.Value);
+        ValuationAssessment val = ValuationHealthAnalyzer.Assess(keyMetrics.Value, valuation);
+        EfficiencyAssessment eff = EfficiencyHealthAnalyzer.Assess(efficiency.Value);
         GrowthAssessment growth = GrowthHealthAnalyzer.Assess(growthInputs);
 
         double? latestDaysToCover = shortInterest?.DaysToCover;
-        RiskSentimentAssessment risk = RiskSentimentHealthAnalyzer.Assess(keyMetrics, latestDaysToCover);
+        RiskSentimentAssessment risk = RiskSentimentHealthAnalyzer.Assess(keyMetrics.Value, latestDaysToCover);
 
         return new CompanyScore(symbol,
             ComputeAbsoluteScore(balance, income, cashFlow, earnings, val, eff, risk, growth), 0);
@@ -84,7 +84,7 @@ public sealed class CompanyAnalysisService(
         var solvency = solvencyTask.Result.ToFrozenDictionary(r => r.Symbol!);
         var profitability = profitabilityTask.Result.ToFrozenDictionary(r => r.Symbol!);
         var keyMetrics = keyMetricsTask.Result.ToFrozenDictionary(r => r.Symbol!);
-        var valuation = valuationTask.Result.ToFrozenDictionary(r => r!.Symbol!, r => r);
+        var valuation = valuationTask.Result.ToFrozenDictionary(r => r!.Value.Symbol!, r => r);
         var efficiency = efficiencyTask.Result.ToFrozenDictionary(r => r.Symbol!);
         var shortInterest = shortInterestTask.Result.ToFrozenDictionary(r => r.Symbol!, r => r);
         var growthGroups = growthTask.Result.GroupBy(g => g.Symbol!).ToFrozenDictionary(g => g.Key, g => g.ToImmutableArray());
@@ -106,7 +106,7 @@ public sealed class CompanyAnalysisService(
             var v = valuation.GetValueOrDefault(symbol);
             var e = efficiency[symbol];
             var si = shortInterest.GetValueOrDefault(symbol);
-            var gi = growthGroups.GetValueOrDefault(symbol, ImmutableArray<QuarterlyGrowthInput>.Empty);
+            var gi = growthGroups.GetValueOrDefault(symbol, []);
 
             BalanceSheetAssessment balance = BalanceSheetHealthAnalyzer.Assess(l, s);
             IncomeStatementAssessment income = IncomeStatementHealthAnalyzer.Assess(p, e);
@@ -116,7 +116,7 @@ public sealed class CompanyAnalysisService(
             EfficiencyAssessment eff = EfficiencyHealthAnalyzer.Assess(e);
             GrowthAssessment growth = GrowthHealthAnalyzer.Assess(gi);
 
-            double? daysToCover = si?.DaysToCover;
+            double? daysToCover = si.DaysToCover;
             RiskSentimentAssessment risk = RiskSentimentHealthAnalyzer.Assess(k, daysToCover);
 
             int absolute = ComputeAbsoluteScore(balance, income, cashFlow, earnings, val, eff, risk, growth);
@@ -136,7 +136,7 @@ public sealed class CompanyAnalysisService(
             results.Add(new(sorted[i].Symbol, sorted[i].Absolute, percentileScore));
         }
 
-        return results.OrderByDescending(k => k.Percentile).ToImmutableArray();
+        return [.. results.OrderByDescending(k => k.Percentile)];
     }
 
     internal async Task<LiquidityRatios?> GetLatestLiquidityRatiosAsync(string symbol)
@@ -246,7 +246,7 @@ LIMIT 5";
         var daos = await queryCtx.QueryAsync<Infrastructure.Database.DataAccessObjects.QuarterlyGrowthInput>(Sql,
             new { Symbol = symbol.ToUpperInvariant() });
 
-        return daos.Select(d => d.ToDomain()).ToImmutableArray();
+        return [.. daos.Select(d => d.ToDomain())];
     }
 
     private async Task<IReadOnlyCollection<LiquidityRatios>> GetAllLatestLiquidityRatiosAsync()
@@ -322,7 +322,7 @@ LIMIT 5";
             });
         }
 
-        return daos.Select(d => d.ToDomain()).ToImmutableArray();
+        return [.. daos.Select(d => d.ToDomain())];
     }
 
     private async Task<IReadOnlyCollection<SolvencyRatios>> GetAllLatestSolvencyRatiosAsync()
@@ -382,7 +382,7 @@ LIMIT 5";
             });
         }
 
-        return daos.Select(d => d.ToDomain()).ToImmutableArray();
+        return [.. daos.Select(d => d.ToDomain())];
     }
 
     private async Task<IReadOnlyCollection<ProfitabilityRatios>> GetAllLatestProfitabilityRatiosAsync()
@@ -446,7 +446,7 @@ LIMIT 5";
             });
         }
 
-        return daos.Select(d => d.ToDomain()).ToImmutableArray();
+        return [.. daos.Select(d => d.ToDomain())];
     }
 
     private async Task<IReadOnlyCollection<KeyMetrics>> GetAllLatestKeyMetricsAsync()
@@ -523,7 +523,7 @@ LIMIT 5";
             });
         }
 
-        return daos.Select(d => d.ToDomain()).ToImmutableArray();
+        return [.. daos.Select(d => d.ToDomain())];
     }
 
     private async Task<IReadOnlyCollection<ValuationRatios?>> GetAllLatestValuationRatiosAsync()
@@ -575,7 +575,7 @@ LIMIT 5";
             });
         }
 
-        return daos.Select(d => d?.ToDomain()).ToImmutableArray();
+        return [.. daos.Select(d => d?.ToDomain())];
     }
 
     private async Task<IReadOnlyCollection<EfficiencyRatios>> GetAllLatestEfficiencyRatiosAsync()
@@ -647,7 +647,7 @@ LIMIT 5";
             });
         }
 
-        return daos.Select(d => d.ToDomain()).ToImmutableArray();
+        return [.. daos.Select(d => d.ToDomain())];
     }
 
     private async Task<IReadOnlyCollection<ShortInterest>> GetAllLatestShortInterestAsync()
@@ -682,7 +682,7 @@ LIMIT 5";
             });
         }
 
-        return daos.Select(d => d.ToDomain()).ToImmutableArray();
+        return [.. daos.Select(d => d.ToDomain())];
     }
 
     private async Task<IReadOnlyCollection<QuarterlyGrowthInput>> GetAllLatestFiveQuarterlyGrowthInputsAsync()
@@ -720,7 +720,7 @@ LIMIT 5";
             });
         }
 
-        return daos.Select(d => d.ToDomain()).ToImmutableArray();
+        return [.. daos.Select(d => d.ToDomain())];
     }
 
     private int ComputeAbsoluteScore(
@@ -761,190 +761,3 @@ LIMIT 5";
         return (int)Math.Round(composite);
     }
 }
-
-
-//public async Task<IReadOnlyCollection<CompanyScore2>> GetAllSiloScores2Async()
-//{
-//    var liquidityTask = GetAllLatestLiquidityRatiosAsync();
-//    var solvencyTask = GetAllLatestSolvencyRatiosAsync();
-//    var profitabilityTask = GetAllLatestProfitabilityRatiosAsync();
-//    var keyMetricsTask = GetAllLatestKeyMetricsAsync();
-//    var valuationTask = GetAllLatestValuationRatiosAsync();
-//    var efficiencyTask = GetAllLatestEfficiencyRatiosAsync();
-//    var shortInterestTask = GetAllLatestShortInterestAsync();
-//    var growthTask = GetAllLatestFiveQuarterlyGrowthInputsAsync();
-
-//    await Task.WhenAll(
-//        liquidityTask,
-//        solvencyTask,
-//        profitabilityTask,
-//        keyMetricsTask,
-//        valuationTask,
-//        efficiencyTask,
-//        shortInterestTask,
-//        growthTask);
-
-//    var liquidity = liquidityTask.Result.ToFrozenDictionary(r => r.Symbol!);
-//    var solvency = solvencyTask.Result.ToFrozenDictionary(r => r.Symbol!);
-//    var profitability = profitabilityTask.Result.ToFrozenDictionary(r => r.Symbol!);
-//    var keyMetrics = keyMetricsTask.Result.ToFrozenDictionary(r => r.Symbol!);
-//    var valuation = valuationTask.Result.ToFrozenDictionary(r => r!.Symbol!, r => r);
-//    var efficiency = efficiencyTask.Result.ToFrozenDictionary(r => r.Symbol!);
-//    var shortInterest = shortInterestTask.Result.ToFrozenDictionary(r => r.Symbol!, r => r);
-//    var growthGroups = growthTask.Result.GroupBy(g => g.Symbol!).ToFrozenDictionary(g => g.Key, g => g.ToImmutableArray());
-
-//    var symbols = liquidity.Keys
-//        .Intersect(solvency.Keys)
-//        .Intersect(profitability.Keys)
-//        .Intersect(keyMetrics.Keys)
-//        .Intersect(efficiency.Keys).ToImmutableArray();
-
-//    var absoluteResults = new List<(string Symbol, int Absolute)>(symbols.Length);
-
-//    foreach (var symbol in symbols)
-//    {
-//        var l = liquidity[symbol];
-//        var s = solvency[symbol];
-//        var p = profitability[symbol];
-//        var k = keyMetrics[symbol];
-//        var v = valuation.GetValueOrDefault(symbol);
-//        var e = efficiency[symbol];
-//        var si = shortInterest.GetValueOrDefault(symbol);
-//        var gi = growthGroups.GetValueOrDefault(symbol, ImmutableArray<QuarterlyGrowthInput>.Empty);
-
-//        BalanceSheetAssessment balance = BalanceSheetHealthAnalyzer.Assess(l, s);
-//        IncomeStatementAssessment income = IncomeStatementHealthAnalyzer.Assess(p, e);
-//        CashFlowAssessment cashFlow = CashFlowHealthAnalyzer.Assess(p);
-//        EarningsAssessment earnings = EarningsHealthAnalyzer.Assess(k);
-//        ValuationAssessment val = ValuationHealthAnalyzer.Assess(k, v);
-//        EfficiencyAssessment eff = EfficiencyHealthAnalyzer.Assess(e);
-//        GrowthAssessment growth = GrowthHealthAnalyzer.Assess(gi);
-
-//        double? daysToCover = si?.DaysToCover;
-//        RiskSentimentAssessment risk = RiskSentimentHealthAnalyzer.Assess(k, daysToCover);
-
-//        int absolute = ComputeAbsoluteScore(balance, income, cashFlow, earnings, val, eff, risk, growth);
-
-//        absoluteResults.Add((symbol, absolute));
-//    }
-
-//    var sorted = absoluteResults.OrderByDescending(r => r.Absolute).ToArray();
-
-//    var results = new List<CompanyScore2>(sorted.Length);
-
-//    for (int i = 0; i < sorted.Length; i++)
-//    {
-//        double percentile = 99 - (i * 98.0 / (sorted.Length - 1));
-//        int percentileScore = (int)Math.Round(percentile);
-
-//        results.Add(new(sorted[i].Symbol, sorted[i].Absolute, 0, percentileScore));
-//    }
-
-//    return results.OrderByDescending(k => k.BlendedScore).ToImmutableArray();
-//}
-
-//public async Task<IReadOnlyCollection<CompanyScore2>> GetAllSiloScores2Async()
-//{
-//    var liquidityTask = GetAllLatestLiquidityRatiosAsync();
-//    var solvencyTask = GetAllLatestSolvencyRatiosAsync();
-//    var profitabilityTask = GetAllLatestProfitabilityRatiosAsync();
-//    var keyMetricsTask = GetAllLatestKeyMetricsAsync();
-//    var valuationTask = GetAllLatestValuationRatiosAsync();
-//    var efficiencyTask = GetAllLatestEfficiencyRatiosAsync();
-//    var shortInterestTask = GetAllLatestShortInterestAsync();
-//    var growthTask = GetAllLatestFiveQuarterlyGrowthInputsAsync();
-//    var sicTask = GetAllSicCodesAsync();
-
-//    await Task.WhenAll(
-//        liquidityTask,
-//        solvencyTask,
-//        profitabilityTask,
-//        keyMetricsTask,
-//        valuationTask,
-//        efficiencyTask,
-//        shortInterestTask,
-//        growthTask,
-//        sicTask);
-
-//    var liquidity = liquidityTask.Result.ToFrozenDictionary(r => r.Symbol!);
-//    var solvency = solvencyTask.Result.ToFrozenDictionary(r => r.Symbol!);
-//    var profitability = profitabilityTask.Result.ToFrozenDictionary(r => r.Symbol!);
-//    var keyMetrics = keyMetricsTask.Result.ToFrozenDictionary(r => r.Symbol!);
-//    var valuation = valuationTask.Result.ToFrozenDictionary(r => r!.Symbol!, r => r);
-//    var efficiency = efficiencyTask.Result.ToFrozenDictionary(r => r.Symbol!);
-//    var shortInterest = shortInterestTask.Result.ToFrozenDictionary(r => r.Symbol!, r => r);
-//    var growthGroups = growthTask.Result.GroupBy(g => g.Symbol!).ToFrozenDictionary(g => g.Key, g => g.ToImmutableArray());
-//    var sicCodes = sicTask.Result;
-
-//    var symbols = liquidity.Keys
-//        .Intersect(solvency.Keys)
-//        .Intersect(profitability.Keys)
-//        .Intersect(keyMetrics.Keys)
-//        .Intersect(efficiency.Keys).ToImmutableArray();
-
-//    var absoluteResults = new List<(string Symbol, int Absolute)>(symbols.Length);
-
-//    foreach (var symbol in symbols)
-//    {
-//        var l = liquidity[symbol];
-//        var s = solvency[symbol];
-//        var p = profitability[symbol];
-//        var k = keyMetrics[symbol];
-//        var v = valuation.GetValueOrDefault(symbol);
-//        var e = efficiency[symbol];
-//        var si = shortInterest.GetValueOrDefault(symbol);
-//        var gi = growthGroups.GetValueOrDefault(symbol, ImmutableArray<QuarterlyGrowthInput>.Empty);
-
-//        BalanceSheetAssessment balance = BalanceSheetHealthAnalyzer.Assess(l, s);
-//        IncomeStatementAssessment income = IncomeStatementHealthAnalyzer.Assess(p, e);
-//        CashFlowAssessment cashFlow = CashFlowHealthAnalyzer.Assess(p);
-//        EarningsAssessment earnings = EarningsHealthAnalyzer.Assess(k);
-//        ValuationAssessment val = ValuationHealthAnalyzer.Assess(k, v);
-//        EfficiencyAssessment eff = EfficiencyHealthAnalyzer.Assess(e);
-//        GrowthAssessment growth = GrowthHealthAnalyzer.Assess(gi);
-
-//        double? daysToCover = si?.DaysToCover;
-//        RiskSentimentAssessment risk = RiskSentimentHealthAnalyzer.Assess(k, daysToCover);
-
-//        int absolute = ComputeAbsoluteScore(balance, income, cashFlow, earnings, val, eff, risk, growth);
-
-//        absoluteResults.Add((symbol, absolute));
-//    }
-
-//    var groups = absoluteResults
-//        .GroupBy(r => sicCodes.GetValueOrDefault(r.Symbol) is string sic && sic.Length == 4 ? sic[..2] : "Unknown")
-//        .ToFrozenDictionary(g => g.Key, g => g.ToImmutableArray());
-
-//    var results = new List<CompanyScore2>(absoluteResults.Count);
-
-//    const int minGroupSize = 20;
-
-//    foreach (var group in groups.Values)
-//    {
-//        var sorted = group.OrderByDescending(r => r.Absolute).ToArray();
-
-//        bool largeGroup = sorted.Length >= minGroupSize;
-
-//        for (int i = 0; i < sorted.Length; i++)
-//        {
-//            int relative = largeGroup
-//                ? (int)Math.Round((i + 1.0) / sorted.Length * 98 + 1)
-//                : 50;
-
-//            int blended = (int)Math.Round(sorted[i].Absolute * 0.7 + relative * 0.3);
-
-//            results.Add(new(sorted[i].Symbol, sorted[i].Absolute, relative, blended));
-//        }
-//    }
-
-//    return [..results.OrderByDescending(r => r.BlendedScore)];
-//}
-//private async Task<IReadOnlyDictionary<string, string?>> GetAllSicCodesAsync()
-//{
-//    const string Sql = "SELECT symbol, sic_code FROM public.us_companies WHERE sic_code IS NOT NULL";
-
-//    using var queryCtx = _dbDefPair.GetQueryConnection();
-//    var rows = await queryCtx.QueryAsync<dynamic>(Sql);
-
-//    return rows.ToFrozenDictionary(r => (string)r.symbol, r => (string?)r.sic_code);
-//}

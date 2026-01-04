@@ -4,6 +4,7 @@ internal sealed record ExecutiveCompensation : DaoBase
 {
     public ExecutiveCompensation() : base()
     {
+        Symbol = "";
         CentralIndexKey = "";
         Name = "";
         Position = "";
@@ -12,6 +13,7 @@ internal sealed record ExecutiveCompensation : DaoBase
 
     public ExecutiveCompensation(Guid userId) : base(userId)
     {
+        Symbol = "";
         CentralIndexKey = "";
         Name = "";
         Position = "";
@@ -34,11 +36,11 @@ internal sealed record ExecutiveCompensation : DaoBase
         TotalCompensation = comp.TotalCompensation;
     }
 
+    public string Symbol { get; init; }
     public string CentralIndexKey { get; init; }
     public string Name { get; init; }
     public string Position { get; init; }
     public string FiscalYear { get; init; }
-    public string? Symbol { get; init; }
     public string? Registrant { get; init; }
     public decimal? Salary { get; init; }
     public decimal? Bonus { get; init; }

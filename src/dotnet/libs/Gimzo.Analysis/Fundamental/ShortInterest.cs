@@ -1,9 +1,9 @@
 namespace Gimzo.Analysis.Fundamental;
 
-public sealed class ShortInterest
+public record struct ShortInterest
 {
     public required string Symbol { get; init; }
-    public DateOnly SettlementDate { get; init; }
+    public DateOnly? SettlementDate { get; init; }
     public string? Title { get; init; }
     public string? MarketCode { get; init; }
     public long? ShortedSecurities { get; init; }

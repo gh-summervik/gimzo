@@ -8,7 +8,7 @@ public readonly record struct CashFlowAssessment(
     double? CashTurnoverRatio,
     bool HasEarningsQualityBoost);
 
-public sealed class CashFlowHealthAnalyzer
+public static class CashFlowHealthAnalyzer
 {
     private static double NormalizeOcfMargin(double value)
         => value >= 0.25 ? 1.0 :

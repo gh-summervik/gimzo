@@ -1,10 +1,10 @@
 ﻿namespace Gimzo.Analysis.Fundamental;
 
-public sealed class KeyMetrics
+public record struct KeyMetrics
 {
+    public required string Symbol { get; init; }
     public required string CentralIndexKey { get; init; }
     public required string FiscalYear { get; init; }
-    public string? Symbol { get; init; }
     public string? Registrant { get; init; }
     public DateOnly? PeriodEndDate { get; init; }
     public decimal? EarningsPerShare { get; init; }

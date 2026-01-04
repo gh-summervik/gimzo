@@ -10,7 +10,6 @@ using Microsoft.Extensions.Logging;
 using OoplesFinance.YahooFinanceAPI;
 using OoplesFinance.YahooFinanceAPI.Enums;
 using OoplesFinance.YahooFinanceAPI.Models;
-using System.Collections.Frozen;
 using System.Collections.Immutable;
 
 namespace Gimzo.AppServices.Data;
@@ -651,10 +650,6 @@ WHERE TRIM(sic_code) = '';
         }
     }
 
-    //public async Task DeletePricesWithEmptySymbolAsync()
-    //{
-    //    LogHelper.LogInfo(_logger, "Deleting price data for empty symbols");
-    //}
     /// <summary>
     /// Removes from the database all data related to ignored symbols.
     /// </summary>

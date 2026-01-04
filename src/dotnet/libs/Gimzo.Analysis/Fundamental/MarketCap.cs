@@ -1,6 +1,6 @@
 ﻿namespace Gimzo.Analysis.Fundamental;
 
-public sealed class MarketCap
+public record struct MarketCap
 {
     public required string CentralIndexKey { get; init; }
     public required string FiscalYear { get; init; }

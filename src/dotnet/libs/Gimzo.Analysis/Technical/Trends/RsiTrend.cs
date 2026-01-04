@@ -2,7 +2,8 @@
 
 namespace Gimzo.Analysis.Technical.Trends;
 
-public class RsiTrend(Ohlc[] prices, int period = 14, double[]? precomputedAvgVolumes = null) : PriceTrendBase(prices, precomputedAvgVolumes), ITrend
+public class RsiTrend(Ohlc[] prices, int period = 14, double[]? precomputedAvgVolumes = null) 
+    : PriceTrendBase(prices, precomputedAvgVolumes), ITrend
 {
     private readonly int _period = period;
 

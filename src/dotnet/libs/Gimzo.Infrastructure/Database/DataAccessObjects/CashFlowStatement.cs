@@ -4,6 +4,7 @@ internal sealed record CashFlowStatement : DaoBase
 {
     public CashFlowStatement() : base()
     {
+        Symbol = "";
         CentralIndexKey = "";
         FiscalYear = "";
         FiscalPeriod = "";
@@ -11,6 +12,7 @@ internal sealed record CashFlowStatement : DaoBase
 
     public CashFlowStatement(Guid userId) : base(userId)
     {
+        Symbol = "";
         CentralIndexKey = "";
         FiscalYear = "";
         FiscalPeriod = "";
@@ -56,10 +58,10 @@ internal sealed record CashFlowStatement : DaoBase
         InterestPaid = stmt.InterestPaid;
     }
 
+    public string Symbol { get; init; }
     public string CentralIndexKey { get; init; }
     public string FiscalYear { get; init; }
     public string FiscalPeriod { get; init; }
-    public string? Symbol { get; init; }
     public string? Registrant { get; init; }
     public DateOnly? PeriodEndDate { get; init; }
     public decimal? Depreciation { get; init; }

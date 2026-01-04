@@ -10,7 +10,7 @@ public readonly record struct BalanceSheetAssessment(
     double? DebtToAssetsRatio,
     double? InterestCoverageRatio);
 
-public sealed class BalanceSheetHealthAnalyzer
+public static class BalanceSheetHealthAnalyzer
 {
     private static double NormalizeHigher(double value, double excellent, double good, double fair, double poor)
         => value >= excellent ? 1.0 :

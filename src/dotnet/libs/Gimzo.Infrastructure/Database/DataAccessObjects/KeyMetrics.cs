@@ -4,12 +4,14 @@ internal sealed record KeyMetrics : DaoBase
 {
     public KeyMetrics() : base()
     {
+        Symbol = "";
         CentralIndexKey = "";
         FiscalYear = "";
     }
 
     public KeyMetrics(Guid userId) : base(userId)
     {
+        Symbol = "";
         CentralIndexKey = "";
         FiscalYear = "";
     }
@@ -42,9 +44,9 @@ internal sealed record KeyMetrics : DaoBase
         FiveYearBeta = metrics.FiveYearBeta;
     }
 
+    public string Symbol { get; init; }
     public string CentralIndexKey { get; init; }
     public string FiscalYear { get; init; }
-    public string? Symbol { get; init; }
     public string? Registrant { get; init; }
     public DateOnly? PeriodEndDate { get; init; }
     public decimal? EarningsPerShare { get; init; }

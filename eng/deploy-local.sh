@@ -13,35 +13,57 @@ if [ ! -d "$source_directory" ]; then
     exit 1
 fi
 
-secrets_backup="/tmp/gimzo_secrets_$$.json"
+admin_subdir="admin-cli"
+runtime_subdir="runtime-cli"
 
+admin_dir="$target_directory/$admin_subdir"
+runtime_dir="$target_directory/$runtime_subdir"
+
+admin_backup="/tmp/gimzo_secrets_admin_$$.json"
+runtime_backup="/tmp/gimzo_secrets_runtime_$$.json"
+
+# Backup existing secrets if subdirectories exist
+if [ -d "$admin_dir" ] && [ -f "$admin_dir/secrets.json" ]; then
+    cp "$admin_dir/secrets.json" "$admin_backup"
+fi
+
+if [ -d "$runtime_dir" ] && [ -f "$runtime_dir/secrets.json" ]; then
+    cp "$runtime_dir/secrets.json" "$runtime_backup"
+fi
+
+# Clean target directory
 if [ -d "$target_directory" ]; then
-    if [ -f "$target_directory/secrets.json" ]; then
-        cp "$target_directory/secrets.json" "$secrets_backup"
-    fi
     rm -rf "$target_directory"
 fi
 
 mkdir -p "$target_directory"
 
 # Publish Admin CLI
-dotnet publish -c Release "$source_directory/Gimzo.Admin.Cli/Gimzo.Admin.Cli.csproj" -o "$target_directory"
+mkdir -p "$admin_dir"
+dotnet publish -c Release "$source_directory/Gimzo.Admin.Cli/Gimzo.Admin.Cli.csproj" -o "$admin_dir"
 if [ $? -ne 0 ]; then
     echo "Publish Gimzo.Admin.Cli failed."
     exit 1
 fi
 
 # Publish Runtime CLI
-dotnet publish -c Release "$source_directory/Gimzo.Runtime.Cli/Gimzo.Runtime.Cli.csproj" -o "$target_directory"
+mkdir -p "$runtime_dir"
+dotnet publish -c Release "$source_directory/Gimzo.Runtime.Cli/Gimzo.Runtime.Cli.csproj" -o "$runtime_dir"
 if [ $? -ne 0 ]; then
     echo "Publish Gimzo.Runtime.Cli failed."
     exit 1
 fi
 
-if [ -f "$secrets_backup" ]; then
-    mv "$secrets_backup" "$target_directory/secrets.json"
+# Restore secrets
+if [ -f "$admin_backup" ]; then
+    mv "$admin_backup" "$admin_dir/secrets.json"
 fi
 
-rm -f "$secrets_backup"
+if [ -f "$runtime_backup" ]; then
+    mv "$runtime_backup" "$runtime_dir/secrets.json"
+fi
+
+# Clean up any leftover backups
+rm -f "$admin_backup" "$runtime_backup"
 
 exit 0

@@ -112,7 +112,7 @@ try
 
         var pathToData = Path.Combine("data", "winners.txt");
         var symbols = await File.ReadAllLinesAsync(pathToData);
-        //var symbols = (await reportService.GetAllSymbolsAsync()).ToArray();
+        
         List<Ledger.PerformanceSummary> summaries = new(symbols.Length);
         List<string> winners = new(1500);
 
@@ -124,9 +124,7 @@ try
                 continue;
 
             i++;
-            //if (i > 5)
-            //    break;
-
+        
             Console.WriteLine($"Processing {symbol} - {i}/{count}");
 
             var ledger = await backtestService.ExecuteAsync(config.Scenario!, symbol);
@@ -196,7 +194,7 @@ try
 
                 foreach (var r in allCompanyScores)
                 {
-                    var line = $"{r.Symbol.PadLeft(7, ' ')}:\tb:{r.Percentile}\ta:{r.Score}";
+                    var line = $"{r.Symbol,7}:\tb:{r.Percentile}\ta:{r.Score}";
                     Console.WriteLine(line);
                     await f.WriteLineAsync(line);
                 }
@@ -222,7 +220,7 @@ try
                         continue;
 
                     var title = $"{r.SicCode} ({Constants.SicTitles[key]})"; // maybe this dictionary should be keyed on a string.
-                    var line = $"{r.Rank.ToString().PadLeft(3,'0')}  {r.ValueBillions.ToString("#,##0.00").PadLeft(25,' ')}B\t\t{title}";
+                    var line = $"{r.Rank.ToString().PadLeft(3, '0')}  {r.ValueBillions,25:#,##0.00}B\t\t{title}";
                     Console.WriteLine(line);
                     await f.WriteLineAsync(line);
                 }

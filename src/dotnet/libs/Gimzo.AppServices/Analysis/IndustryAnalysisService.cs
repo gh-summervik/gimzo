@@ -35,7 +35,7 @@ public class IndustryAnalysisService(
             if (string.IsNullOrWhiteSpace(m.SicCode))
                 continue;
 
-            var p = prices.GetValueOrDefault(symbol, ImmutableArray<Ohlc>.Empty);
+            var p = prices.GetValueOrDefault(symbol, []);
 
             var lastPrice = p.LastOrDefault()?.Close;
             var marketCap = m.MarketCap;
