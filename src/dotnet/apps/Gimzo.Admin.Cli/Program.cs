@@ -79,11 +79,6 @@ try
         await importer.InitializeImportAsync(process, config.Weekday, config.Saturday, config.Sunday);
         await importer.ImportAsync(config.Cleanup);
         apiClient.Dispose();
-
-        // do fundamental analysis here.
-        //var analysisService = new CompanyAnalysisService(dbDefPairs![0],
-        //    serviceProvider.GetRequiredService<IMemoryCache>(),
-        //    serviceProvider.GetRequiredService<ILogger<CompanyAnalysisService>>());
     }
 
     if (config.Csv)
@@ -182,34 +177,40 @@ try
 
     if (config.Analyze)
     {
-        var reportService = new ReportService(dbDefPairs![0],
-            serviceProvider.GetRequiredService<IMemoryCache>(),
-            serviceProvider.GetRequiredService<ILogger<ReportService>>());
-
         var analysisService = new CompanyAnalysisService(dbDefPairs![0],
             serviceProvider.GetRequiredService<IMemoryCache>(),
             serviceProvider.GetRequiredService<ILogger<CompanyAnalysisService>>());
 
-        var symbols = string.IsNullOrWhiteSpace(config.Symbol)
-            ? (await reportService.GetAllSymbolsAsync()).ToArray()
-            : [config.Symbol];
-
-        Dictionary<string, int> scores = new();
-
-        foreach (var symbol in symbols)
+        if (string.IsNullOrWhiteSpace(config.Symbol))
         {
-            var score = await analysisService.GetSiloScoreForSymbolAsync(symbol);
-            if (score == null)
-                continue;
-            scores.Add(symbol, score.Value.Score1To99);
-            if (symbols.Length > 1)
-                Console.WriteLine($"{symbol}\t\t{score.Value.Score1To99}");
+            var allScores = await analysisService.GetAllSiloScoresAsync();
+
+            if (allScores.Count > 0)
+            {
+                string baseDir = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                    ? Path.Combine("C:", "temp", "gimzo")
+                    : Path.Combine("/", "c", "temp", "gimzo");
+
+                string fullPath = Path.Combine(baseDir, "value_ranking.txt");
+
+                await using var f = File.Create(fullPath);
+
+                foreach (var r in allScores)
+                {
+                    var line = $"{r.Symbol.PadLeft(7, ' ')}:\tb:{r.Percentile}\ta:{r.Score}";
+                    Console.WriteLine(line);
+                    await f.WriteLineAsync(line);
+                }
+
+                await f.FlushAsync();
+                f.Close();
+            }
         }
-
-        var sorted = scores.OrderByDescending(k => k.Value);
-
-        foreach (var kvp in sorted)
-            Console.WriteLine($"{kvp.Key}: {kvp.Value}");
+        else
+        {
+            var score = await analysisService.GetSiloScoreForSymbolAsync(config.Symbol);
+            Console.WriteLine($"{config.Symbol}\t{score}");
+        }
     }
 
     exitCode = 0;

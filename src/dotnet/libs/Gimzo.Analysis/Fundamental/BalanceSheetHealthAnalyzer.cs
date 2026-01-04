@@ -1,8 +1,7 @@
 ﻿namespace Gimzo.Analysis.Fundamental;
 
 public readonly record struct BalanceSheetAssessment(
-    int Score1To99,
-    string Assessment,
+    int Score,
     double? CurrentRatio,
     double? QuickRatio,
     double? CashRatio,
@@ -41,7 +40,7 @@ public sealed class BalanceSheetHealthAnalyzer
            value >= 1.5 ? 0.4 :
            value > 0 ? 0.2 : 0.0;
 
-    public BalanceSheetAssessment Assess(LiquidityRatios liquidity, SolvencyRatios solvency)
+    public static BalanceSheetAssessment Assess(LiquidityRatios liquidity, SolvencyRatios solvency)
     {
         double sCr = liquidity.CurrentRatio.HasValue ? NormalizeHigher(liquidity.CurrentRatio.Value, 3.0, 2.0, 1.5, 1.0) : 0.0;
         double sQr = liquidity.QuickRatio.HasValue ? NormalizeHigher(liquidity.QuickRatio.Value, 2.0, 1.5, 1.0, 0.5) : 0.0;
@@ -54,16 +53,8 @@ public sealed class BalanceSheetHealthAnalyzer
         double composite = (sCr + sQr + sCash + sEr + sDe + sDa + sIc) / 7.0;
         int score = (int)Math.Round(composite * 98 + 1);
 
-        string assessment = score >= 85 ? "Fortress balance sheet" :
-                            score >= 70 ? "Strong" :
-                            score >= 55 ? "Solid" :
-                            score >= 40 ? "Adequate" :
-                            score >= 25 ? "Stretched" :
-                            "Weak/Distressed";
-
         return new BalanceSheetAssessment(
             score,
-            assessment,
             liquidity.CurrentRatio,
             liquidity.QuickRatio,
             liquidity.CashRatio,

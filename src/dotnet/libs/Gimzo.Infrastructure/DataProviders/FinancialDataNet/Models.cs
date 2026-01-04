@@ -190,9 +190,9 @@ public readonly record struct KeyMetrics(string Symbol,
     double? PriceToEarningsRatio, double? ForwardPriceToEarningsRatio,
     double? EarningsGrowthRate, double? PriceEarningsToGrowthRate,
     decimal? BookValuePerShare, double? PriceToBookRatio,
-    double? Ebitda, decimal? EnterpriseValue, double? DividendYield,
+    decimal? Ebitda, decimal? EnterpriseValue, double? DividendYield,
     double? DividendPayoutRatio, double? DebtToEquityRatio,
-    decimal? CapitalExpenditures, decimal? FreeCashFlow, decimal? ReturnOnEquity,
+    decimal? CapitalExpenditures, decimal? FreeCashFlow, double? ReturnOnEquity,
     double? OneYearBeta, double? ThreeYearBeta, double? FiveYearBeta)
 { 
     public Analysis.Fundamental.KeyMetrics ToDomain()

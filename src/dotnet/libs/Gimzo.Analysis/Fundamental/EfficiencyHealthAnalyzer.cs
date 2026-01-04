@@ -1,7 +1,7 @@
 ﻿namespace Gimzo.Analysis.Fundamental;
 
 public readonly record struct EfficiencyAssessment(
-    int Score1To99,
+    int Score,
     string Assessment,
     double? AssetTurnoverRatio,
     double? InventoryTurnoverRatio,
@@ -17,7 +17,7 @@ public sealed class EfficiencyHealthAnalyzer
            value >= 0.5 ? 0.4 :
            value > 0 ? 0.2 : 0.0;
 
-    public EfficiencyAssessment Assess(EfficiencyRatios efficiency)
+    public static EfficiencyAssessment Assess(EfficiencyRatios efficiency)
     {
         double sAsset = efficiency.AssetTurnoverRatio.HasValue ? NormalizeTurnover(efficiency.AssetTurnoverRatio.Value) : 0.0;
         double sInv = efficiency.InventoryTurnoverRatio.HasValue ? NormalizeTurnover(efficiency.InventoryTurnoverRatio.Value) : 0.0;

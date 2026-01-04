@@ -27,6 +27,7 @@ internal sealed record CompanyInformation : DaoBase
         Ein = companyInformation.Ein;
         SicCode = companyInformation.SicCode;
         SicDescription = companyInformation.SicDescription;
+        SicTitle = companyInformation.SicTitle;
         FiscalYearEnd = companyInformation.FiscalYearEnd;
         StateOfIncorporation = companyInformation.StateOfIncorporation;
         PhoneNumber = companyInformation.PhoneNumber;
@@ -53,6 +54,7 @@ internal sealed record CompanyInformation : DaoBase
     public string? Ein { get; init; }
     public string? SicCode { get; init; }
     public string? SicDescription { get; init; }
+    public string? SicTitle { get; init;  }
     public string? FiscalYearEnd { get; init; }
     public string? StateOfIncorporation { get; init; }
     public string? PhoneNumber { get; init; }
@@ -87,6 +89,7 @@ internal sealed record CompanyInformation : DaoBase
             Ein = Ein,
             SicCode = SicCode,
             SicDescription = SicDescription,
+            SicTitle = SicTitle,
             FiscalYearEnd = FiscalYearEnd,
             StateOfIncorporation = StateOfIncorporation,
             PhoneNumber = PhoneNumber,

@@ -2,6 +2,6 @@
 
 public sealed record QuarterlyGrowthInput(
     string Symbol,
-    DateOnly PeriodEndDate,
+    DateOnly? PeriodEndDate,
     decimal? Revenue,
     decimal? EarningsPerShareDiluted);

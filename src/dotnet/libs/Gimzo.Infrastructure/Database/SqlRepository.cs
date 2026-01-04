@@ -2,6 +2,12 @@
 
 internal static class SqlRepository
 {
+    public const string FullAuditSelect = @"created_by AS CreatedBy,
+updated_by AS UpdatedBy,
+created_at_unix_ms AS CreatedAtUnixMs,
+updated_at_unix_ms AS UpdatedAtUnixMs";
+
+
     public const string InsertStockSymbols = @"
 INSERT INTO public.stock_symbols (
     symbol,
@@ -48,14 +54,11 @@ INSERT INTO public.stock_symbols (
     updated_at = EXCLUDED.updated_at,
     updated_at_unix_ms = EXCLUDED.updated_at_unix_ms";
 
-    public const string SelectStockSymbols = @"
+    public const string SelectStockSymbols = $@"
 SELECT
     symbol,
     registrant,
-    created_by AS CreatedBy,
-    updated_by AS UpdatedBy,
-    created_at_unix_ms AS CreatedAtUnixMs,
-    updated_at_unix_ms AS UpdatedAtUnixMs
+    {FullAuditSelect}
 FROM public.stock_symbols";
 
     
@@ -105,14 +108,11 @@ INSERT INTO public.etf_symbols (
     updated_at = EXCLUDED.updated_at,
     updated_at_unix_ms = EXCLUDED.updated_at_unix_ms";
 
-    public const string SelectEtfSymbols = @"
+    public const string SelectEtfSymbols = $@"
 SELECT
     symbol,
     description AS Description,
-    created_by AS CreatedBy,
-    updated_by AS UpdatedBy,
-    created_at_unix_ms AS CreatedAtUnixMs,
-    updated_at_unix_ms AS UpdatedAtUnixMs
+    {FullAuditSelect}
 FROM public.etf_symbols";
 
     
@@ -162,14 +162,11 @@ INSERT INTO public.commodity_symbols (
     updated_at = EXCLUDED.updated_at,
     updated_at_unix_ms = EXCLUDED.updated_at_unix_ms";
 
-    public const string SelectCommoditySymbols = @"
+    public const string SelectCommoditySymbols = $@"
 SELECT
     symbol,
     description AS Description,
-    created_by AS CreatedBy,
-    updated_by AS UpdatedBy,
-    created_at_unix_ms AS CreatedAtUnixMs,
-    updated_at_unix_ms AS UpdatedAtUnixMs
+    {FullAuditSelect}
 FROM public.commodity_symbols";
 
     
@@ -219,14 +216,11 @@ INSERT INTO public.otc_symbols (
     updated_at = EXCLUDED.updated_at,
     updated_at_unix_ms = EXCLUDED.updated_at_unix_ms";
 
-    public const string SelectOtcSymbols = @"
+    public const string SelectOtcSymbols = $@"
 SELECT
     symbol,
     title AS Title,
-    created_by AS CreatedBy,
-    updated_by AS UpdatedBy,
-    created_at_unix_ms AS CreatedAtUnixMs,
-    updated_at_unix_ms AS UpdatedAtUnixMs
+    {FullAuditSelect}
 FROM public.otc_symbols";
 
     
@@ -281,15 +275,12 @@ INSERT INTO public.crypto_symbols (
     updated_at = EXCLUDED.updated_at,
     updated_at_unix_ms = EXCLUDED.updated_at_unix_ms";
 
-    public const string SelectCryptoSymbols = @"
+    public const string SelectCryptoSymbols = $@"
 SELECT
     symbol,
     base_asset AS BaseAsset,
     quote_asset AS QuoteAsset,
-    created_by AS CreatedBy,
-    updated_by AS UpdatedBy,
-    created_at_unix_ms AS CreatedAtUnixMs,
-    updated_at_unix_ms AS UpdatedAtUnixMs
+    {FullAuditSelect}
 FROM public.crypto_symbols";
 
     
@@ -339,14 +330,11 @@ INSERT INTO public.index_symbols (
     updated_at = EXCLUDED.updated_at,
     updated_at_unix_ms = EXCLUDED.updated_at_unix_ms";
 
-    public const string SelectIndexSymbols = @"
+    public const string SelectIndexSymbols = $@"
 SELECT
     symbol,
     index_name AS IndexName,
-    created_by AS CreatedBy,
-    updated_by AS UpdatedBy,
-    created_at_unix_ms AS CreatedAtUnixMs,
-    updated_at_unix_ms AS UpdatedAtUnixMs
+    {FullAuditSelect}
 FROM public.index_symbols";
 
     
@@ -416,7 +404,7 @@ INSERT INTO public.security_information (
     updated_at = EXCLUDED.updated_at,
     updated_at_unix_ms = EXCLUDED.updated_at_unix_ms";
 
-    public const string SelectSecurityInformation = @"
+    public const string SelectSecurityInformation = $@"
 SELECT
     symbol,
     issuer,
@@ -424,10 +412,7 @@ SELECT
     isin,
     figi,
     type,
-    created_by AS CreatedBy,
-    updated_by AS UpdatedBy,
-    created_at_unix_ms AS CreatedAtUnixMs,
-    updated_at_unix_ms AS UpdatedAtUnixMs
+    {FullAuditSelect}
 FROM public.security_information";
 
     
@@ -501,7 +486,7 @@ INSERT INTO public.eod_prices (
     updated_at = EXCLUDED.updated_at,
     updated_at_unix_ms = EXCLUDED.updated_at_unix_ms";
 
-    public const string SelectEodPrices = @"
+    public const string SelectEodPrices = $@"
 SELECT
     symbol,
     date_eod AS Date,
@@ -510,10 +495,7 @@ SELECT
     low AS Low,
     close AS Close,
     volume AS Volume,
-    created_by AS CreatedBy,
-    updated_by AS UpdatedBy,
-    created_at_unix_ms AS CreatedAtUnixMs,
-    updated_at_unix_ms AS UpdatedAtUnixMs
+    {FullAuditSelect}
 FROM public.eod_prices";
 
     
@@ -528,6 +510,7 @@ INSERT INTO public.us_companies (
     ein,
     sic_code,
     sic_description,
+    sic_title,
     fiscal_year_end,
     state_of_incorporation,
     phone_number,
@@ -559,6 +542,7 @@ INSERT INTO public.us_companies (
     @Ein,
     @SicCode,
     @SicDescription,
+    @SicTitle,
     @FiscalYearEnd,
     @StateOfIncorporation,
     @PhoneNumber,
@@ -593,6 +577,7 @@ INSERT INTO public.us_companies (
     ein,
     sic_code,
     sic_description,
+    sic_title,
     fiscal_year_end,
     state_of_incorporation,
     phone_number,
@@ -624,6 +609,7 @@ INSERT INTO public.us_companies (
     @Ein,
     @SicCode,
     @SicDescription,
+    @SicTitle,
     @FiscalYearEnd,
     @StateOfIncorporation,
     @PhoneNumber,
@@ -652,6 +638,7 @@ INSERT INTO public.us_companies (
     ein = EXCLUDED.ein,
     sic_code = EXCLUDED.sic_code,
     sic_description = EXCLUDED.sic_description,
+    sic_title = EXCLUDED.sic_title,
     fiscal_year_end = EXCLUDED.fiscal_year_end,
     state_of_incorporation = EXCLUDED.state_of_incorporation,
     phone_number = EXCLUDED.phone_number,
@@ -671,7 +658,7 @@ INSERT INTO public.us_companies (
     updated_at = EXCLUDED.updated_at,
     updated_at_unix_ms = EXCLUDED.updated_at_unix_ms";
 
-    public const string SelectCompanyInfo = @"
+    public const string SelectCompanyInfo = $@"
 SELECT
     central_index_key AS CentralIndexKey,
     exchange AS Exchange,
@@ -682,6 +669,7 @@ SELECT
     ein AS Ein,
     sic_code AS SicCode,
     sic_description AS SicDescription,
+    sic_title as SicTitle,
     fiscal_year_end AS FiscalYearEnd,
     state_of_incorporation AS StateOfIncorporation,
     phone_number AS PhoneNumber,
@@ -697,10 +685,7 @@ SELECT
     shares_issued AS SharesIssued,
     shares_outstanding AS SharesOutstanding,
     description AS Description,
-    created_by AS CreatedBy,
-    updated_by AS UpdatedBy,
-    created_at_unix_ms AS CreatedAtUnixMs,
-    updated_at_unix_ms AS UpdatedAtUnixMs
+    {FullAuditSelect}
 FROM public.us_companies";
 
     
@@ -853,7 +838,7 @@ INSERT INTO public.liquidity_ratios (
     updated_at = EXCLUDED.updated_at,
     updated_at_unix_ms = EXCLUDED.updated_at_unix_ms";
 
-    public const string SelectLiquidityRatios = @"
+    public const string SelectLiquidityRatios = $@"
 SELECT
     symbol,
     central_index_key AS CentralIndexKey,
@@ -878,10 +863,7 @@ SELECT
     cash_to_working_capital_ratio AS CashToWorkingCapitalRatio,
     inventory_to_working_capital_ratio AS InventoryToWorkingCapitalRatio,
     net_debt AS NetDebt,
-    created_by AS CreatedBy,
-    updated_by AS UpdatedBy,
-    created_at_unix_ms AS CreatedAtUnixMs,
-    updated_at_unix_ms AS UpdatedAtUnixMs
+    {FullAuditSelect}
 FROM public.liquidity_ratios";
 
     
@@ -1004,7 +986,7 @@ INSERT INTO public.profitability_ratios (
     updated_at = EXCLUDED.updated_at,
     updated_at_unix_ms = EXCLUDED.updated_at_unix_ms";
 
-    public const string SelectProfitabilityRatios = @"
+    public const string SelectProfitabilityRatios = $@"
 SELECT
     symbol,
     central_index_key AS CentralIndexKey,
@@ -1023,10 +1005,7 @@ SELECT
     return_on_debt AS ReturnOnDebt,
     cash_return_on_assets AS CashReturnOnAssets,
     cash_turnover_ratio AS CashTurnoverRatio,
-    created_by AS CreatedBy,
-    updated_by AS UpdatedBy,
-    created_at_unix_ms AS CreatedAtUnixMs,
-    updated_at_unix_ms AS UpdatedAtUnixMs
+    {FullAuditSelect}
 FROM public.profitability_ratios";
 
     
@@ -1139,7 +1118,7 @@ INSERT INTO public.solvency_ratios (
     updated_at = EXCLUDED.updated_at,
     updated_at_unix_ms = EXCLUDED.updated_at_unix_ms";
 
-    public const string SelectSolvencyRatios = @"
+    public const string SelectSolvencyRatios = $@"
 SELECT
     symbol,
     central_index_key AS CentralIndexKey,
@@ -1156,10 +1135,7 @@ SELECT
     debt_to_capital_ratio AS DebtToCapitalRatio,
     debt_to_income_ratio AS DebtToIncomeRatio,
     cash_flow_to_debt_ratio AS CashFlowToDebtRatio,
-    created_by AS CreatedBy,
-    updated_by AS UpdatedBy,
-    created_at_unix_ms AS CreatedAtUnixMs,
-    updated_at_unix_ms AS UpdatedAtUnixMs
+    {FullAuditSelect}
 FROM public.solvency_ratios";
 
     
@@ -1252,7 +1228,7 @@ INSERT INTO public.valuation_ratios (
     updated_at = EXCLUDED.updated_at,
     updated_at_unix_ms = EXCLUDED.updated_at_unix_ms";
 
-    public const string SelectValuationRatios = @"
+    public const string SelectValuationRatios = $@"
 SELECT
     symbol,
     central_index_key AS CentralIndexKey,
@@ -1265,10 +1241,7 @@ SELECT
     book_value_per_share AS BookValuePerShare,
     retention_ratio AS RetentionRatio,
     net_fixed_assets AS NetFixedAssets,
-    created_by AS CreatedBy,
-    updated_by AS UpdatedBy,
-    created_at_unix_ms AS CreatedAtUnixMs,
-    updated_at_unix_ms AS UpdatedAtUnixMs
+    {FullAuditSelect}
 FROM public.valuation_ratios";
 
     
@@ -1427,7 +1400,7 @@ INSERT INTO public.key_metrics (
     updated_at = EXCLUDED.updated_at,
     updated_at_unix_ms = EXCLUDED.updated_at_unix_ms";
 
-    public const string SelectKeyMetrics = @"
+    public const string SelectKeyMetrics = $@"
 SELECT
     symbol,
     central_index_key AS CentralIndexKey,
@@ -1453,10 +1426,7 @@ SELECT
     one_year_beta AS OneYearBeta,
     three_year_beta AS ThreeYearBeta,
     five_year_beta AS FiveYearBeta,
-    created_by AS CreatedBy,
-    updated_by AS UpdatedBy,
-    created_at_unix_ms AS CreatedAtUnixMs,
-    updated_at_unix_ms AS UpdatedAtUnixMs
+    {FullAuditSelect}
 FROM public.key_metrics";
 
     
@@ -1545,7 +1515,7 @@ INSERT INTO public.market_caps (
     updated_at = EXCLUDED.updated_at,
     updated_at_unix_ms = EXCLUDED.updated_at_unix_ms";
 
-    public const string SelectMarketCaps = @"
+    public const string SelectMarketCaps = $@"
 SELECT
     symbol,
     central_index_key AS CentralIndexKey,
@@ -1557,10 +1527,7 @@ SELECT
     shares_outstanding AS SharesOutstanding,
     change_in_shares_outstanding AS ChangeInSharesOutstanding,
     percentage_change_in_shares_outstanding AS PercentageChangeInSharesOutstanding,
-    created_by AS CreatedBy,
-    updated_by AS UpdatedBy,
-    created_at_unix_ms AS CreatedAtUnixMs,
-    updated_at_unix_ms AS UpdatedAtUnixMs
+    {FullAuditSelect}
 FROM public.market_caps";
 
     
@@ -1624,17 +1591,14 @@ INSERT INTO public.employee_counts (
     updated_at = EXCLUDED.updated_at,
     updated_at_unix_ms = EXCLUDED.updated_at_unix_ms";
 
-    public const string SelectEmployeeCounts = @"
+    public const string SelectEmployeeCounts = $@"
 SELECT
     symbol,
     central_index_key AS CentralIndexKey,
     registrant,
     fiscal_year AS FiscalYear,
     count AS Count,
-    created_by AS CreatedBy,
-    updated_by AS UpdatedBy,
-    created_at_unix_ms AS CreatedAtUnixMs,
-    updated_at_unix_ms AS UpdatedAtUnixMs
+    {FullAuditSelect}
 FROM public.employee_counts";
 
     
@@ -1731,7 +1695,7 @@ INSERT INTO public.executive_compensations (
     updated_at = EXCLUDED.updated_at,
     updated_at_unix_ms = EXCLUDED.updated_at_unix_ms";
 
-    public const string SelectExecutiveCompensations = @"
+    public const string SelectExecutiveCompensations = $@"
 SELECT
     symbol,
     central_index_key AS CentralIndexKey,
@@ -1745,10 +1709,7 @@ SELECT
     incentive_plan_compensation AS IncentivePlanCompensation,
     other_compensation AS OtherCompensation,
     total_compensation AS TotalCompensation,
-    created_by AS CreatedBy,
-    updated_by AS UpdatedBy,
-    created_at_unix_ms AS CreatedAtUnixMs,
-    updated_at_unix_ms AS UpdatedAtUnixMs
+    {FullAuditSelect}
 FROM public.executive_compensations";
 
     
@@ -1886,7 +1847,7 @@ INSERT INTO public.income_statements (
     updated_at = EXCLUDED.updated_at,
     updated_at_unix_ms = EXCLUDED.updated_at_unix_ms";
 
-    public const string SelectIncomeStatements = @"
+    public const string SelectIncomeStatements = $@"
 SELECT
     symbol,
     central_index_key AS CentralIndexKey,
@@ -1908,10 +1869,7 @@ SELECT
     earnings_per_share_diluted AS EarningsPerShareDiluted,
     weighted_average_shares_outstanding_basic AS WeightedAverageSharesOutstandingBasic,
     weighted_average_shares_outstanding_diluted AS WeightedAverageSharesOutstandingDiluted,
-    created_by AS CreatedBy,
-    updated_by AS UpdatedBy,
-    created_at_unix_ms AS CreatedAtUnixMs,
-    updated_at_unix_ms AS UpdatedAtUnixMs
+    {FullAuditSelect}
 FROM public.income_statements";
 
     
@@ -2104,7 +2062,7 @@ INSERT INTO public.balance_sheets (
     updated_at = EXCLUDED.updated_at,
     updated_at_unix_ms = EXCLUDED.updated_at_unix_ms";
 
-    public const string SelectBalanceSheets = @"
+    public const string SelectBalanceSheets = $@"
 SELECT
     symbol,
     central_index_key AS CentralIndexKey,
@@ -2137,10 +2095,7 @@ SELECT
     retained_earnings AS RetainedEarnings,
     accumulated_other_comprehensive_income AS AccumulatedOtherComprehensiveIncome,
     total_shareholders_equity AS TotalShareholdersEquity,
-    created_by AS CreatedBy,
-    updated_by AS UpdatedBy,
-    created_at_unix_ms AS CreatedAtUnixMs,
-    updated_at_unix_ms AS UpdatedAtUnixMs
+    {FullAuditSelect}
 FROM public.balance_sheets";
 
     
@@ -2358,7 +2313,7 @@ INSERT INTO public.cash_flow_statements (
     updated_at = EXCLUDED.updated_at,
     updated_at_unix_ms = EXCLUDED.updated_at_unix_ms";
 
-    public const string SelectCashFlowStatements = @"
+    public const string SelectCashFlowStatements = $@"
 SELECT
     symbol,
     central_index_key AS CentralIndexKey,
@@ -2396,10 +2351,7 @@ SELECT
     cash_at_end_of_period AS CashAtEndOfPeriod,
     income_taxes_paid AS IncomeTaxesPaid,
     interest_paid AS InterestPaid,
-    created_by AS CreatedBy,
-    updated_by AS UpdatedBy,
-    created_at_unix_ms AS CreatedAtUnixMs,
-    updated_at_unix_ms AS UpdatedAtUnixMs
+    {FullAuditSelect}
 FROM public.cash_flow_statements";
 
     
@@ -2463,17 +2415,14 @@ INSERT INTO public.stock_splits (
     updated_at = EXCLUDED.updated_at,
     updated_at_unix_ms = EXCLUDED.updated_at_unix_ms";
 
-    public const string SelectStockSplits = @"
+    public const string SelectStockSplits = $@"
 SELECT
     symbol,
     central_index_key AS CentralIndexKey,
     registrant,
     execution_date AS ExecutionDate,
     multiplier,
-    created_by AS CreatedBy,
-    updated_by AS UpdatedBy,
-    created_at_unix_ms AS CreatedAtUnixMs,
-    updated_at_unix_ms AS UpdatedAtUnixMs
+    {FullAuditSelect}
 FROM public.stock_splits";
 
     
@@ -2552,7 +2501,7 @@ INSERT INTO public.dividends (
     updated_at = EXCLUDED.updated_at,
     updated_at_unix_ms = EXCLUDED.updated_at_unix_ms";
 
-    public const string SelectDividends = @"
+    public const string SelectDividends = $@"
 SELECT
     symbol,
     registrant,
@@ -2562,10 +2511,7 @@ SELECT
     ex_date AS ExDate,
     record_date AS RecordDate,
     payment_date AS PaymentDate,
-    created_by AS CreatedBy,
-    updated_by AS UpdatedBy,
-    created_at_unix_ms AS CreatedAtUnixMs,
-    updated_at_unix_ms AS UpdatedAtUnixMs
+    {FullAuditSelect}
 FROM public.dividends";
 
     
@@ -2659,7 +2605,7 @@ INSERT INTO public.earnings_releases (
     updated_at = EXCLUDED.updated_at,
     updated_at_unix_ms = EXCLUDED.updated_at_unix_ms";
 
-    public const string SelectEarningsReleases = @"
+    public const string SelectEarningsReleases = $@"
 SELECT
     symbol AS Symbol,
     central_index_key AS CentralIndexKey,
@@ -2672,10 +2618,7 @@ SELECT
     number_of_forecasts AS NumberOfForecasts,
     conference_call_time AS ConferenceCallTime,
     conference_call_unix_ms AS ConferenceCallUnixMs,
-    created_by AS CreatedBy,
-    updated_by AS UpdatedBy,
-    created_at_unix_ms AS CreatedAtUnixMs,
-    updated_at_unix_ms AS UpdatedAtUnixMs
+    {FullAuditSelect}
 FROM public.earnings_releases";
 
     
@@ -2818,7 +2761,7 @@ INSERT INTO public.efficiency_ratios (
     updated_at = EXCLUDED.updated_at,
     updated_at_unix_ms = EXCLUDED.updated_at_unix_ms";
 
-    public const string SelectEfficiencyRatios = @"
+    public const string SelectEfficiencyRatios = $@"
 SELECT
     symbol,
     central_index_key AS CentralIndexKey,
@@ -2841,10 +2784,7 @@ SELECT
     inventory_to_sales_ratio AS InventoryToSalesRatio,
     investment_turnover_ratio AS InvestmentTurnoverRatio,
     sales_to_operating_income_ratio AS SalesToOperatingIncomeRatio,
-    created_by AS CreatedBy,
-    updated_by AS UpdatedBy,
-    created_at_unix_ms AS CreatedAtUnixMs,
-    updated_at_unix_ms AS UpdatedAtUnixMs
+    {FullAuditSelect}
 FROM public.efficiency_ratios";
 
     
@@ -2938,7 +2878,7 @@ INSERT INTO public.short_interests (
     updated_at = EXCLUDED.updated_at,
     updated_at_unix_ms = EXCLUDED.updated_at_unix_ms";
 
-    public const string SelectShortInterests = @"
+    public const string SelectShortInterests = $@"
 SELECT
     symbol,
     title,
@@ -2951,10 +2891,7 @@ SELECT
     average_daily_volume AS AverageDailyVolume,
     days_to_cover AS DaysToCover,
     is_stock_split AS IsStockSplit,
-    created_by AS CreatedBy,
-    updated_by AS UpdatedBy,
-    created_at_unix_ms AS CreatedAtUnixMs,
-    updated_at_unix_ms AS UpdatedAtUnixMs
+    {FullAuditSelect}
 FROM public.short_interests";
 
     
@@ -3033,7 +2970,7 @@ INSERT INTO public.processes(
     updated_at = EXCLUDED.updated_at,
     updated_at_unix_ms = EXCLUDED.updated_at_unix_ms";
 
-    public const string SelectProcess = @"
+    public const string SelectProcess = $@"
 SELECT
     process_id AS ProcessId,
     process_type AS ProcessType,
@@ -3042,10 +2979,7 @@ SELECT
     input_path AS InputPath,
     output_path AS OutputPath,
     parent_process_id AS ParentProcessId,
-    created_by AS CreatedBy,
-    updated_by AS UpdatedBy,
-    created_at_unix_ms AS CreatedAtUnixMs,
-    updated_at_unix_ms AS UpdatedAtUnixMs
+    {FullAuditSelect}
 FROM public.processes";
 
  
@@ -3100,14 +3034,11 @@ ON CONFLICT (symbol) DO UPDATE SET
     updated_at = EXCLUDED.updated_at,
     updated_at_unix_ms = EXCLUDED.updated_at_unix_ms";
     
-    public const string SelectIgnoredSymbol = @"
+    public const string SelectIgnoredSymbol = $@"
 SELECT
     symbol,
     reason,
     expiration,
-    created_by AS CreatedBy,
-    updated_by AS UpdatedBy,
-    created_at_unix_ms AS CreatedAtUnixMs,
-    updated_at_unix_ms AS UpdatedAtUnixMs
+    {FullAuditSelect}
 FROM public.ignored_symbols";
 }

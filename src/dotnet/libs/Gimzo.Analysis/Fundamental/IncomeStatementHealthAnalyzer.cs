@@ -1,7 +1,7 @@
 ﻿namespace Gimzo.Analysis.Fundamental;
 
 public readonly record struct IncomeStatementAssessment(
-    int Score1To99,
+    int Score,
     string Assessment,
     double? GrossMargin,
     double? OperatingMargin,
@@ -40,7 +40,7 @@ public sealed class IncomeStatementHealthAnalyzer
            value >= 0.05 ? 0.4 :
            value > 0 ? 0.2 : 0.0;
 
-    public IncomeStatementAssessment Assess(ProfitabilityRatios profitability, EfficiencyRatios efficiency)
+    public static IncomeStatementAssessment Assess(ProfitabilityRatios profitability, EfficiencyRatios efficiency)
     {
         double sGross = profitability.GrossMargin.HasValue ? NormalizeMargin(profitability.GrossMargin.Value) : 0.0;
         double sOp = profitability.OperatingMargin.HasValue ? NormalizeMargin(profitability.OperatingMargin.Value) : 0.0;

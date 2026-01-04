@@ -1,7 +1,7 @@
 ﻿namespace Gimzo.Analysis.Fundamental;
 
 public readonly record struct RiskSentimentAssessment(
-    int Score1To99,
+    int Score,
     string Assessment,
     double? OneYearBeta,
     double? DaysToCover);  // from latest short interest
@@ -22,7 +22,7 @@ public sealed class RiskSentimentHealthAnalyzer
            value <= 12 ? 0.4 :
            0.2;
 
-    public RiskSentimentAssessment Assess(KeyMetrics key, double? latestDaysToCover = null)
+    public static RiskSentimentAssessment Assess(KeyMetrics key, double? latestDaysToCover = null)
     {
         double sBeta = key.OneYearBeta.HasValue ? NormalizeBeta(key.OneYearBeta.Value) : 0.0;
         double sShort = latestDaysToCover.HasValue ? NormalizeDaysToCover(latestDaysToCover.Value) : 0.0;

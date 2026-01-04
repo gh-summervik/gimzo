@@ -1,7 +1,7 @@
 ﻿namespace Gimzo.Analysis.Fundamental;
 
 public readonly record struct ValuationAssessment(
-    int Score1To99,
+    int Score,
     string Assessment,
     double? PriceToBookRatio,
     double? DividendYield,
@@ -46,7 +46,7 @@ public sealed class ValuationHealthAnalyzer
            value >= 2 ? 0.4 :
            value > 0 ? 0.2 : 0.0;
 
-    public ValuationAssessment Assess(KeyMetrics key, ValuationRatios? valuation = null)
+    public static ValuationAssessment Assess(KeyMetrics key, ValuationRatios? valuation = null)
     {
         double sPb = key.PriceToBookRatio.HasValue ? NormalizePb(key.PriceToBookRatio.Value) : 0.0;
         double sYield = key.DividendYield.HasValue ? NormalizeYield(key.DividendYield.Value) : 0.0;

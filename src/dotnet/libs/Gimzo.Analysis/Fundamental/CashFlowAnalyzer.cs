@@ -1,7 +1,7 @@
 ﻿namespace Gimzo.Analysis.Fundamental;
 
 public readonly record struct CashFlowAssessment(
-    int Score1To99,
+    int Score,
     string Assessment,
     double? OperatingCashFlowMargin,
     double? CashReturnOnAssets,
@@ -31,7 +31,7 @@ public sealed class CashFlowHealthAnalyzer
            value >= 2.0 ? 0.4 :
            value > 0 ? 0.2 : 0.0;
 
-    public CashFlowAssessment Assess(ProfitabilityRatios profitability)
+    public static CashFlowAssessment Assess(ProfitabilityRatios profitability)
     {
         double sOcf = profitability.OperatingCashFlowMargin.HasValue ? NormalizeOcfMargin(profitability.OperatingCashFlowMargin.Value) : 0.0;
         double sCashRoa = profitability.CashReturnOnAssets.HasValue ? NormalizeCashRoa(profitability.CashReturnOnAssets.Value) : 0.0;

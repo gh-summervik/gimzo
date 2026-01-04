@@ -11,11 +11,6 @@ public sealed class ReportService(DbDefPair dbDefPair, IMemoryCache memoryCache,
 {
     private readonly ILogger<ReportService> _logger = logger;
 
-    public async Task<IReadOnlyCollection<string>> GetAllSymbolsAsync()
-    {
-        return [.. await GetSymbolsAsync()];
-    }
-
     public async Task CreateExtremeReportAsync(string symbol, FileInfo outputFile, bool overwrite = false)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(symbol, nameof(symbol));

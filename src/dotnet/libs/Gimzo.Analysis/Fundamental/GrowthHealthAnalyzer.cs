@@ -2,7 +2,7 @@
 
 // New analyzer
 public readonly record struct GrowthAssessment(
-    int Score1To99,
+    int Score,
     string Assessment,
     double? RevenueGrowthPct,
     double? EpsGrowthPct);

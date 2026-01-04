@@ -12,6 +12,7 @@ public sealed class CompanyInformation
     public string? Ein { get; init; }
     public string? SicCode { get; init; }
     public string? SicDescription { get; init; }
+    public string? SicTitle { get; init;  }
     public string? FiscalYearEnd { get; init; }
     public string? StateOfIncorporation { get; init; }
     public string? PhoneNumber { get; init; }

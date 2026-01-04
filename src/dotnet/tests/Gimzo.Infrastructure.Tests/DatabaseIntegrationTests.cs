@@ -339,6 +339,7 @@ public class DatabaseIntegrationTests : IClassFixture<IntegrationTestsFixture>
             Ein = "ein",
             SicCode = "sic_code",
             SicDescription = "sic_description",
+            SicTitle = "sic_title",
             FiscalYearEnd = "fiscal_year_end",
             StateOfIncorporation = "state_of_incorporation",
             PhoneNumber = "phone_number",
@@ -371,6 +372,7 @@ public class DatabaseIntegrationTests : IClassFixture<IntegrationTestsFixture>
         Assert.Equal(dao.Ein, fromDb.Ein);
         Assert.Equal(dao.SicCode, fromDb.SicCode);
         Assert.Equal(dao.SicDescription, fromDb.SicDescription);
+        Assert.Equal(dao.SicTitle, fromDb.SicTitle);
         Assert.Equal(dao.FiscalYearEnd, fromDb.FiscalYearEnd);
         Assert.Equal(dao.StateOfIncorporation, fromDb.StateOfIncorporation);
         Assert.Equal(dao.PhoneNumber, fromDb.PhoneNumber);
@@ -685,7 +687,7 @@ public class DatabaseIntegrationTests : IClassFixture<IntegrationTestsFixture>
             DebtToEquityRatio = 0.5,
             CapitalExpenditures = 20000m,
             FreeCashFlow = 30000m,
-            ReturnOnEquity = 0.2m,
+            ReturnOnEquity = 0.2d,
             OneYearBeta = 1.1,
             ThreeYearBeta = 1.2,
             FiveYearBeta = 1.0

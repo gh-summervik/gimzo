@@ -1,7 +1,7 @@
 ﻿namespace Gimzo.Analysis.Fundamental;
 
 public readonly record struct EarningsAssessment(
-    int Score1To99,
+    int Score,
     string Assessment,
     decimal? EarningsPerShare,
     decimal? EarningsPerShareForecast,
@@ -39,7 +39,7 @@ public sealed class EarningsHealthAnalyzer
            value <= 30 ? 0.4 :
            0.2;
 
-    public EarningsAssessment Assess(KeyMetrics metrics)
+    public static EarningsAssessment Assess(KeyMetrics metrics)
     {
         double sEps = metrics.EarningsPerShare.HasValue ? NormalizeEps(metrics.EarningsPerShare.Value) : 0.0;
         double sGrowth = metrics.EarningsGrowthRate.HasValue ? NormalizeGrowth(metrics.EarningsGrowthRate.Value) : 0.0;

@@ -490,14 +490,14 @@ public sealed class FinancialDataApiClient(string apiKey, ILogger<FinancialDataA
                 peg.ValueKind == JsonValueKind.Null ? null : peg.GetDouble(),
                 book.ValueKind == JsonValueKind.Null ? null : book.GetDecimal(),
                 ptbr.ValueKind == JsonValueKind.Null ? null : ptbr.GetDouble(),
-                ebitda.ValueKind == JsonValueKind.Null ? null : ebitda.GetDouble(),
+                ebitda.ValueKind == JsonValueKind.Null ? null : ebitda.GetDecimal(),
                 entval.ValueKind == JsonValueKind.Null ? null : entval.GetDecimal(),
                 yield.ValueKind == JsonValueKind.Null ? null : yield.GetDouble(),
                 dpr.ValueKind == JsonValueKind.Null ? null : dpr.GetDouble(),
                 der.ValueKind == JsonValueKind.Null ? null : der.GetDouble(),
                 capex.ValueKind == JsonValueKind.Null ? null : capex.GetDecimal(),
                 fcf.ValueKind == JsonValueKind.Null ? null : fcf.GetDecimal(),
-                roe.ValueKind == JsonValueKind.Null ? null : roe.GetDecimal(),
+                roe.ValueKind == JsonValueKind.Null ? null : roe.GetDouble(),
                 beta1.ValueKind == JsonValueKind.Null ? null : beta1.GetDouble(),
                 beta3.ValueKind == JsonValueKind.Null ? null : beta3.GetDouble(),
                 beta5.ValueKind == JsonValueKind.Null ? null : beta5.GetDouble());
@@ -1197,6 +1197,7 @@ public sealed class FinancialDataApiClient(string apiKey, ILogger<FinancialDataA
                 volume.ValueKind == JsonValueKind.Null ? null : volume.GetDouble());
         }).OrderBy(static k => k.DateTime)];
     }
+
     private static string StandardizeIndustry(string input) =>
         _industryMapping.TryGetValue(input, out string? value) ? value : input;
 
@@ -1630,6 +1631,9 @@ public sealed class FinancialDataApiClient(string apiKey, ILogger<FinancialDataA
         { "semiconductor industry", "Semiconductor" },
         { "thin-film renewables (solar and glass)", "Thin-film Renewables" },
     };
+
+
+
     public void Dispose()
     {
         _httpClient.Dispose();
