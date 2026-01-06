@@ -126,54 +126,59 @@ try
             serviceProvider.GetRequiredService<IMemoryCache>(),
             serviceProvider.GetRequiredService<ILogger<BacktestingService>>());
 
-        var pathToData = Path.Combine("data", "winners.txt");
-        var symbols = await File.ReadAllLinesAsync(pathToData);
+        var symbols = (await backtestService.GetSymbolsToTest(minAbsoluteScore: 40,
+            minCompanyPercentileRank: 50,
+            minIndustryRank: 0)).ToImmutableArray();
 
         List<Ledger.PerformanceSummary> summaries = new(symbols.Length);
-        List<string> winners = new(1500);
+
+        DirectoryInfo targetDirInfo = new(RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+            ? Path.Combine("C:", "temp", "gimzo")
+            : Path.Combine("/", "c", "temp", "gimzo"));
+
+        if (!targetDirInfo.Exists)
+            targetDirInfo.Create();
+        else
+            foreach (var file in targetDirInfo.GetFiles("gimzo_ledger*.csv").Union(targetDirInfo.GetFiles("gimzo_ledger*.txt")))
+                file.Delete();
 
         int i = 0;
         int count = symbols.Length;
+        int tradesIn2025 = 0;
+
         foreach (var symbol in symbols)
         {
-            if (string.IsNullOrWhiteSpace(symbol))
-                continue;
-
             i++;
 
-            Console.WriteLine($"Processing {symbol} - {i}/{count}");
+            if (string.IsNullOrWhiteSpace(symbol))
+            {
+                LogHelper.LogWarning(logger, "Logic error - a blank symbol was found in the list of symbols. Do better.");
+                continue;
+            }
+
+            Console.Write($"\rProcessing {symbol,-8}\t{i,4}/{count}");
 
             var ledger = await backtestService.ExecuteAsync(config.Scenario!, symbol);
 
             if (ledger != null)
             {
+                var entries2025 = ledger.GetPairs().Where(k => k.Open.Date > new DateOnly(2024, 12, 31)).ToImmutableArray();
+                tradesIn2025 += entries2025.Length;
+
                 var ledgerFileName = $"gimzo_ledger_{symbol}_{DateTime.Now:yyyyMMddHHmm}.csv";
 
-                string baseDir = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-                    ? Path.Combine("C:", "temp", "gimzo")
-                    : Path.Combine("/", "c", "temp", "gimzo");
-
-                string fullPath = Path.Combine(baseDir, ledgerFileName);
+                string fullPath = Path.Combine(targetDirInfo.FullName, ledgerFileName);
 
                 await reportService.WriteLedgerAsync(ledger, new FileInfo(fullPath), true);
                 var perf = ledger.GetPerformance();
 
                 if (perf != null)
-                {
                     summaries.Add(perf);
-                    if (perf.TotalProfit > 0)
-                        winners.Add(symbol);
-                    //Console.WriteLine(perf.ToCliOutput());
-                    continue;
-                }
             }
         }
 
-        string winnersPath = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-            ? Path.Combine("C:", "temp", "gimzo", "winners.txt")
-            : Path.Combine("/c", "temp", "gimzo", "winners.txt");
-
-        await File.WriteAllLinesAsync(winnersPath, winners);
+        Console.WriteLine($"\rNum Stocks Considered   : {symbols.Length:#,##0}              ");
+        Console.WriteLine($"Trades in 2025          : {tradesIn2025:#,##0}");
 
         decimal totalProfit = summaries.Sum(s => s.TotalProfit);
         long totalTrades = summaries.Sum(s => s.TotalTrades);
@@ -181,13 +186,14 @@ try
         decimal totalGrossWin = summaries.Sum(s => s.AverageWin * (decimal)(s.TotalTrades * s.WinRate));
         decimal totalGrossLoss = summaries.Sum(s => s.AverageLoss * (decimal)(s.TotalTrades * (1 - s.WinRate)));
 
-        Console.WriteLine($"Total profit      : {totalProfit}");
+        Console.WriteLine();
+        Console.WriteLine($"Total profit      : {totalProfit:C2}");
         Console.WriteLine($"Weighted win rate : {(totalTrades > 0 ? totalWins / totalTrades : 0):P2}");
         Console.WriteLine($"Avg profit/trade  : {(totalTrades > 0 ? totalProfit / totalTrades : 0):C2}");
         Console.WriteLine($"Overall avg win   : {(totalWins > 0 ? totalGrossWin / (decimal)totalWins : 0):C2}");
         Console.WriteLine($"Overall avg loss  : {(totalTrades - totalWins > 0 ? totalGrossLoss / (decimal)(totalTrades - totalWins) : 0):C2}");
         Console.WriteLine($"Overall PF        : {(totalGrossLoss > 0M ? totalGrossWin / totalGrossLoss : 999999M):F2}");
-        Console.WriteLine($"Total trades      : {totalTrades}");
+        Console.WriteLine($"Total trades      : {totalTrades:#,##0}");
     }
 
     if (config.Analyze)
@@ -365,7 +371,6 @@ void ShowHelp()
         new CliArg(["--weekday"], [], false, "Force the Weekday import workflow."),
         new CliArg(["-r", "--csv", "--report"], ["symbol","report name", "output file name"], false, "Produce CSV file with specified report."),
         new CliArg(["-b", "--backtest"],["scenario name"], false, "Runs a backtesting scenario."),
-        new CliArg(["-r", "--report"],["symbol","name of report","output file name"], false, "Produce a given report."),
         new CliArg(["-a", "--analyze"],["symbol (optional)"], false, "Get fundamental scores."),
         new CliArg(["-?", "?", "-h", "--help", "help"], [], false, "Show this help.")
     ];
@@ -378,12 +383,19 @@ void ShowHelp()
         Console.WriteLine();
     }
     Console.WriteLine(CliHelper.FormatArguments(args));
-    Console.WriteLine($"\t{config.AppName} will perform the workflow according to the current day of week,");
+    Console.WriteLine("Importing Notes");
+    Console.WriteLine($"\tWhen choosing '-i', {config.AppName} will perform the workflow according to the current day of week,");
     Console.WriteLine("\tbut you can override this behavior with the --[weekday|sat|sun] options.");
     Console.WriteLine();
     Console.WriteLine("\tOn a first run, use the `--weekday` argument to ensure best behavior.");
     Console.WriteLine($"\tYou can run them all, as in `{config.AppName} --import --weekday --sat --sun`");
+    Console.WriteLine("\tbut this is not recommended on a first run because you'll process more data than necessary.");
+    Console.WriteLine();
+    Console.WriteLine("Backtesting Notes");
+    foreach (var kvp in BacktestingService.Scenarios)
+        Console.WriteLine($"\t{kvp.Key,-16}\t{kvp.Value}");
 }
+
 class Config(string appName, string appVersion, string? description)
 {
     public string AppName { get; } = appName;
@@ -408,7 +420,7 @@ class Config(string appName, string appVersion, string? description)
     public bool IsValid(out string message)
     {
         message = "";
-        if (!Csv && !Import && !Backtest && !Analyze && !ImportCleanupOnly)
+        if (!ShowHelp && !Csv && !Import && !Backtest && !Analyze && !ImportCleanupOnly)
             message = "Either csv, import, backtest, analyze, or cleanup must be specified.";
         else if ((Weekday || Saturday || Sunday) && !Import)
             message = "When specifying a day of the week, the import flag (--import) is required.";

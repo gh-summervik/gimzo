@@ -1,8 +1,10 @@
-﻿namespace Gimzo.AppServices.Backtesting;
+﻿using Gimzo.Analysis.Technical.Charts;
+
+namespace Gimzo.AppServices.Backtesting;
 
 public partial class BacktestingService
 {
-    private async Task<Ledger?> ExecutePriceExtremeFollowAsync(string symbol)
+    private async Task<Ledger?> ExecuteBullishPriceExtremeFollowAsync(string symbol)
     {
         var chart = await GetChartAsync(symbol);
         if (chart == null)
@@ -14,18 +16,25 @@ public partial class BacktestingService
         {
             var current = chart.Extremes[i];
 
+            var prevHigh = chart.FindPreviousHigh(i);
+            if (prevHigh == null)
+                continue;
+
+            if (!(current.IsLow && current.IsBullish && chart.TrendValues[current.Index] > -0.2 &&
+                chart.PriceActions[current.Index + 1].Open > chart.PriceActions[current.Index].Close &&
+                chart.PriceActions[current.Index + 1].MidPoint < prevHigh.Value.Price))
+                continue;
+
             var v = Math.Max(0, current.Index - 21);
             var avgVol = chart.PriceActions[v..current.Index].Select(k => k.Volume).Average();
 
-            if (chart.PriceActions[current.Index].Volume < 1.2 * avgVol)
-                continue;
-
-            if (current.IsLow && current.IsBullish && chart.TrendValues[current.Index] > 0.2)
+            var entry = new CashLedgerEntry(chart.PriceActions[current.Index + 1].Date, symbol, DefaultQty,
+                chart.PriceActions[current.Index + 1].MidPoint, "");
+            var exitPoint = FindExitOnLong(entry, chart);
+            if (exitPoint != null)
             {
-                var entry = new CashLedgerEntry(chart.PriceActions[current.Index + 1].Date, symbol, DefaultQty,
-                    chart.PriceActions[current.Index + 1].Close, "");
                 ledger.Add(entry);
-                ledger.Add(FindExitOnLong(entry, chart));
+                ledger.Add(exitPoint);
             }
         }
         return ledger;
