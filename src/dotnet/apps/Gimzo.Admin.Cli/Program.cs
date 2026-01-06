@@ -70,16 +70,32 @@ try
         var apiClient = new FinancialDataApiClient(fdnApiKey,
             serviceProvider.GetRequiredService<ILogger<FinancialDataApiClient>>());
 
-        var importer = new FinancialDataImporter(apiClient,
+        var importer = new FinancialDataImporter(
+            apiClient,
             dbDefPairs![0],
             serviceProvider.GetRequiredService<IMemoryCache>(),
             serviceProvider.GetRequiredService<ILogger<FinancialDataImporter>>());
 
         LogHelper.LogInfo(logger, "New process started; id: {id}", process.ProcessId);
 
-        await importer.InitializeImportAsync(process, config.Weekday, config.Saturday, config.Sunday);
-        await importer.ImportAsync(config.Cleanup);
-        apiClient.Dispose();
+        await importer.InitializeImportAsync(process, config.Weekday, config.Saturday, config.Sunday, config.ImportCleanupOnly);
+        await importer.ImportAsync();
+        importer.Dispose();
+
+        LogHelper.LogInfo(logger, "Capturing company valuations.");
+        var coAnalysisService = new CompanyAnalysisService(dbDefPairs![0],
+            serviceProvider.GetRequiredService<IMemoryCache>(),
+            serviceProvider.GetRequiredService<ILogger<CompanyAnalysisService>>());
+
+        LogHelper.LogInfo(logger, "Capturing industry valuations.");
+        var indAnalysisService = new IndustryAnalysisService(dbDefPairs![0],
+            serviceProvider.GetRequiredService<IMemoryCache>(),
+            serviceProvider.GetRequiredService<ILogger<IndustryAnalysisService>>());
+
+        var t1 = coAnalysisService.SaveAllSiloScoresAsync(process.ProcessId);
+        var t2 = indAnalysisService.SaveAllIndustryScoresAsync(process.ProcessId);
+
+        await Task.WhenAll(t1, t2);
     }
 
     if (config.Csv)
@@ -112,7 +128,7 @@ try
 
         var pathToData = Path.Combine("data", "winners.txt");
         var symbols = await File.ReadAllLinesAsync(pathToData);
-        
+
         List<Ledger.PerformanceSummary> summaries = new(symbols.Length);
         List<string> winners = new(1500);
 
@@ -124,7 +140,7 @@ try
                 continue;
 
             i++;
-        
+
             Console.WriteLine($"Processing {symbol} - {i}/{count}");
 
             var ledger = await backtestService.ExecuteAsync(config.Scenario!, symbol);
@@ -280,7 +296,7 @@ void ParseArguments(string[] args, out string[] childArgs)
                 config.Import = true;
                 break;
             case "--cleanup":
-                config.Cleanup = true;
+                config.ImportCleanupOnly = true;
                 break;
             case "--saturday":
             case "--sat":
@@ -377,7 +393,7 @@ class Config(string appName, string appVersion, string? description)
     public bool ShowHelp { get; set; }
     public bool Import { get; set; }
     public bool Csv { get; set; }
-    public bool Cleanup { get; set; }
+    public bool ImportCleanupOnly { get; set; }
     public bool Weekday { get; set; }
     public bool Saturday { get; set; }
     public bool Sunday { get; set; }
@@ -392,7 +408,7 @@ class Config(string appName, string appVersion, string? description)
     public bool IsValid(out string message)
     {
         message = "";
-        if (!Csv && !Import && !Backtest && !Analyze && !Cleanup)
+        if (!Csv && !Import && !Backtest && !Analyze && !ImportCleanupOnly)
             message = "Either csv, import, backtest, analyze, or cleanup must be specified.";
         else if ((Weekday || Saturday || Sunday) && !Import)
             message = "When specifying a day of the week, the import flag (--import) is required.";
@@ -408,7 +424,7 @@ class Config(string appName, string appVersion, string? description)
 
         if (Backtest && string.IsNullOrWhiteSpace(Scenario))
             message = "Scenario must be specified when backtest is chosen.";
-        if (Cleanup && !Import)
+        if (ImportCleanupOnly && !Import)
             message = "Cleanup is not valid without import.";
 
         return string.IsNullOrWhiteSpace(message);

@@ -17,7 +17,7 @@ namespace Gimzo.AppServices.Data;
 public sealed class FinancialDataImporter(FinancialDataApiClient apiClient,
     DbDefPair dbDefPair,
     IMemoryCache memoryCache,
-    ILogger<FinancialDataImporter> logger) : ServiceBase(dbDefPair, memoryCache)
+    ILogger<FinancialDataImporter> logger) : ServiceBase(dbDefPair, memoryCache), IDisposable
 {
     private readonly FinancialDataApiClient _fdnApiClient = apiClient;
     private readonly YahooClient _yahooClient = new();
@@ -29,6 +29,7 @@ public sealed class FinancialDataImporter(FinancialDataApiClient apiClient,
     private bool _forceSaturday;
     private bool _forceSunday;
     private bool _initialized;
+    private bool _cleanupOnly;
 
     /// <summary>
     /// Initialize the import process by hydrating meta info and determining
@@ -36,12 +37,13 @@ public sealed class FinancialDataImporter(FinancialDataApiClient apiClient,
     /// This method is intended to be called first.
     /// </summary>
     public async Task InitializeImportAsync(Process process, bool forceWeekday = false,
-        bool forceSaturday = false, bool forceSunday = false)
+        bool forceSaturday = false, bool forceSunday = false, bool cleanupOnly = false)
     {
         _process = process ?? throw new ArgumentNullException(nameof(process));
         _forceWeekday = forceWeekday;
         _forceSaturday = forceSaturday;
         _forceSunday = forceSunday;
+        _cleanupOnly = cleanupOnly;
 
         await SaveProcess(_process.ToDao());
 
@@ -53,12 +55,12 @@ public sealed class FinancialDataImporter(FinancialDataApiClient apiClient,
         LogHelper.LogInfo(_logger, "Import initialized");
     }
 
-    public async Task ImportAsync(bool cleanupOnly = false)
+    public async Task ImportAsync()
     {
         if (!_initialized)
             throw new Exception($"Import not initialized; call {nameof(InitializeImportAsync)} first.");
 
-        if (!cleanupOnly)
+        if (!_cleanupOnly)
         {
             if (_forceSunday | _forceSaturday | _forceWeekday)
             {
@@ -142,7 +144,7 @@ public sealed class FinancialDataImporter(FinancialDataApiClient apiClient,
                  * We have to employ Yahoo here to capture the past few days because
                  * financialdata.net has a 2-day delay on EOD historical prices. Really.
                  * 
-                 * We do all this date manipulation so that one set of values does not overwrite the other.
+                 * We do this date manipulation so that one set of values does not overwrite the other.
                  * FDN is the primary, and then we try to fill in the latest using Yahoo.
                  */
                 var yahooStartTime = fdnEodPrices[^1].Date.GetValueOrDefault().AddWeekdays(1).ToDateTime(TimeOnly.MinValue);
@@ -301,7 +303,7 @@ public sealed class FinancialDataImporter(FinancialDataApiClient apiClient,
         return [.. (await queryCtx.QueryAsync<string>(FetchSymbolsSql))];
     }
 
-    public async Task RemovedExpiredIgnoredSymbolsAsync()
+    internal async Task RemovedExpiredIgnoredSymbolsAsync()
     {
         const string SelectSymbolsToRemove = @"SELECT symbol FROM public.ignored_symbols WHERE expiration <= @Now";
         const string RemoveExpiredIgnoreRecordsSql = @"DELETE FROM public.ignored_symbols WHERE symbol = @Symbol";
@@ -354,7 +356,7 @@ AND table_type = 'BASE TABLE'";
         };
     }
 
-    public async Task SaveStockSymbolsAsync(IReadOnlyCollection<Security> securities, Guid processId)
+    internal async Task SaveStockSymbolsAsync(IReadOnlyCollection<Security> securities, Guid processId)
     {
         if (processId.Equals(Guid.Empty))
             processId = Constants.SystemId;
@@ -372,7 +374,7 @@ AND table_type = 'BASE TABLE'";
         }
     }
 
-    public async Task SaveSecuritiesAsync(IReadOnlyCollection<Security> securities, Guid processId)
+    internal async Task SaveSecuritiesAsync(IReadOnlyCollection<Security> securities, Guid processId)
     {
         if (processId.Equals(Guid.Empty))
             processId = Constants.SystemId;
@@ -394,7 +396,7 @@ AND table_type = 'BASE TABLE'";
         }
     }
 
-    public async Task SaveEodPricesAsync(IReadOnlyCollection<Ohlc> prices, Guid processId)
+    internal async Task SaveEodPricesAsync(IReadOnlyCollection<Ohlc> prices, Guid processId)
     {
         if (processId.Equals(Guid.Empty))
             processId = Constants.SystemId;
@@ -419,7 +421,7 @@ AND table_type = 'BASE TABLE'";
         }
     }
 
-    public async Task SaveCompanyInfoAsync(Gimzo.Analysis.Fundamental.CompanyInformation company, Guid processId)
+    internal async Task SaveCompanyInfoAsync(Gimzo.Analysis.Fundamental.CompanyInformation company, Guid processId)
     {
         if (processId.Equals(Guid.Empty))
             processId = Constants.SystemId;
@@ -430,7 +432,7 @@ AND table_type = 'BASE TABLE'";
             new Infrastructure.Database.DataAccessObjects.CompanyInformation(company, processId));
     }
 
-    public async Task SaveIncomeStatementsAsync(IReadOnlyCollection<Gimzo.Analysis.Fundamental.IncomeStatement> statements, Guid processId)
+    internal async Task SaveIncomeStatementsAsync(IReadOnlyCollection<Gimzo.Analysis.Fundamental.IncomeStatement> statements, Guid processId)
     {
         if (processId.Equals(Guid.Empty))
             processId = Constants.SystemId;
@@ -441,7 +443,7 @@ AND table_type = 'BASE TABLE'";
             await cmdCtx.ExecuteAsync(SqlRepository.MergeIncomeStatements, chunk);
     }
 
-    public async Task SaveBalanceSheetsAsync(IReadOnlyCollection<Gimzo.Analysis.Fundamental.BalanceSheet> statements, Guid processId)
+    internal async Task SaveBalanceSheetsAsync(IReadOnlyCollection<Gimzo.Analysis.Fundamental.BalanceSheet> statements, Guid processId)
     {
         if (processId.Equals(Guid.Empty))
             processId = Constants.SystemId;
@@ -452,7 +454,7 @@ AND table_type = 'BASE TABLE'";
             await cmdCtx.ExecuteAsync(SqlRepository.MergeBalanceSheets, chunk);
     }
 
-    public async Task SaveCashFlowStatementsAsync(IReadOnlyCollection<Gimzo.Analysis.Fundamental.CashFlowStatement> statements, Guid processId)
+    internal async Task SaveCashFlowStatementsAsync(IReadOnlyCollection<Gimzo.Analysis.Fundamental.CashFlowStatement> statements, Guid processId)
     {
         if (processId.Equals(Guid.Empty))
             processId = Constants.SystemId;
@@ -463,7 +465,7 @@ AND table_type = 'BASE TABLE'";
             await cmdCtx.ExecuteAsync(SqlRepository.MergeCashFlowStatements, chunk);
     }
 
-    public async Task SaveDividendsAsync(IReadOnlyCollection<Gimzo.Analysis.Fundamental.Dividend> dividends, Guid processId)
+    internal async Task SaveDividendsAsync(IReadOnlyCollection<Gimzo.Analysis.Fundamental.Dividend> dividends, Guid processId)
     {
         if (processId.Equals(Guid.Empty))
             processId = Constants.SystemId;
@@ -474,7 +476,7 @@ AND table_type = 'BASE TABLE'";
             await cmdCtx.ExecuteAsync(SqlRepository.MergeDividends, chunk);
     }
 
-    public async Task SaveSplitsAsync(IReadOnlyCollection<Gimzo.Analysis.Fundamental.StockSplit> splits, Guid processId)
+    internal async Task SaveSplitsAsync(IReadOnlyCollection<Gimzo.Analysis.Fundamental.StockSplit> splits, Guid processId)
     {
         if (processId.Equals(Guid.Empty))
             processId = Constants.SystemId;
@@ -485,7 +487,7 @@ AND table_type = 'BASE TABLE'";
             await cmdCtx.ExecuteAsync(SqlRepository.MergeStockSplits, chunk);
     }
 
-    public async Task SaveEarningReleasesAsync(IReadOnlyCollection<Gimzo.Analysis.Fundamental.EarningsRelease> releases, Guid processId)
+    internal async Task SaveEarningReleasesAsync(IReadOnlyCollection<Gimzo.Analysis.Fundamental.EarningsRelease> releases, Guid processId)
     {
         if (processId.Equals(Guid.Empty))
             processId = Constants.SystemId;
@@ -496,7 +498,7 @@ AND table_type = 'BASE TABLE'";
             await cmdCtx.ExecuteAsync(SqlRepository.MergeEarningsReleases, chunk);
     }
 
-    public async Task SaveShortInterestsAsync(IReadOnlyCollection<Gimzo.Analysis.Fundamental.ShortInterest> shortInterests, Guid processId)
+    internal async Task SaveShortInterestsAsync(IReadOnlyCollection<Gimzo.Analysis.Fundamental.ShortInterest> shortInterests, Guid processId)
     {
         if (processId.Equals(Guid.Empty))
             processId = Constants.SystemId;
@@ -511,7 +513,7 @@ AND table_type = 'BASE TABLE'";
     /// Finds symbols with most recent pricing data greater than 10 days older than
     /// max eod pricing data found and adds them to the ignored list.
     /// </summary>
-    public async Task AddDelistedSymbolsToIgnoreListAsync(Guid processId)
+    internal async Task AddDelistedSymbolsToIgnoreListAsync(Guid processId)
     {
         LogHelper.LogInfo(_logger, "Adding to ignore list delisted symbols.");
         if (processId.Equals(Guid.Empty))
@@ -545,7 +547,7 @@ WHERE p.symbol IS NULL";
             await InsertIgnoredSymbolsAsync("No price data", processId, symbols, expiration: null);
     }
 
-    public async Task AddSymbolsWithPricesOutsideRangeToIgnoreListAsync(Guid processId, decimal min = 10M, decimal max = 2_000M)
+    internal async Task AddSymbolsWithPricesOutsideRangeToIgnoreListAsync(Guid processId, decimal min = 10M, decimal max = 2_000M)
     {
         LogHelper.LogInfo(_logger, "Adding to ignore list symbols with prices outside range.");
         if (processId.Equals(Guid.Empty))
@@ -566,7 +568,7 @@ HAVING AVG(close) < @Min OR AVG(close) > @Max";
                 expiration: TimeHelper.TodayEastern.AddWeekdays(100));
     }
 
-    public async Task AddSymbolsWithShortChartsToIgnoreListAsync(Guid processId, int minDaysOfData = 200)
+    internal async Task AddSymbolsWithShortChartsToIgnoreListAsync(Guid processId, int minDaysOfData = 200)
     {
         LogHelper.LogInfo(_logger, "Adding to ignore list symbols with short charts.");
         const string Sql = @"
@@ -593,7 +595,7 @@ HAVING COUNT(*) < @MinDays";
     /// Insert into the database a collection of symbols to ignore.
     /// The symbols share the same reason and the same expiration.
     /// </summary>
-    public async Task InsertIgnoredSymbolsAsync(string reason, Guid processId,
+    internal async Task InsertIgnoredSymbolsAsync(string reason, Guid processId,
         IReadOnlyCollection<string> symbols, DateOnly? expiration = null)
     {
         if (symbols.Count > 0)
@@ -616,7 +618,7 @@ HAVING COUNT(*) < @MinDays";
         }
     }
 
-    public async Task UpdateSicTitlesAsync()
+    internal async Task UpdateSicTitlesAsync()
     {
         LogHelper.LogInfo(_logger, "Updating industries from SIC codes");
         DateTimeOffset now = DateTimeOffset.UtcNow;
@@ -631,8 +633,7 @@ WHERE sic_code = @Code";
 
         const string NullifyBlanks = @"UPDATE public.us_companies
 SET sic_code = NULL, sic_description = NULL, sic_title = NULL
-WHERE TRIM(sic_code) = '';
-";
+WHERE TRIM(sic_code) = ''";
 
         using var cmdCtx = _dbDefPair.GetCommandConnection();
         await cmdCtx.ExecuteAsync(NullifyBlanks);
@@ -653,7 +654,7 @@ WHERE TRIM(sic_code) = '';
     /// <summary>
     /// Removes from the database all data related to ignored symbols.
     /// </summary>
-    public async Task DeleteDataForIgnoredSymbolsAsync()
+    internal async Task DeleteDataForIgnoredSymbolsAsync()
     {
         LogHelper.LogInfo(_logger, "Deleting data for ignored symbols");
 
@@ -691,7 +692,7 @@ WHERE TRIM(sic_code) = '';
         }
     }
 
-    public async Task SaveKeyMetricsAsync(IReadOnlyCollection<Gimzo.Analysis.Fundamental.KeyMetrics> metrics, Guid processId)
+    internal async Task SaveKeyMetricsAsync(IReadOnlyCollection<Gimzo.Analysis.Fundamental.KeyMetrics> metrics, Guid processId)
     {
         if (processId.Equals(Guid.Empty))
             processId = Constants.SystemId;
@@ -702,7 +703,7 @@ WHERE TRIM(sic_code) = '';
             await cmdCtx.ExecuteAsync(SqlRepository.MergeKeyMetrics, chunk);
     }
 
-    public async Task SaveMarketCapsAsync(IReadOnlyCollection<Gimzo.Analysis.Fundamental.MarketCap> marketCaps, Guid processId)
+    internal async Task SaveMarketCapsAsync(IReadOnlyCollection<Gimzo.Analysis.Fundamental.MarketCap> marketCaps, Guid processId)
     {
         if (processId.Equals(Guid.Empty))
             processId = Constants.SystemId;
@@ -713,7 +714,7 @@ WHERE TRIM(sic_code) = '';
             await cmdCtx.ExecuteAsync(SqlRepository.MergeMarketCaps, chunk);
     }
 
-    public async Task SaveEmployeeCountsAsync(IReadOnlyCollection<Gimzo.Analysis.Fundamental.EmployeeCount> empCounts, Guid processId)
+    internal async Task SaveEmployeeCountsAsync(IReadOnlyCollection<Gimzo.Analysis.Fundamental.EmployeeCount> empCounts, Guid processId)
     {
         if (processId.Equals(Guid.Empty))
             processId = Constants.SystemId;
@@ -724,7 +725,7 @@ WHERE TRIM(sic_code) = '';
             await cmdCtx.ExecuteAsync(SqlRepository.MergeEmployeeCounts, chunk);
     }
 
-    public async Task SaveExecCompensationAsync(IReadOnlyCollection<Gimzo.Analysis.Fundamental.ExecutiveCompensation> comps, Guid processId)
+    internal async Task SaveExecCompensationAsync(IReadOnlyCollection<Gimzo.Analysis.Fundamental.ExecutiveCompensation> comps, Guid processId)
     {
         if (processId.Equals(Guid.Empty))
             processId = Constants.SystemId;
@@ -735,7 +736,7 @@ WHERE TRIM(sic_code) = '';
             await cmdCtx.ExecuteAsync(SqlRepository.MergeExecutiveCompensations, chunk);
     }
 
-    public async Task SaveEfficiencyRatiosAsync(IReadOnlyCollection<Gimzo.Analysis.Fundamental.EfficiencyRatios> ratios, Guid processId)
+    internal async Task SaveEfficiencyRatiosAsync(IReadOnlyCollection<Gimzo.Analysis.Fundamental.EfficiencyRatios> ratios, Guid processId)
     {
         if (processId.Equals(Guid.Empty))
             processId = Constants.SystemId;
@@ -746,7 +747,7 @@ WHERE TRIM(sic_code) = '';
             await cmdCtx.ExecuteAsync(SqlRepository.MergeEfficiencyRatios, chunk);
     }
 
-    public async Task SaveLiquidityRatiosAsync(IReadOnlyCollection<Gimzo.Analysis.Fundamental.LiquidityRatios> ratios, Guid processId)
+    internal async Task SaveLiquidityRatiosAsync(IReadOnlyCollection<Gimzo.Analysis.Fundamental.LiquidityRatios> ratios, Guid processId)
     {
         if (processId.Equals(Guid.Empty))
             processId = Constants.SystemId;
@@ -757,7 +758,7 @@ WHERE TRIM(sic_code) = '';
             await cmdCtx.ExecuteAsync(SqlRepository.MergeLiquidityRatios, chunk);
     }
 
-    public async Task SaveProfitabilityRatiosAsync(IReadOnlyCollection<Gimzo.Analysis.Fundamental.ProfitabilityRatios> ratios, Guid processId)
+    internal async Task SaveProfitabilityRatiosAsync(IReadOnlyCollection<Gimzo.Analysis.Fundamental.ProfitabilityRatios> ratios, Guid processId)
     {
         if (processId.Equals(Guid.Empty))
             processId = Constants.SystemId;
@@ -768,7 +769,7 @@ WHERE TRIM(sic_code) = '';
             await cmdCtx.ExecuteAsync(SqlRepository.MergeProfitabilityRatios, chunk);
     }
 
-    public async Task SaveSolvencyRatiosAsync(IReadOnlyCollection<Gimzo.Analysis.Fundamental.SolvencyRatios> ratios, Guid processId)
+    internal async Task SaveSolvencyRatiosAsync(IReadOnlyCollection<Gimzo.Analysis.Fundamental.SolvencyRatios> ratios, Guid processId)
     {
         if (processId.Equals(Guid.Empty))
             processId = Constants.SystemId;
@@ -779,7 +780,7 @@ WHERE TRIM(sic_code) = '';
             await cmdCtx.ExecuteAsync(SqlRepository.MergeSolvencyRatios, chunk);
     }
 
-    public async Task SaveValuationRatiosAsync(IReadOnlyCollection<Gimzo.Analysis.Fundamental.ValuationRatios> ratios, Guid processId)
+    internal async Task SaveValuationRatiosAsync(IReadOnlyCollection<Gimzo.Analysis.Fundamental.ValuationRatios> ratios, Guid processId)
     {
         if (processId.Equals(Guid.Empty))
             processId = Constants.SystemId;
@@ -788,5 +789,11 @@ WHERE TRIM(sic_code) = '';
 
         foreach (var chunk in ratios.Select(k => new Infrastructure.Database.DataAccessObjects.ValuationRatios(k, processId)).Chunk(Constants.DefaultChunkSize))
             await cmdCtx.ExecuteAsync(SqlRepository.MergeValuationRatios, chunk);
+    }
+
+    public void Dispose()
+    {
+        _fdnApiClient.Dispose();
+        GC.SuppressFinalize(this);
     }
 }

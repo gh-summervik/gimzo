@@ -455,7 +455,7 @@ public sealed class FinancialDataApiClient(string apiKey, ILogger<FinancialDataA
 
         var json = JsonSerializer.Serialize(metrics);
 
-        return [.. metrics.Select(static k =>
+        return [.. metrics.Select(k =>
         {
             var eps = k.GetProperty("earnings_per_share");
             var epsf = k.GetProperty("earnings_per_share_forecast");
@@ -482,21 +482,21 @@ public sealed class FinancialDataApiClient(string apiKey, ILogger<FinancialDataA
                 k.GetProperty("registrant_name").GetString() ?? "",
                 k.GetProperty("fiscal_year").GetString() ?? "",
                 ped.ValueKind == JsonValueKind.Null ? null : DateOnly.FromDateTime(ped.GetDateTime()),
-                eps.ValueKind == JsonValueKind.Null ? null : eps.GetDecimal(),
-                epsf.ValueKind == JsonValueKind.Null ? null : epsf.GetDecimal(),
+                SanitizeDecimal(eps),
+                SanitizeDecimal(epsf),
                 pe.ValueKind == JsonValueKind.Null ? null : pe.GetDouble(),
                 fpe.ValueKind == JsonValueKind.Null ? null : fpe.GetDouble(),
                 egr.ValueKind == JsonValueKind.Null ? null : egr.GetDouble(),
                 peg.ValueKind == JsonValueKind.Null ? null : peg.GetDouble(),
-                book.ValueKind == JsonValueKind.Null ? null : book.GetDecimal(),
+                SanitizeDecimal(book),
                 ptbr.ValueKind == JsonValueKind.Null ? null : ptbr.GetDouble(),
-                ebitda.ValueKind == JsonValueKind.Null ? null : ebitda.GetDecimal(),
-                entval.ValueKind == JsonValueKind.Null ? null : entval.GetDecimal(),
+                SanitizeDecimal(ebitda),
+                SanitizeDecimal(entval),
                 yield.ValueKind == JsonValueKind.Null ? null : yield.GetDouble(),
                 dpr.ValueKind == JsonValueKind.Null ? null : dpr.GetDouble(),
                 der.ValueKind == JsonValueKind.Null ? null : der.GetDouble(),
-                capex.ValueKind == JsonValueKind.Null ? null : capex.GetDecimal(),
-                fcf.ValueKind == JsonValueKind.Null ? null : fcf.GetDecimal(),
+                SanitizeDecimal(capex),
+                SanitizeDecimal(fcf),
                 roe.ValueKind == JsonValueKind.Null ? null : roe.GetDouble(),
                 beta1.ValueKind == JsonValueKind.Null ? null : beta1.GetDouble(),
                 beta3.ValueKind == JsonValueKind.Null ? null : beta3.GetDouble(),
@@ -504,32 +504,60 @@ public sealed class FinancialDataApiClient(string apiKey, ILogger<FinancialDataA
         }).OrderBy(static k => k.PeriodEndDate)];
     }
 
+    /// <summary>
+    /// This method resolves a defect in financialdata.net's API - they will sometimes report market cap numbers
+    /// that are truly absurd.
+    /// </summary>
+    private decimal? SanitizeDecimal(JsonElement element, [CallerMemberName] string? caller = null)
+    {
+        if (element.ValueKind == JsonValueKind.Null)
+            return null;
+
+        try
+        {
+            decimal value = element.GetDecimal();
+            if (Math.Abs(value) < 1_000_000_000_000_000_000m)
+                return value;
+
+            LogHelper.LogWarning(_logger, "Set value to null. Caller: {caller}, value: {value}", caller ?? "Unknown", value);
+            return null;
+        }
+        catch (Exception exc)
+        {
+            LogHelper.LogError(_logger, exc, $"From {caller}", caller ?? "Unknown");
+            return null;
+        }
+    }
+
     public async Task<MarketCap[]> GetMarketCapAsync(string identifier)
     {
         if (string.IsNullOrWhiteSpace(identifier))
             throw new ArgumentException("Identifier cannot be empty", nameof(identifier));
+
         var paramsDict = new Dictionary<string, string> { { "identifier", identifier } };
         var results = await GetDataAsync(EndPoints.MarketCap, paramsDict);
-        return [.. results.Select(static k => {
-            var mc = k.GetProperty("market_cap");
-            var cimc = k.GetProperty("change_in_market_cap");
-            var pcimc = k.GetProperty("percentage_change_in_market_cap");
-            var so = k.GetProperty("shares_outstanding");
-            var cso = k.GetProperty("change_in_shares_outstanding");
-            var pcso = k.GetProperty("percentage_change_in_shares_outstanding");
 
-            return new MarketCap(k.GetProperty("trading_symbol").GetString() ?? "",
-                k.GetProperty("central_index_key").GetString() ?? "",
-                k.GetProperty("registrant_name").GetString() ?? "",
-                k.GetProperty("fiscal_year").GetString() ?? "",
-                mc.ValueKind == JsonValueKind.Null ? null : mc.GetDouble(),
-                cimc.ValueKind == JsonValueKind.Null ? null : cimc.GetDouble(),
-                pcimc.ValueKind == JsonValueKind.Null ? null : pcimc.GetDouble(),
-                so.ValueKind == JsonValueKind.Null ? null : so.GetInt64(),
-                cso.ValueKind == JsonValueKind.Null ? null : cso.GetInt64(),
-                pcso.ValueKind == JsonValueKind.Null ? null : pcso.GetDouble());
-            }
-        ).OrderBy(static k => k.FiscalYear)];
+        return [.. results.Select(k =>
+    {
+        var mc = k.GetProperty("market_cap");
+        var cimc = k.GetProperty("change_in_market_cap");
+        var pcimc = k.GetProperty("percentage_change_in_market_cap");
+        var so = k.GetProperty("shares_outstanding");
+        var cso = k.GetProperty("change_in_shares_outstanding");
+        var pcso = k.GetProperty("percentage_change_in_shares_outstanding");
+
+        return new MarketCap(
+            k.GetProperty("trading_symbol").GetString() ?? "",
+            k.GetProperty("central_index_key").GetString() ?? "",
+            k.GetProperty("registrant_name").GetString() ?? "",
+            k.GetProperty("fiscal_year").GetString() ?? "",
+            SanitizeDecimal(mc),
+            SanitizeDecimal(cimc),
+            pcimc.ValueKind == JsonValueKind.Null ? null : pcimc.GetDouble(),
+            so.ValueKind == JsonValueKind.Null ? null : so.GetInt64(),
+            cso.ValueKind == JsonValueKind.Null ? null : cso.GetInt64(),
+            pcso.ValueKind == JsonValueKind.Null ? null : pcso.GetDouble());
+        }).OrderBy(static k => k.FiscalYear)];
     }
 
     public async Task<EmployeeCount[]> GetEmployeeCountAsync(string identifier)

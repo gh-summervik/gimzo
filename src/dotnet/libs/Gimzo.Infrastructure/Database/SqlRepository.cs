@@ -29,26 +29,9 @@ INSERT INTO public.stock_symbols (
     @UpdatedAtUnixMs
 )";
 
-    public const string MergeStockSymbols = @"
-INSERT INTO public.stock_symbols (
-    symbol,
-    registrant,
-    created_by,
-    updated_by,
-    created_at,
-    updated_at,
-    created_at_unix_ms,
-    updated_at_unix_ms
-) VALUES (
-    @Symbol,
-    @Registrant,
-    @CreatedBy,
-    @UpdatedBy,
-    @CreatedAt,
-    @UpdatedAt,
-    @CreatedAtUnixMs,
-    @UpdatedAtUnixMs
-) ON CONFLICT (symbol) DO UPDATE SET
+    public const string MergeStockSymbols = $@"
+{InsertStockSymbols}
+ON CONFLICT (symbol) DO UPDATE SET
     registrant = EXCLUDED.registrant,
     updated_by = EXCLUDED.updated_by,
     updated_at = EXCLUDED.updated_at,
@@ -61,7 +44,7 @@ SELECT
     {FullAuditSelect}
 FROM public.stock_symbols";
 
-    
+
     public const string InsertEtfSymbols = @"
 INSERT INTO public.etf_symbols (
     symbol,
@@ -83,26 +66,9 @@ INSERT INTO public.etf_symbols (
     @UpdatedAtUnixMs
 )";
 
-    public const string MergeEtfSymbols = @"
-INSERT INTO public.etf_symbols (
-    symbol,
-    description,
-    created_by,
-    updated_by,
-    created_at,
-    updated_at,
-    created_at_unix_ms,
-    updated_at_unix_ms
-) VALUES (
-    @Symbol,
-    @Description,
-    @CreatedBy,
-    @UpdatedBy,
-    @CreatedAt,
-    @UpdatedAt,
-    @CreatedAtUnixMs,
-    @UpdatedAtUnixMs
-) ON CONFLICT (symbol) DO UPDATE SET
+    public const string MergeEtfSymbols = $@"
+{InsertEtfSymbols}
+ON CONFLICT (symbol) DO UPDATE SET
     description = EXCLUDED.description,
     updated_by = EXCLUDED.updated_by,
     updated_at = EXCLUDED.updated_at,
@@ -115,7 +81,7 @@ SELECT
     {FullAuditSelect}
 FROM public.etf_symbols";
 
-    
+
     public const string InsertCommoditySymbols = @"
 INSERT INTO public.commodity_symbols (
     symbol,
@@ -137,26 +103,9 @@ INSERT INTO public.commodity_symbols (
     @UpdatedAtUnixMs
 )";
 
-    public const string MergeCommoditySymbols = @"
-INSERT INTO public.commodity_symbols (
-    symbol,
-    description,
-    created_by,
-    updated_by,
-    created_at,
-    updated_at,
-    created_at_unix_ms,
-    updated_at_unix_ms
-) VALUES (
-    @Symbol,
-    @Description,
-    @CreatedBy,
-    @UpdatedBy,
-    @CreatedAt,
-    @UpdatedAt,
-    @CreatedAtUnixMs,
-    @UpdatedAtUnixMs
-) ON CONFLICT (symbol) DO UPDATE SET
+    public const string MergeCommoditySymbols = $@"
+{InsertCommoditySymbols}
+ON CONFLICT (symbol) DO UPDATE SET
     description = EXCLUDED.description,
     updated_by = EXCLUDED.updated_by,
     updated_at = EXCLUDED.updated_at,
@@ -169,7 +118,7 @@ SELECT
     {FullAuditSelect}
 FROM public.commodity_symbols";
 
-    
+
     public const string InsertOtcSymbols = @"
 INSERT INTO public.otc_symbols (
     symbol,
@@ -191,26 +140,9 @@ INSERT INTO public.otc_symbols (
     @UpdatedAtUnixMs
 )";
 
-    public const string MergeOtcSymbols = @"
-INSERT INTO public.otc_symbols (
-    symbol,
-    title,
-    created_by,
-    updated_by,
-    created_at,
-    updated_at,
-    created_at_unix_ms,
-    updated_at_unix_ms
-) VALUES (
-    @Symbol,
-    @Title,
-    @CreatedBy,
-    @UpdatedBy,
-    @CreatedAt,
-    @UpdatedAt,
-    @CreatedAtUnixMs,
-    @UpdatedAtUnixMs
-) ON CONFLICT (symbol) DO UPDATE SET
+    public const string MergeOtcSymbols = $@"
+{InsertOtcSymbols}
+ON CONFLICT (symbol) DO UPDATE SET
     title = EXCLUDED.title,
     updated_by = EXCLUDED.updated_by,
     updated_at = EXCLUDED.updated_at,
@@ -223,7 +155,7 @@ SELECT
     {FullAuditSelect}
 FROM public.otc_symbols";
 
-    
+
     public const string InsertCryptoSymbols = @"
 INSERT INTO public.crypto_symbols (
     symbol,
@@ -247,28 +179,9 @@ INSERT INTO public.crypto_symbols (
     @UpdatedAtUnixMs
 )";
 
-    public const string MergeCryptoSymbols = @"
-INSERT INTO public.crypto_symbols (
-    symbol,
-    base_asset,
-    quote_asset,
-    created_by,
-    updated_by,
-    created_at,
-    updated_at,
-    created_at_unix_ms,
-    updated_at_unix_ms
-) VALUES (
-    @Symbol,
-    @BaseAsset,
-    @QuoteAsset,
-    @CreatedBy,
-    @UpdatedBy,
-    @CreatedAt,
-    @UpdatedAt,
-    @CreatedAtUnixMs,
-    @UpdatedAtUnixMs
-) ON CONFLICT (symbol) DO UPDATE SET
+    public const string MergeCryptoSymbols = $@"
+{InsertCryptoSymbols}
+ON CONFLICT (symbol) DO UPDATE SET
     base_asset = EXCLUDED.base_asset,
     quote_asset = EXCLUDED.quote_asset,
     updated_by = EXCLUDED.updated_by,
@@ -283,7 +196,7 @@ SELECT
     {FullAuditSelect}
 FROM public.crypto_symbols";
 
-    
+
     public const string InsertIndexSymbols = @"
 INSERT INTO public.index_symbols (
     symbol,
@@ -305,26 +218,9 @@ INSERT INTO public.index_symbols (
     @UpdatedAtUnixMs
 )";
 
-    public const string MergeIndexSymbols = @"
-INSERT INTO public.index_symbols (
-    symbol,
-    index_name,
-    created_by,
-    updated_by,
-    created_at,
-    updated_at,
-    created_at_unix_ms,
-    updated_at_unix_ms
-) VALUES (
-    @Symbol,
-    @IndexName,
-    @CreatedBy,
-    @UpdatedBy,
-    @CreatedAt,
-    @UpdatedAt,
-    @CreatedAtUnixMs,
-    @UpdatedAtUnixMs
-) ON CONFLICT(symbol) DO UPDATE SET
+    public const string MergeIndexSymbols = $@"
+{InsertIndexSymbols}
+ON CONFLICT(symbol) DO UPDATE SET
     index_name = EXCLUDED.index_name,
     updated_by = EXCLUDED.updated_by,
     updated_at = EXCLUDED.updated_at,
@@ -337,7 +233,7 @@ SELECT
     {FullAuditSelect}
 FROM public.index_symbols";
 
-    
+
     public const string InsertSecurityInformation = @"
 INSERT INTO public.security_information (
     symbol,
@@ -367,34 +263,9 @@ INSERT INTO public.security_information (
     @UpdatedAtUnixMs
 )";
 
-    public const string MergeSecurityInformation = @"
-INSERT INTO public.security_information (
-    symbol,
-    issuer,
-    cusip,
-    isin,
-    figi,
-    type,
-    created_by,
-    updated_by,
-    created_at,
-    updated_at,
-    created_at_unix_ms,
-    updated_at_unix_ms
-) VALUES (
-    @Symbol,
-    @Issuer,
-    @Cusip,
-    @Isin,
-    @Figi,
-    @Type,
-    @CreatedBy,
-    @UpdatedBy,
-    @CreatedAt,
-    @UpdatedAt,
-    @CreatedAtUnixMs,
-    @UpdatedAtUnixMs
-) ON CONFLICT (symbol) DO UPDATE SET
+    public const string MergeSecurityInformation = $@"
+{InsertSecurityInformation}
+ON CONFLICT (symbol) DO UPDATE SET
     issuer = EXCLUDED.issuer,
     cusip = EXCLUDED.cusip,
     isin = EXCLUDED.isin,
@@ -415,7 +286,7 @@ SELECT
     {FullAuditSelect}
 FROM public.security_information";
 
-    
+
     public const string InsertEodPrices = @"
 INSERT INTO public.eod_prices (
     symbol,
@@ -447,36 +318,9 @@ INSERT INTO public.eod_prices (
     @UpdatedAtUnixMs
 )";
 
-    public const string MergeEodPrices = @"
-INSERT INTO public.eod_prices (
-    symbol,
-    date_eod,
-    open,
-    high,
-    low,
-    close,
-    volume,
-    created_by,
-    updated_by,
-    created_at,
-    updated_at,
-    created_at_unix_ms,
-    updated_at_unix_ms
-) VALUES (
-    @Symbol,
-    @Date,
-    @Open,
-    @High,
-    @Low,
-    @Close,
-    @Volume,
-    @CreatedBy,
-    @UpdatedBy,
-    @CreatedAt,
-    @UpdatedAt,
-    @CreatedAtUnixMs,
-    @UpdatedAtUnixMs
-) ON CONFLICT (symbol, date_eod) DO UPDATE SET
+    public const string MergeEodPrices = $@"
+{InsertEodPrices}
+ON CONFLICT (symbol, date_eod) DO UPDATE SET
     open = EXCLUDED.open,
     high = EXCLUDED.high,
     low = EXCLUDED.low,
@@ -498,7 +342,7 @@ SELECT
     {FullAuditSelect}
 FROM public.eod_prices";
 
-    
+
     public const string InsertCompanyInfo = @"
 INSERT INTO public.us_companies (
     central_index_key,
@@ -566,72 +410,9 @@ INSERT INTO public.us_companies (
     @UpdatedAtUnixMs
 )";
 
-    public const string MergeCompanyInfo = @"
-INSERT INTO public.us_companies (
-    central_index_key,
-    exchange,
-    symbol,
-    registrant,
-    isin,
-    lei,
-    ein,
-    sic_code,
-    sic_description,
-    sic_title,
-    fiscal_year_end,
-    state_of_incorporation,
-    phone_number,
-    mailing_address,
-    business_address,
-    former_name,
-    industry,
-    date_founding,
-    chief_executive_officer,
-    number_employees,
-    web_site,
-    market_cap,
-    shares_issued,
-    shares_outstanding,
-    description,
-    created_by,
-    updated_by,
-    created_at,
-    updated_at,
-    created_at_unix_ms,
-    updated_at_unix_ms
-) VALUES (
-    @CentralIndexKey,
-    @Exchange,
-    @Symbol,
-    @Registrant,
-    @Isin,
-    @Lei,
-    @Ein,
-    @SicCode,
-    @SicDescription,
-    @SicTitle,
-    @FiscalYearEnd,
-    @StateOfIncorporation,
-    @PhoneNumber,
-    @MailingAddress,
-    @BusinessAddress,
-    @FormerName,
-    @Industry,
-    @DateFounding,
-    @ChiefExecutiveOfficer,
-    @NumberEmployees,
-    @WebSite,
-    @MarketCap,
-    @SharesIssued,
-    @SharesOutstanding,
-    @Description,
-    @CreatedBy,
-    @UpdatedBy,
-    @CreatedAt,
-    @UpdatedAt,
-    @CreatedAtUnixMs,
-    @UpdatedAtUnixMs
-) ON CONFLICT (central_index_key, exchange, symbol) DO UPDATE SET
+    public const string MergeCompanyInfo = $@"
+{InsertCompanyInfo}
+ON CONFLICT (central_index_key, exchange, symbol) DO UPDATE SET
     registrant = EXCLUDED.registrant,
     isin = EXCLUDED.isin,
     lei = EXCLUDED.lei,
@@ -688,7 +469,7 @@ SELECT
     {FullAuditSelect}
 FROM public.us_companies";
 
-    
+
     public const string InsertLiquidityRatios = @"
 INSERT INTO public.liquidity_ratios (
     symbol,
@@ -752,68 +533,9 @@ INSERT INTO public.liquidity_ratios (
     @UpdatedAtUnixMs
 )";
 
-    public const string MergeLiquidityRatios = @"
-INSERT INTO public.liquidity_ratios (
-    symbol,
-    central_index_key,
-    registrant,
-    fiscal_year,
-    fiscal_period,
-    period_end_date,
-    working_capital,
-    current_ratio,
-    cash_ratio,
-    quick_ratio,
-    days_of_inventory_outstanding,
-    days_of_sales_outstanding,
-    days_payable_outstanding,
-    cash_conversion_cycle,
-    sales_to_working_capital_ratio,
-    cash_to_current_liabilities_ratio,
-    working_capital_to_debt_ratio,
-    cash_flow_adequacy_ratio,
-    sales_to_current_assets_ratio,
-    cash_to_current_assets_ratio,
-    cash_to_working_capital_ratio,
-    inventory_to_working_capital_ratio,
-    net_debt,
-    created_by,
-    updated_by,
-    created_at,
-    updated_at,
-    created_at_unix_ms,
-    updated_at_unix_ms
-) VALUES (
-    @Symbol,
-    @CentralIndexKey,
-    @Registrant,
-    @FiscalYear,
-    @FiscalPeriod,
-    @PeriodEndDate,
-    @WorkingCapital,
-    @CurrentRatio,
-    @CashRatio,
-    @QuickRatio,
-    @DaysOfInventoryOutstanding,
-    @DaysOfSalesOutstanding,
-    @DaysPayableOutstanding,
-    @CashConversionCycle,
-    @SalesToWorkingCapitalRatio,
-    @CashToCurrentLiabilitiesRatio,
-    @WorkingCapitalToDebtRatio,
-    @CashFlowAdequacyRatio,
-    @SalesToCurrentAssetsRatio,
-    @CashToCurrentAssetsRatio,
-    @CashToWorkingCapitalRatio,
-    @InventoryToWorkingCapitalRatio,
-    @NetDebt,
-    @CreatedBy,
-    @UpdatedBy,
-    @CreatedAt,
-    @UpdatedAt,
-    @CreatedAtUnixMs,
-    @UpdatedAtUnixMs
-) ON CONFLICT (central_index_key, fiscal_year, fiscal_period) DO UPDATE SET
+    public const string MergeLiquidityRatios = $@"
+{InsertLiquidityRatios}
+ON CONFLICT (central_index_key, fiscal_year, fiscal_period) DO UPDATE SET
     symbol = EXCLUDED.symbol,
     registrant = EXCLUDED.registrant,
     period_end_date = EXCLUDED.period_end_date,
@@ -866,7 +588,7 @@ SELECT
     {FullAuditSelect}
 FROM public.liquidity_ratios";
 
-    
+
     public const string InsertProfitabilityRatios = @"
 INSERT INTO public.profitability_ratios (
     symbol,
@@ -918,56 +640,9 @@ INSERT INTO public.profitability_ratios (
     @UpdatedAtUnixMs
 )";
 
-    public const string MergeProfitabilityRatios = @"
-INSERT INTO public.profitability_ratios (
-    symbol,
-    central_index_key,
-    registrant,
-    fiscal_year,
-    fiscal_period,
-    period_end_date,
-    ebit,
-    ebitda,
-    profit_margin,
-    gross_margin,
-    operating_margin,
-    operating_cash_flow_margin,
-    return_on_equity,
-    return_on_assets,
-    return_on_debt,
-    cash_return_on_assets,
-    cash_turnover_ratio,
-    created_by,
-    updated_by,
-    created_at,
-    updated_at,
-    created_at_unix_ms,
-    updated_at_unix_ms
-) VALUES (
-    @Symbol,
-    @CentralIndexKey,
-    @Registrant,
-    @FiscalYear,
-    @FiscalPeriod,
-    @PeriodEndDate,
-    @Ebit,
-    @Ebitda,
-    @ProfitMargin,
-    @GrossMargin,
-    @OperatingMargin,
-    @OperatingCashFlowMargin,
-    @ReturnOnEquity,
-    @ReturnOnAssets,
-    @ReturnOnDebt,
-    @CashReturnOnAssets,
-    @CashTurnoverRatio,
-    @CreatedBy,
-    @UpdatedBy,
-    @CreatedAt,
-    @UpdatedAt,
-    @CreatedAtUnixMs,
-    @UpdatedAtUnixMs
-) ON CONFLICT (central_index_key, fiscal_year, fiscal_period) DO UPDATE SET
+    public const string MergeProfitabilityRatios = $@"
+{InsertProfitabilityRatios}
+ON CONFLICT (central_index_key, fiscal_year, fiscal_period) DO UPDATE SET
     symbol = EXCLUDED.symbol,
     registrant = EXCLUDED.registrant,
     period_end_date = EXCLUDED.period_end_date,
@@ -1008,7 +683,7 @@ SELECT
     {FullAuditSelect}
 FROM public.profitability_ratios";
 
-    
+
     public const string InsertSolvencyRatios = @"
 INSERT INTO public.solvency_ratios (
     symbol,
@@ -1056,52 +731,9 @@ INSERT INTO public.solvency_ratios (
     @UpdatedAtUnixMs
 )";
 
-    public const string MergeSolvencyRatios = @"
-INSERT INTO public.solvency_ratios (
-    symbol,
-    central_index_key,
-    registrant,
-    fiscal_year,
-    fiscal_period,
-    period_end_date,
-    equity_ratio,
-    debt_coverage_ratio,
-    asset_coverage_ratio,
-    interest_coverage_ratio,
-    debt_to_equity_ratio,
-    debt_to_assets_ratio,
-    debt_to_capital_ratio,
-    debt_to_income_ratio,
-    cash_flow_to_debt_ratio,
-    created_by,
-    updated_by,
-    created_at,
-    updated_at,
-    created_at_unix_ms,
-    updated_at_unix_ms
-) VALUES (
-    @Symbol,
-    @CentralIndexKey,
-    @Registrant,
-    @FiscalYear,
-    @FiscalPeriod,
-    @PeriodEndDate,
-    @EquityRatio,
-    @DebtCoverageRatio,
-    @AssetCoverageRatio,
-    @InterestCoverageRatio,
-    @DebtToEquityRatio,
-    @DebtToAssetsRatio,
-    @DebtToCapitalRatio,
-    @DebtToIncomeRatio,
-    @CashFlowToDebtRatio,
-    @CreatedBy,
-    @UpdatedBy,
-    @CreatedAt,
-    @UpdatedAt,
-    @CreatedAtUnixMs,
-    @UpdatedAtUnixMs
-) ON CONFLICT (central_index_key, fiscal_year, fiscal_period) DO UPDATE SET
+    public const string MergeSolvencyRatios = $@"
+{InsertSolvencyRatios}
+ON CONFLICT (central_index_key, fiscal_year, fiscal_period) DO UPDATE SET
     symbol = EXCLUDED.symbol,
     registrant = EXCLUDED.registrant,
     period_end_date = EXCLUDED.period_end_date,
@@ -1138,7 +770,7 @@ SELECT
     {FullAuditSelect}
 FROM public.solvency_ratios";
 
-    
+
     public const string InsertValuationRatios = @"
 INSERT INTO public.valuation_ratios (
     symbol,
@@ -1178,44 +810,9 @@ INSERT INTO public.valuation_ratios (
     @UpdatedAtUnixMs
 )";
 
-    public const string MergeValuationRatios = @"
-INSERT INTO public.valuation_ratios (
-    symbol,
-    central_index_key,
-    registrant,
-    fiscal_year,
-    fiscal_period,
-    period_end_date,
-    dividends_per_share,
-    dividend_payout_ratio,
-    book_value_per_share,
-    retention_ratio,
-    net_fixed_assets,
-    created_by,
-    updated_by,
-    created_at,
-    updated_at,
-    created_at_unix_ms,
-    updated_at_unix_ms
-) VALUES (
-    @Symbol,
-    @CentralIndexKey,
-    @Registrant,
-    @FiscalYear,
-    @FiscalPeriod,
-    @PeriodEndDate,
-    @DividendsPerShare,
-    @DividendPayoutRatio,
-    @BookValuePerShare,
-    @RetentionRatio,
-    @NetFixedAssets,
-    @CreatedBy,
-    @UpdatedBy,
-    @CreatedAt,
-    @UpdatedAt,
-    @CreatedAtUnixMs,
-    @UpdatedAtUnixMs
-) ON CONFLICT (central_index_key, fiscal_year, fiscal_period) DO UPDATE SET
+    public const string MergeValuationRatios = $@"
+{InsertValuationRatios}
+ON CONFLICT (central_index_key, fiscal_year, fiscal_period) DO UPDATE SET
     symbol = EXCLUDED.symbol,
     registrant = EXCLUDED.registrant,
     period_end_date = EXCLUDED.period_end_date,
@@ -1244,7 +841,7 @@ SELECT
     {FullAuditSelect}
 FROM public.valuation_ratios";
 
-    
+
     public const string InsertKeyMetrics = @"
 INSERT INTO public.key_metrics (
     symbol,
@@ -1310,70 +907,9 @@ INSERT INTO public.key_metrics (
     @UpdatedAtUnixMs
 )";
 
-    public const string MergeKeyMetrics = @"
-INSERT INTO public.key_metrics (
-    symbol,
-    central_index_key,
-    registrant,
-    fiscal_year,
-    period_end_date,
-    earnings_per_share,
-    earnings_per_share_forecast,
-    price_to_earnings_ratio,
-    forward_price_to_earnings_ratio,
-    earnings_growth_rate,
-    price_earnings_to_growth_rate,
-    book_value_per_share,
-    price_to_book_ratio,
-    ebitda,
-    enterprise_value,
-    dividend_yield,
-    dividend_payout_ratio,
-    debt_to_equity_ratio,
-    capital_expenditures,
-    free_cash_flow,
-    return_on_equity,
-    one_year_beta,
-    three_year_beta,
-    five_year_beta,
-    created_by,
-    updated_by,
-    created_at,
-    updated_at,
-    created_at_unix_ms,
-    updated_at_unix_ms
-) VALUES (
-    @Symbol,
-    @CentralIndexKey,
-    @Registrant,
-    @FiscalYear,
-    @PeriodEndDate,
-    @EarningsPerShare,
-    @EarningsPerShareForecast,
-    @PriceToEarningsRatio,
-    @ForwardPriceToEarningsRatio,
-    @EarningsGrowthRate,
-    @PriceEarningsToGrowthRate,
-    @BookValuePerShare,
-    @PriceToBookRatio,
-    @Ebitda,
-    @EnterpriseValue,
-    @DividendYield,
-    @DividendPayoutRatio,
-    @DebtToEquityRatio,
-    @CapitalExpenditures,
-    @FreeCashFlow,
-    @ReturnOnEquity,
-    @OneYearBeta,
-    @ThreeYearBeta,
-    @FiveYearBeta,
-    @CreatedBy,
-    @UpdatedBy,
-    @CreatedAt,
-    @UpdatedAt,
-    @CreatedAtUnixMs,
-    @UpdatedAtUnixMs
-) ON CONFLICT (central_index_key, fiscal_year) DO UPDATE SET
+    public const string MergeKeyMetrics = $@"
+{InsertKeyMetrics}
+ON CONFLICT (central_index_key, fiscal_year) DO UPDATE SET
     symbol = EXCLUDED.symbol,
     registrant = EXCLUDED.registrant,
     period_end_date = EXCLUDED.period_end_date,
@@ -1429,7 +965,7 @@ SELECT
     {FullAuditSelect}
 FROM public.key_metrics";
 
-    
+
     public const string InsertMarketCaps = @"
 INSERT INTO public.market_caps (
     symbol,
@@ -1467,42 +1003,9 @@ INSERT INTO public.market_caps (
     @UpdatedAtUnixMs
 )";
 
-    public const string MergeMarketCaps = @"
-INSERT INTO public.market_caps (
-    symbol,
-    central_index_key,
-    registrant,
-    fiscal_year,
-    value,
-    change_in_market_cap,
-    percentage_change_in_market_cap,
-    shares_outstanding,
-    change_in_shares_outstanding,
-    percentage_change_in_shares_outstanding,
-    created_by,
-    updated_by,
-    created_at,
-    updated_at,
-    created_at_unix_ms,
-    updated_at_unix_ms
-) VALUES (
-    @Symbol,
-    @CentralIndexKey,
-    @Registrant,
-    @FiscalYear,
-    @Value,
-    @ChangeInMarketCap,
-    @PercentageChangeInMarketCap,
-    @SharesOutstanding,
-    @ChangeInSharesOutstanding,
-    @PercentageChangeInSharesOutstanding,
-    @CreatedBy,
-    @UpdatedBy,
-    @CreatedAt,
-    @UpdatedAt,
-    @CreatedAtUnixMs,
-    @UpdatedAtUnixMs
-) ON CONFLICT (central_index_key, fiscal_year) DO UPDATE SET
+    public const string MergeMarketCaps = $@"
+{InsertMarketCaps}
+ON CONFLICT (central_index_key, fiscal_year) DO UPDATE SET
     symbol = EXCLUDED.symbol,
     registrant = EXCLUDED.registrant,
     value = EXCLUDED.value,
@@ -1530,7 +1033,7 @@ SELECT
     {FullAuditSelect}
 FROM public.market_caps";
 
-    
+
     public const string InsertEmployeeCounts = @"
 INSERT INTO public.employee_counts (
     symbol,
@@ -1558,32 +1061,9 @@ INSERT INTO public.employee_counts (
     @UpdatedAtUnixMs
 )";
 
-    public const string MergeEmployeeCounts = @"
-INSERT INTO public.employee_counts (
-    symbol,
-    central_index_key,
-    registrant,
-    fiscal_year,
-    count,
-    created_by,
-    updated_by,
-    created_at,
-    updated_at,
-    created_at_unix_ms,
-    updated_at_unix_ms
-) VALUES (
-    @Symbol,
-    @CentralIndexKey,
-    @Registrant,
-    @FiscalYear,
-    @Count,
-    @CreatedBy,
-    @UpdatedBy,
-    @CreatedAt,
-    @UpdatedAt,
-    @CreatedAtUnixMs,
-    @UpdatedAtUnixMs
-) ON CONFLICT (central_index_key, fiscal_year) DO UPDATE SET
+    public const string MergeEmployeeCounts = $@"
+{InsertEmployeeCounts}
+ON CONFLICT (central_index_key, fiscal_year) DO UPDATE SET
     symbol = EXCLUDED.symbol,
     registrant = EXCLUDED.registrant,
     count = EXCLUDED.count,
@@ -1601,7 +1081,7 @@ SELECT
     {FullAuditSelect}
 FROM public.employee_counts";
 
-    
+
     public const string InsertExecutiveCompensations = @"
 INSERT INTO public.executive_compensations (
     symbol,
@@ -1643,46 +1123,9 @@ INSERT INTO public.executive_compensations (
     @UpdatedAtUnixMs
 )";
 
-    public const string MergeExecutiveCompensations = @"
-INSERT INTO public.executive_compensations (
-    symbol,
-    central_index_key,
-    registrant,
-    name,
-    position,
-    fiscal_year,
-    salary,
-    bonus,
-    stock_awards,
-    incentive_plan_compensation,
-    other_compensation,
-    total_compensation,
-    created_by,
-    updated_by,
-    created_at,
-    updated_at,
-    created_at_unix_ms,
-    updated_at_unix_ms
-) VALUES (
-    @Symbol,
-    @CentralIndexKey,
-    @Registrant,
-    @Name,
-    @Position,
-    @FiscalYear,
-    @Salary,
-    @Bonus,
-    @StockAwards,
-    @IncentivePlanCompensation,
-    @OtherCompensation,
-    @TotalCompensation,
-    @CreatedBy,
-    @UpdatedBy,
-    @CreatedAt,
-    @UpdatedAt,
-    @CreatedAtUnixMs,
-    @UpdatedAtUnixMs
-) ON CONFLICT (central_index_key, name, position, fiscal_year) DO UPDATE SET
+    public const string MergeExecutiveCompensations = $@"
+{InsertExecutiveCompensations}
+ON CONFLICT (central_index_key, name, position, fiscal_year) DO UPDATE SET
     symbol = EXCLUDED.symbol,
     registrant = EXCLUDED.registrant,
     salary = EXCLUDED.salary,
@@ -1712,7 +1155,7 @@ SELECT
     {FullAuditSelect}
 FROM public.executive_compensations";
 
-    
+
     public const string InsertIncomeStatements = @"
 INSERT INTO public.income_statements (
     symbol,
@@ -1770,62 +1213,9 @@ INSERT INTO public.income_statements (
     @UpdatedAtUnixMs
 )";
 
-    public const string MergeIncomeStatements = @"
-INSERT INTO public.income_statements (
-    symbol,
-    central_index_key,
-    registrant,
-    fiscal_year,
-    fiscal_period,
-    period_end_date,
-    revenue,
-    cost_of_revenue,
-    gross_profit,
-    research_development_expenses,
-    general_admin_expenses,
-    operating_expenses,
-    operating_income,
-    interest_expense,
-    interest_income,
-    net_income,
-    earnings_per_share_basic,
-    earnings_per_share_diluted,
-    weighted_average_shares_outstanding_basic,
-    weighted_average_shares_outstanding_diluted,
-    created_by,
-    updated_by,
-    created_at,
-    updated_at,
-    created_at_unix_ms,
-    updated_at_unix_ms
-) VALUES (
-    @Symbol,
-    @CentralIndexKey,
-    @Registrant,
-    @FiscalYear,
-    @FiscalPeriod,
-    @PeriodEndDate,
-    @Revenue,
-    @CostOfRevenue,
-    @GrossProfit,
-    @ResearchDevelopmentExpenses,
-    @GeneralAdminExpenses,
-    @OperatingExpenses,
-    @OperatingIncome,
-    @InterestExpense,
-    @InterestIncome,
-    @NetIncome,
-    @EarningsPerShareBasic,
-    @EarningsPerShareDiluted,
-    @WeightedAverageSharesOutstandingBasic,
-    @WeightedAverageSharesOutstandingDiluted,
-    @CreatedBy,
-    @UpdatedBy,
-    @CreatedAt,
-    @UpdatedAt,
-    @CreatedAtUnixMs,
-    @UpdatedAtUnixMs
-) ON CONFLICT (central_index_key, fiscal_year, fiscal_period) DO UPDATE SET
+    public const string MergeIncomeStatements = $@"
+{InsertIncomeStatements}
+ON CONFLICT (central_index_key, fiscal_year, fiscal_period) DO UPDATE SET
     symbol = EXCLUDED.symbol,
     registrant = EXCLUDED.registrant,
     period_end_date = EXCLUDED.period_end_date,
@@ -1872,7 +1262,7 @@ SELECT
     {FullAuditSelect}
 FROM public.income_statements";
 
-    
+
     public const string InsertBalanceSheets = @"
 INSERT INTO public.balance_sheets (
     symbol,
@@ -1952,84 +1342,9 @@ INSERT INTO public.balance_sheets (
     @UpdatedAtUnixMs
 )";
 
-    public const string MergeBalanceSheets = @"
-INSERT INTO public.balance_sheets (
-    symbol,
-    central_index_key,
-    registrant,
-    fiscal_year,
-    fiscal_period,
-    period_end_date,
-    cash,
-    marketable_securities_current,
-    accounts_receivable,
-    inventories,
-    non_trade_receivables,
-    other_assets_current,
-    total_assets_current,
-    marketable_securities_non_current,
-    property_plant_equipment,
-    other_assets_non_current,
-    total_assets_non_current,
-    total_assets,
-    accounts_payable,
-    deferred_revenue,
-    short_term_debt,
-    other_liabilities_current,
-    total_liabilities_current,
-    long_term_debt,
-    other_liabilities_non_current,
-    total_liabilities_non_current,
-    total_liabilities,
-    common_stock,
-    retained_earnings,
-    accumulated_other_comprehensive_income,
-    total_shareholders_equity,
-    created_by,
-    updated_by,
-    created_at,
-    updated_at,
-    created_at_unix_ms,
-    updated_at_unix_ms
-) VALUES (
-    @Symbol,
-    @CentralIndexKey,
-    @Registrant,
-    @FiscalYear,
-    @FiscalPeriod,
-    @PeriodEndDate,
-    @Cash,
-    @MarketableSecuritiesCurrent,
-    @AccountsReceivable,
-    @Inventories,
-    @NonTradeReceivables,
-    @OtherAssetsCurrent,
-    @TotalAssetsCurrent,
-    @MarketableSecuritiesNonCurrent,
-    @PropertyPlantEquipment,
-    @OtherAssetsNonCurrent,
-    @TotalAssetsNonCurrent,
-    @TotalAssets,
-    @AccountsPayable,
-    @DeferredRevenue,
-    @ShortTermDebt,
-    @OtherLiabilitiesCurrent,
-    @TotalLiabilitiesCurrent,
-    @LongTermDebt,
-    @OtherLiabilitiesNonCurrent,
-    @TotalLiabilitiesNonCurrent,
-    @TotalLiabilities,
-    @CommonStock,
-    @RetainedEarnings,
-    @AccumulatedOtherComprehensiveIncome,
-    @TotalShareholdersEquity,
-    @CreatedBy,
-    @UpdatedBy,
-    @CreatedAt,
-    @UpdatedAt,
-    @CreatedAtUnixMs,
-    @UpdatedAtUnixMs
-) ON CONFLICT (central_index_key, fiscal_year, fiscal_period) DO UPDATE SET
+    public const string MergeBalanceSheets = $@"
+{InsertBalanceSheets}
+ON CONFLICT (central_index_key, fiscal_year, fiscal_period) DO UPDATE SET
     symbol = EXCLUDED.symbol,
     registrant = EXCLUDED.registrant,
     period_end_date = EXCLUDED.period_end_date,
@@ -2098,7 +1413,7 @@ SELECT
     {FullAuditSelect}
 FROM public.balance_sheets";
 
-    
+
     public const string InsertCashFlowStatements = @"
 INSERT INTO public.cash_flow_statements (
     symbol,
@@ -2188,94 +1503,9 @@ INSERT INTO public.cash_flow_statements (
     @UpdatedAtUnixMs
 )";
 
-    public const string MergeCashFlowStatements = @"
-INSERT INTO public.cash_flow_statements (
-    symbol,
-    central_index_key,
-    registrant,
-    fiscal_year,
-    fiscal_period,
-    period_end_date,
-    depreciation,
-    share_based_compensation_expense,
-    deferred_income_tax_expense,
-    other_non_cash_income_expense,
-    change_in_accounts_receivable,
-    change_in_inventories,
-    change_in_non_trade_receivables,
-    change_in_other_assets,
-    change_in_accounts_payable,
-    change_in_deferred_revenue,
-    change_in_other_liabilities,
-    cash_from_operating_activities,
-    purchases_of_marketable_securities,
-    sales_of_marketable_securities,
-    acquisition_of_property,
-    acquisition_of_business,
-    other_investing_activities,
-    cash_from_investing_activities,
-    tax_withholding_for_share_based_compensation,
-    payments_of_dividends,
-    issuance_of_common_stock,
-    repurchase_of_common_stock,
-    issuance_of_long_term_debt,
-    repayment_of_long_term_debt,
-    other_financing_activities,
-    cash_from_financing_activities,
-    change_in_cash,
-    cash_at_end_of_period,
-    income_taxes_paid,
-    interest_paid,
-    created_by,
-    updated_by,
-    created_at,
-    updated_at,
-    created_at_unix_ms,
-    updated_at_unix_ms
-) VALUES (
-    @Symbol,
-    @CentralIndexKey,
-    @Registrant,
-    @FiscalYear,
-    @FiscalPeriod,
-    @PeriodEndDate,
-    @Depreciation,
-    @ShareBasedCompensationExpense,
-    @DeferredIncomeTaxExpense,
-    @OtherNonCashIncomeExpense,
-    @ChangeInAccountsReceivable,
-    @ChangeInInventories,
-    @ChangeInNonTradeReceivables,
-    @ChangeInOtherAssets,
-    @ChangeInAccountsPayable,
-    @ChangeInDeferredRevenue,
-    @ChangeInOtherLiabilities,
-    @CashFromOperatingActivities,
-    @PurchasesOfMarketableSecurities,
-    @SalesOfMarketableSecurities,
-    @AcquisitionOfProperty,
-    @AcquisitionOfBusiness,
-    @OtherInvestingActivities,
-    @CashFromInvestingActivities,
-    @TaxWithholdingForShareBasedCompensation,
-    @PaymentsOfDividends,
-    @IssuanceOfCommonStock,
-    @RepurchaseOfCommonStock,
-    @IssuanceOfLongTermDebt,
-    @RepaymentOfLongTermDebt,
-    @OtherFinancingActivities,
-    @CashFromFinancingActivities,
-    @ChangeInCash,
-    @CashAtEndOfPeriod,
-    @IncomeTaxesPaid,
-    @InterestPaid,
-    @CreatedBy,
-    @UpdatedBy,
-    @CreatedAt,
-    @UpdatedAt,
-    @CreatedAtUnixMs,
-    @UpdatedAtUnixMs
-) ON CONFLICT (central_index_key, fiscal_year, fiscal_period) DO UPDATE SET
+    public const string MergeCashFlowStatements = $@"
+{InsertCashFlowStatements}
+ON CONFLICT (central_index_key, fiscal_year, fiscal_period) DO UPDATE SET
     symbol = EXCLUDED.symbol,
     registrant = EXCLUDED.registrant,
     period_end_date = EXCLUDED.period_end_date,
@@ -2354,7 +1584,7 @@ SELECT
     {FullAuditSelect}
 FROM public.cash_flow_statements";
 
-    
+
     public const string InsertStockSplits = @"
 INSERT INTO public.stock_splits (
     symbol,
@@ -2382,32 +1612,9 @@ INSERT INTO public.stock_splits (
     @UpdatedAtUnixMs
 )";
 
-    public const string MergeStockSplits = @"
-INSERT INTO public.stock_splits (
-    symbol,
-    central_index_key,
-    registrant,
-    execution_date,
-    multiplier,
-    created_by,
-    updated_by,
-    created_at,
-    updated_at,
-    created_at_unix_ms,
-    updated_at_unix_ms
-) VALUES (
-    @Symbol,
-    @CentralIndexKey,
-    @Registrant,
-    @ExecutionDate,
-    @Multiplier,
-    @CreatedBy,
-    @UpdatedBy,
-    @CreatedAt,
-    @UpdatedAt,
-    @CreatedAtUnixMs,
-    @UpdatedAtUnixMs
-) ON CONFLICT (central_index_key, execution_date) DO UPDATE SET
+    public const string MergeStockSplits = $@"
+{InsertStockSplits}
+ON CONFLICT (central_index_key, execution_date) DO UPDATE SET
     symbol = EXCLUDED.symbol,
     registrant = EXCLUDED.registrant,
     multiplier = EXCLUDED.multiplier,
@@ -2425,7 +1632,7 @@ SELECT
     {FullAuditSelect}
 FROM public.stock_splits";
 
-    
+
     public const string InsertDividends = @"
 INSERT INTO public.dividends (
     symbol,
@@ -2459,38 +1666,9 @@ INSERT INTO public.dividends (
     @UpdatedAtUnixMs
 )";
 
-    public const string MergeDividends = @"
-INSERT INTO public.dividends (
-    symbol,
-    registrant,
-    type,
-    amount,
-    declaration_date,
-    ex_date,
-    record_date,
-    payment_date,
-    created_by,
-    updated_by,
-    created_at,
-    updated_at,
-    created_at_unix_ms,
-    updated_at_unix_ms
-) VALUES (
-    @Symbol,
-    @Registrant,
-    @Type,
-    @Amount,
-    @DeclarationDate,
-    @ExDate,
-    @RecordDate,
-    @PaymentDate,
-    @CreatedBy,
-    @UpdatedBy,
-    @CreatedAt,
-    @UpdatedAt,
-    @CreatedAtUnixMs,
-    @UpdatedAtUnixMs
-) ON CONFLICT (symbol, record_date) DO UPDATE SET
+    public const string MergeDividends = $@"
+{InsertDividends}
+ON CONFLICT (symbol, record_date) DO UPDATE SET
     registrant = EXCLUDED.registrant,
     type = EXCLUDED.type,
     amount = EXCLUDED.amount,
@@ -2514,7 +1692,7 @@ SELECT
     {FullAuditSelect}
 FROM public.dividends";
 
-    
+
     public const string InsertEarningsReleases = @"
 INSERT INTO public.earnings_releases (
     symbol,
@@ -2554,44 +1732,9 @@ INSERT INTO public.earnings_releases (
     @UpdatedAtUnixMs
 )";
 
-    public const string MergeEarningsReleases = @"
-INSERT INTO public.earnings_releases (
-    symbol,
-    central_index_key,
-    registrant_name,
-    market_cap,
-    fiscal_quarter_end_date,
-    earnings_per_share,
-    earnings_per_share_forecast,
-    percentage_surprise,
-    number_of_forecasts,
-    conference_call_time,
-    conference_call_unix_ms,
-    created_by,
-    updated_by,
-    created_at,
-    updated_at,
-    created_at_unix_ms,
-    updated_at_unix_ms
-) VALUES (
-    @Symbol,
-    @CentralIndexKey,
-    @RegistrantName,
-    @MarketCap,
-    @FiscalQuarterEndDate,
-    @EarningsPerShare,
-    @EarningsPerShareForecast,
-    @PercentageSurprise,
-    @NumberOfForecasts,
-    @ConferenceCallTime,
-    @ConferenceCallUnixMs,
-    @CreatedBy,
-    @UpdatedBy,
-    @CreatedAt,
-    @UpdatedAt,
-    @CreatedAtUnixMs,
-    @UpdatedAtUnixMs
-) ON CONFLICT (central_index_key, fiscal_quarter_end_date) DO UPDATE SET
+    public const string MergeEarningsReleases = $@"
+{InsertEarningsReleases}
+ON CONFLICT (central_index_key, fiscal_quarter_end_date) DO UPDATE SET
     symbol = EXCLUDED.symbol,
     registrant_name = EXCLUDED.registrant_name,
     market_cap = EXCLUDED.market_cap,
@@ -2621,7 +1764,7 @@ SELECT
     {FullAuditSelect}
 FROM public.earnings_releases";
 
-    
+
     public const string InsertEfficiencyRatios = @"
 INSERT INTO public.efficiency_ratios (
     symbol,
@@ -2681,64 +1824,9 @@ INSERT INTO public.efficiency_ratios (
     @UpdatedAtUnixMs
 )";
 
-    public const string MergeEfficiencyRatios = @"
-INSERT INTO public.efficiency_ratios (
-    symbol,
-    central_index_key,
-    registrant,
-    fiscal_year,
-    fiscal_period,
-    period_end_date,
-    asset_turnover_ratio,
-    inventory_turnover_ratio,
-    accounts_receivable_turnover_ratio,
-    accounts_payable_turnover_ratio,
-    equity_multiplier,
-    days_sales_in_inventory,
-    fixed_asset_turnover_ratio,
-    days_working_capital,
-    working_capital_turnover_ratio,
-    days_cash_on_hand,
-    capital_intensity_ratio,
-    sales_to_equity_ratio,
-    inventory_to_sales_ratio,
-    investment_turnover_ratio,
-    sales_to_operating_income_ratio,
-    created_by,
-    updated_by,
-    created_at,
-    updated_at,
-    created_at_unix_ms,
-    updated_at_unix_ms
-) VALUES (
-    @Symbol,
-    @CentralIndexKey,
-    @Registrant,
-    @FiscalYear,
-    @FiscalPeriod,
-    @PeriodEndDate,
-    @AssetTurnoverRatio,
-    @InventoryTurnoverRatio,
-    @AccountsReceivableTurnoverRatio,
-    @AccountsPayableTurnoverRatio,
-    @EquityMultiplier,
-    @DaysSalesInInventory,
-    @FixedAssetTurnoverRatio,
-    @DaysWorkingCapital,
-    @WorkingCapitalTurnoverRatio,
-    @DaysCashOnHand,
-    @CapitalIntensityRatio,
-    @SalesToEquityRatio,
-    @InventoryToSalesRatio,
-    @InvestmentTurnoverRatio,
-    @SalesToOperatingIncomeRatio,
-    @CreatedBy,
-    @UpdatedBy,
-    @CreatedAt,
-    @UpdatedAt,
-    @CreatedAtUnixMs,
-    @UpdatedAtUnixMs
-) ON CONFLICT (central_index_key, fiscal_year, fiscal_period) DO UPDATE SET
+    public const string MergeEfficiencyRatios = $@"
+{InsertEfficiencyRatios}
+ON CONFLICT (central_index_key, fiscal_year, fiscal_period) DO UPDATE SET
     symbol = EXCLUDED.symbol,
     registrant = EXCLUDED.registrant,
     period_end_date = EXCLUDED.period_end_date,
@@ -2787,7 +1875,7 @@ SELECT
     {FullAuditSelect}
 FROM public.efficiency_ratios";
 
-    
+
     public const string InsertShortInterests = @"
 INSERT INTO public.short_interests (
     symbol,
@@ -2827,44 +1915,9 @@ INSERT INTO public.short_interests (
     @UpdatedAtUnixMs
 )";
 
-    public const string MergeShortInterests = @"
-INSERT INTO public.short_interests (
-    symbol,
-    title,
-    market_code,
-    settlement_date,
-    shorted_securities,
-    previous_shorted_securities,
-    change_in_shorted_securities,
-    percentage_change_in_shorted_securities,
-    average_daily_volume,
-    days_to_cover,
-    is_stock_split,
-    created_by,
-    updated_by,
-    created_at,
-    updated_at,
-    created_at_unix_ms,
-    updated_at_unix_ms
-) VALUES (
-    @Symbol,
-    @Title,
-    @MarketCode,
-    @SettlementDate,
-    @ShortedSecurities,
-    @PreviousShortedSecurities,
-    @ChangeInShortedSecurities,
-    @PercentageChangeInShortedSecurities,
-    @AverageDailyVolume,
-    @DaysToCover,
-    @IsStockSplit,
-    @CreatedBy,
-    @UpdatedBy,
-    @CreatedAt,
-    @UpdatedAt,
-    @CreatedAtUnixMs,
-    @UpdatedAtUnixMs
-) ON CONFLICT (symbol, settlement_date) DO UPDATE SET
+    public const string MergeShortInterests = $@"
+{InsertShortInterests}
+ON CONFLICT (symbol, settlement_date) DO UPDATE SET
     title = EXCLUDED.title,
     market_code = EXCLUDED.market_code,
     shorted_securities = EXCLUDED.shorted_securities,
@@ -2894,7 +1947,7 @@ SELECT
     {FullAuditSelect}
 FROM public.short_interests";
 
-    
+
     public const string InsertProcess = @"
 INSERT INTO public.processes(
     process_id,
@@ -2930,40 +1983,9 @@ INSERT INTO public.processes(
     @UpdatedAtUnixMs
 )";
 
-    public const string MergeProcess = @"
-INSERT INTO public.processes(
-    process_id,
-    process_type,
-    start_time,
-    finish_time,
-    start_time_unix_ms,
-    finish_time_unix_ms,
-    input_path,
-    output_path,
-    parent_process_id,
-    created_by,
-    updated_by,
-    created_at,
-    updated_at,
-    created_at_unix_ms,
-    updated_at_unix_ms
-) VALUES(
-    @ProcessId,
-    @ProcessType,
-    @StartTime,
-    @FinishTime,
-    @StartTimeUnixMs,
-    @FinishTimeUnixMs,
-    @InputPath,
-    @OutputPath,
-    @ParentProcessId,
-    @CreatedBy,
-    @UpdatedBy,
-    @CreatedAt,
-    @UpdatedAt,
-    @CreatedAtUnixMs,
-    @UpdatedAtUnixMs
-) ON CONFLICT (process_id) DO UPDATE SET
+    public const string MergeProcess = $@"
+{InsertProcess}
+ON CONFLICT (process_id) DO UPDATE SET
     finish_time = EXCLUDED.finish_time,
     finish_time_unix_ms = EXCLUDED.finish_time_unix_ms,
     updated_by = EXCLUDED.updated_by,
@@ -2982,7 +2004,7 @@ SELECT
     {FullAuditSelect}
 FROM public.processes";
 
- 
+
     public const string InsertIgnoredSymbol = @"
 INSERT INTO public.ignored_symbols(
     symbol,
@@ -3006,34 +2028,15 @@ VALUES(
     @UpdatedAtUnixMs
 )";
 
-    public const string MergeIgnoredSymbol = @"
-INSERT INTO public.ignored_symbols(
-    symbol,
-    reason,
-    expiration,
-    created_by,
-    updated_by,
-    created_at,
-    updated_at,
-    created_at_unix_ms,
-    updated_at_unix_ms)
-VALUES(
-    @Symbol,
-    @Reason,
-    @Expiration,
-    @CreatedBy,
-    @UpdatedBy,
-    @CreatedAt,
-    @UpdatedAt,
-    @CreatedAtUnixMs,
-    @UpdatedAtUnixMs)
+    public const string MergeIgnoredSymbol = $@"
+{InsertIgnoredSymbol}
 ON CONFLICT (symbol) DO UPDATE SET
     reason = EXCLUDED.reason,
     expiration = EXCLUDED.expiration,
     updated_by = EXCLUDED.updated_by,
     updated_at = EXCLUDED.updated_at,
     updated_at_unix_ms = EXCLUDED.updated_at_unix_ms";
-    
+
     public const string SelectIgnoredSymbol = $@"
 SELECT
     symbol,
@@ -3041,4 +2044,92 @@ SELECT
     expiration,
     {FullAuditSelect}
 FROM public.ignored_symbols";
+
+    
+    public const string InsertCompanyValuation = @"
+INSERT INTO public.company_valuations(
+    symbol, 
+    date_eval, 
+    absolute_value, 
+    percentile_rank,
+    created_by,
+    updated_by,
+    created_at,
+    updated_at,
+    created_at_unix_ms,
+    updated_at_unix_ms)
+VALUES(
+    @Symbol, 
+    @DateEval, 
+    @Absolute, 
+    @Percentile,
+    @CreatedBy,
+    @UpdatedBy,
+    @CreatedAt,
+    @UpdatedAt,
+    @CreatedAtUnixMs,
+    @UpdatedAtUnixMs)
+";
+
+    public const string MergeCompanyValuation = $@"
+{InsertCompanyValuation}
+ON CONFLICT (symbol, date_eval) DO UPDATE SET
+    absolute_value = EXCLUDED.absolute_value,
+    percentile_rank = EXCLUDED.percentile_rank,
+    updated_by = EXCLUDED.updated_by,
+    updated_at = EXCLUDED.updated_at,
+    updated_at_unix_ms = EXCLUDED.updated_at_unix_ms";
+
+    public const string SelectCompanyValuation = $@"
+SELECT 
+symbol, 
+date_eval AS DateEval,
+absolute_value AS Absolute, 
+percentile_rank AS Percentile,
+{FullAuditSelect}
+FROM public.company_valuations";
+
+
+    public const string InsertSicMoneyFlow = @"
+INSERT INTO public.sic_money_flow(
+    sic_code,
+    date_eval,
+    flow_billions,
+    rank,
+    created_by,
+    updated_by,
+    created_at,
+    updated_at,
+    created_at_unix_ms,
+    updated_at_unix_ms)
+VALUES(
+    @SicCode,
+    @DateEval,
+    @FlowBillions,
+    @Rank,
+    @CreatedBy,
+    @UpdatedBy,
+    @CreatedAt,
+    @UpdatedAt,
+    @CreatedAtUnixMs,
+    @UpdatedAtUnixMs)";
+
+    public const string MergeSicMoneyFlow = $@"
+{InsertSicMoneyFlow}
+ON CONFLICT (sic_code, date_eval) DO UPDATE SET
+    flow_billions = @FlowBillions,
+    rank = @Rank,
+    updated_by = EXCLUDED.updated_by,
+    updated_at = EXCLUDED.updated_at,
+    updated_at_unix_ms = EXCLUDED.updated_at_unix_ms";
+
+    public const string SelectSicMoneyFlow = $@"
+SELECT
+    sic_code AS SicCode,
+    date_eval AS DateEval,
+    flow_billions AS FlowBillions,
+    rank,
+{FullAuditSelect}
+FROM public.sic_money_flow
+";
 }

@@ -30,6 +30,28 @@ public sealed class CompanyAnalysisService(
         ["RiskSentiment"] = 0.10
     }.ToFrozenDictionary();
 
+    public async Task SaveAllSiloScoresAsync(Guid processId)
+    {
+        if (processId == Guid.Empty)
+            processId = Common.Constants.SystemId;
+
+        var scores = await GetAllSiloScoresAsync();
+
+        var now = DateOnly.FromDateTime(DateTime.UtcNow);
+        using var cmdCtx = _dbDefPair.GetCommandConnection();
+        foreach (var chunk in scores.Chunk(Common.Constants.DefaultChunkSize))
+        {
+            await cmdCtx.ExecuteAsync(SqlRepository.MergeCompanyValuation,
+                chunk.Select(k => new Infrastructure.Database.DataAccessObjects.CompanyValuation(processId)
+                {
+                    Symbol = k.Symbol,
+                    Absolute = k.Score,
+                    DateEval = now,
+                    Percentile = k.Percentile
+                }));
+        }
+    }
+
     public async Task<CompanyScore?> GetSiloScoreForSymbolAsync(string symbol)
     {
         LiquidityRatios? liquidity = await GetLatestLiquidityRatiosAsync(symbol);

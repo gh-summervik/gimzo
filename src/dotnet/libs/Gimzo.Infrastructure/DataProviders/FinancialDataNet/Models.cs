@@ -228,8 +228,8 @@ public readonly record struct KeyMetrics(string Symbol,
 }
 
 public readonly record struct MarketCap(string Symbol, string CentralIndexKey,
-    string? Registrant, string FiscalYear, double? Value,
-    double? ChangeInMarketCap, double? PercentageChangeInMarketCap,
+    string? Registrant, string FiscalYear, decimal? Value,
+    decimal? ChangeInMarketCap, double? PercentageChangeInMarketCap,
     long? SharesOutstanding, long? ChangeInSharesOutstanding,
     double? PercentageChangeInSharesOutstanding)
 {

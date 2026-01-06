@@ -20,6 +20,28 @@ public class IndustryAnalysisService(
 
     private readonly record struct SicCodeCashFlow(string Code, decimal Value);
 
+    public async Task SaveAllIndustryScoresAsync(Guid processId)
+    {
+        if (processId == Guid.Empty)
+            processId = Common.Constants.SystemId;
+
+        var scores = await GetAllIndustryScoresAsync();
+
+        var now = DateOnly.FromDateTime(DateTime.UtcNow);
+        using var cmdCtx = _dbDefPair.GetCommandConnection();
+        foreach (var chunk in scores.Chunk(Common.Constants.DefaultChunkSize))
+        {
+            await cmdCtx.ExecuteAsync(SqlRepository.MergeSicMoneyFlow,
+                chunk.Select(k => new Infrastructure.Database.DataAccessObjects.SicMoneyFlow(processId)
+                {
+                    SicCode = k.SicCode,
+                    DateEval = now,
+                    FlowBillions = k.ValueBillions,
+                    Rank = k.Rank
+                }));
+        }
+    }
+
     public async Task<IReadOnlyCollection<IndustryScore>> GetAllIndustryScoresAsync()
     {
         var coMetricsTask = GetAllMarketCapsAsync();
@@ -64,11 +86,35 @@ public class IndustryAnalysisService(
 
     private async Task<IReadOnlyCollection<CompanyMetrics>> GetAllMarketCapsAsync()
     {
-        const string Sql = @"SELECT symbol, market_cap AS MarketCap, shares_outstanding AS SharesOutstanding, sic_code AS SicCode
-FROM public.us_companies";
+        const string Sql = @"
+WITH ranked AS (
+    SELECT mc.symbol, mc.value, mc.shares_outstanding, c.sic_code,
+    ROW_NUMBER() OVER (PARTITION BY mc.symbol ORDER BY mc.fiscal_year DESC) AS rn
+    FROM public.market_caps mc JOIN public.us_companies c on mc.symbol = c.symbol
+)
+SELECT symbol, value AS MarketCap, shares_outstanding AS SharesOutstanding, sic_code AS SicCode FROM ranked
+WHERE RN = 1;
+";
 
-        using var queryCtx = _dbDefPair.GetQueryConnection();
-        return [.. (await queryCtx.QueryAsync<CompanyMetrics>(Sql))];
+        await using var ds = NpgsqlDataSource.Create(_dbDefPair.Query.ConnectionString);
+        await using var connection = await ds.OpenConnectionAsync();
+        await using var command = new NpgsqlCommand(Sql, connection);
+        await using var reader = await command.ExecuteReaderAsync();
+
+        var daos = new List<CompanyMetrics>(10000);
+
+        while (await reader.ReadAsync())
+        {
+            daos.Add(new CompanyMetrics
+            {
+                Symbol = reader.GetString(0),
+                MarketCap = reader.IsDBNull(1) ? null : (decimal)reader.GetDouble(1),
+                SharesOutstanding = reader.IsDBNull(2) ? null : reader.GetDouble(2),
+                SicCode = reader.IsDBNull(3) ? null : reader.GetString(3)
+            });
+        }
+
+        return [.. daos];
     }
 
     private async Task<IReadOnlyCollection<Ohlc>> GetAllOhlcAsync()

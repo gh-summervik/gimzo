@@ -750,8 +750,8 @@ public class DatabaseIntegrationTests : IClassFixture<IntegrationTestsFixture>
             CentralIndexKey = "TEST",
             Registrant = "registrant",
             FiscalYear = "2023",
-            Value = 1000000D,
-            ChangeInMarketCap = 100000D,
+            Value = 1000000M,
+            ChangeInMarketCap = 100000M,
             PercentageChangeInMarketCap = 0.11,
             SharesOutstanding = 1000000,
             ChangeInSharesOutstanding = 100000,
@@ -1494,6 +1494,83 @@ public class DatabaseIntegrationTests : IClassFixture<IntegrationTestsFixture>
         // DELETE
         await cmdConn.ExecuteAsync($"DELETE FROM public.ignored_symbols {WhereClause}", dao);
         fromDb = await FetchFromDb<IgnoredSymbol>($"{SqlRepository.SelectIgnoredSymbol} {WhereClause}", dao);
+        Assert.Null(fromDb);
+    }
+
+    [Fact]
+    public async Task SicMoneyFlow_WriteMergeReadDelete_Async()
+    {
+        using var cmdConn = _fixture.GetConnectionPairForDb().CommandConn;
+        Assert.NotNull(cmdConn);
+        var dao = new SicMoneyFlow { 
+            SicCode = "SYMBOL",
+            DateEval = DateOnly.FromDateTime(DateTime.Now),
+            FlowBillions = 29729872M,
+            Rank = 23
+        };
+
+        const string WhereClause = "WHERE sic_code = @SicCode";
+        
+        // INSERT
+        await cmdConn.ExecuteAsync(SqlRepository.InsertSicMoneyFlow, dao);
+        var fromDb = await FetchFromDb<SicMoneyFlow>(
+            $"{SqlRepository.SelectSicMoneyFlow} {WhereClause}", dao);
+        Assert.NotNull(fromDb);
+
+        Assert.Equal(dao.SicCode, fromDb.SicCode);
+        Assert.Equal(dao.FlowBillions, fromDb.FlowBillions);
+        Assert.Equal(dao.DateEval, fromDb.DateEval);
+        Assert.Equal(dao.Rank, fromDb.Rank);
+
+        var dao2 = dao with { Rank = 1 };
+        // MERGE
+        await cmdConn.ExecuteAsync(SqlRepository.MergeSicMoneyFlow, dao2);
+        fromDb = await FetchFromDb<SicMoneyFlow>(
+            $"{SqlRepository.SelectSicMoneyFlow} {WhereClause}", dao);
+        Assert.NotNull(fromDb);
+        Assert.Equal(dao2.Rank, fromDb.Rank);
+        // DELETE
+        await cmdConn.ExecuteAsync($"DELETE FROM public.sic_money_flow {WhereClause}", dao);
+        fromDb = await FetchFromDb<SicMoneyFlow>($"{SqlRepository.SelectSicMoneyFlow} {WhereClause}", dao);
+        Assert.Null(fromDb);
+    }
+
+    [Fact]
+    public async Task CompanyValuation_WriteMergeReadDelete_Async()
+    {
+        using var cmdConn = _fixture.GetConnectionPairForDb().CommandConn;
+        Assert.NotNull(cmdConn);
+        var dao = new CompanyValuation
+        {
+            Symbol = "SYMBOL",
+            DateEval = DateOnly.FromDateTime(DateTime.Now),
+            Absolute = 50,
+            Percentile = 48
+        };
+
+        const string WhereClause = "WHERE symbol = @Symbol";
+
+        // INSERT
+        await cmdConn.ExecuteAsync(SqlRepository.InsertCompanyValuation, dao);
+        var fromDb = await FetchFromDb<CompanyValuation>(
+            $"{SqlRepository.SelectCompanyValuation} {WhereClause}", dao);
+        Assert.NotNull(fromDb);
+
+        Assert.Equal(dao.Symbol, fromDb.Symbol);
+        Assert.Equal(dao.DateEval, fromDb.DateEval);
+        Assert.Equal(dao.Absolute, fromDb.Absolute);
+        Assert.Equal(dao.Percentile, fromDb.Percentile);
+
+        var dao2 = dao with { Percentile = 60 };
+        // MERGE
+        await cmdConn.ExecuteAsync(SqlRepository.MergeCompanyValuation, dao2);
+        fromDb = await FetchFromDb<CompanyValuation>(
+            $"{SqlRepository.SelectCompanyValuation} {WhereClause}", dao);
+        Assert.NotNull(fromDb);
+        Assert.Equal(dao2.Percentile, fromDb.Percentile);
+        // DELETE
+        await cmdConn.ExecuteAsync($"DELETE FROM public.company_valuations {WhereClause}", dao);
+        fromDb = await FetchFromDb<CompanyValuation>($"{SqlRepository.SelectCompanyValuation} {WhereClause}", dao);
         Assert.Null(fromDb);
     }
 }
