@@ -5,7 +5,7 @@ public partial class BacktestingService
     private async Task<Ledger?> ExecuteMovingAverageCrossoverAsync(string symbol)
     {
         var chart = await GetChartAsync(symbol);
-        if (chart == null || chart.MovingAverages.Length < 2)
+        if (chart is null || chart.MovingAverages.Length < 2)
             return null;
 
         var ledger = new Ledger();
@@ -102,7 +102,7 @@ public partial class BacktestingService
     private async Task<Ledger?> ExecutePriceMovingAverageCrossoverAsync(string symbol)
     {
         var chart = await GetChartAsync(symbol);
-        if (chart == null || chart.MovingAverages.Length < 2)
+        if (chart is null || chart.MovingAverages.Length < 2)
             return null;
 
         var ledger = new Ledger();

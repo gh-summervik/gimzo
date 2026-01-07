@@ -1573,4 +1573,133 @@ public class DatabaseIntegrationTests : IClassFixture<IntegrationTestsFixture>
         fromDb = await FetchFromDb<CompanyValuation>($"{SqlRepository.SelectCompanyValuation} {WhereClause}", dao);
         Assert.Null(fromDb);
     }
+
+    [Fact]
+    public async Task BacktestTrades_InsertReadDelete_Async()
+    {
+        using var cmdConn = _fixture.GetConnectionPairForDb().CommandConn;
+        Assert.NotNull(cmdConn);
+
+        Guid testUserId = Guid.NewGuid();
+
+        var dao = new BacktestTrade(testUserId)
+        {
+            BacktestType = "TestScenario",
+            Symbol = "TEST",
+            EntryDate = new DateOnly(2026, 1, 1),
+            ExitDate = new DateOnly(2026, 1, 15),
+            EntryPrice = 100.0000m,
+            ExitPrice = 110.0000m,
+            PnlPercent = 10.0,
+            IsWinner = true,
+            DurationDays = 14,
+            ExitReason = nameof(BacktestTrades_InsertReadDelete_Async)
+        };
+
+        const string WhereClause = "WHERE trade_id = @TradeId";
+
+        // INSERT
+        await cmdConn.ExecuteAsync(SqlRepository.InsertBacktestTrades, dao);
+
+        var fromDb = await FetchFromDb<BacktestTrade>(
+            $"{SqlRepository.SelectBacktestTrades} {WhereClause}",
+            new { dao.TradeId });
+
+        Assert.NotNull(fromDb);
+        Assert.Equal(dao.TradeId, fromDb.TradeId);
+        Assert.Equal(dao.BacktestType, fromDb.BacktestType);
+        Assert.Equal(dao.Symbol, fromDb.Symbol);
+        Assert.Equal(dao.EntryDate, fromDb.EntryDate);
+        Assert.Equal(dao.ExitDate, fromDb.ExitDate);
+        Assert.Equal(dao.EntryPrice, fromDb.EntryPrice);
+        Assert.Equal(dao.ExitPrice, fromDb.ExitPrice);
+        Assert.Equal(dao.PnlPercent, fromDb.PnlPercent);
+        Assert.Equal(dao.IsWinner, fromDb.IsWinner);
+        Assert.Equal(dao.DurationDays, fromDb.DurationDays);
+        Assert.Equal(dao.ExitReason, fromDb.ExitReason);
+
+        // DELETE
+        await cmdConn.ExecuteAsync($"DELETE FROM public.backtest_trades {WhereClause}",
+            new { dao.TradeId });
+
+        fromDb = await FetchFromDb<BacktestTrade>(
+            $"{SqlRepository.SelectBacktestTrades} {WhereClause}",
+            new { dao.TradeId });
+
+        Assert.Null(fromDb);
+    }
+    [Fact]
+    public async Task BacktestTrades_InsertReadJsonb_Async()
+    {
+        using var cmdConn = _fixture.GetConnectionPairForDb().CommandConn;
+        Assert.NotNull(cmdConn);
+
+        Guid testUserId = Guid.NewGuid();
+
+        var entryDistances = new Dictionary<int, decimal>
+        {
+            [20] = -1.2345m,
+            [50] = 5.6789m,
+            [200] = -10.0000m
+        };
+
+        var exitDistances = new Dictionary<int, decimal>
+        {
+            [20] = 2.3456m,
+            [50] = -3.4567m
+        };
+
+        var dao = new BacktestTrade(testUserId)
+        {
+            BacktestType = "JsonbTest",
+            Symbol = "TESTJSON",
+            EntryDate = new DateOnly(2026, 1, 6),
+            ExitDate = new DateOnly(2026, 1, 20),
+            EntryPrice = 150.0000m,
+            ExitPrice = 165.0000m,
+            PnlPercent = 10.0,
+            IsWinner = true,
+            DurationDays = 14,
+            EntryMaDistances = entryDistances,
+            ExitMaDistances = exitDistances
+        };
+
+        const string WhereClause = "WHERE trade_id = @TradeId";
+
+        // INSERT
+        await cmdConn.ExecuteAsync(SqlRepository.InsertBacktestTrades, dao);
+
+        var fromDb = await FetchFromDb<BacktestTrade>(
+            $"{SqlRepository.SelectBacktestTrades} {WhereClause}",
+            new { dao.TradeId });
+
+        Assert.NotNull(fromDb);
+        Assert.Equal(dao.TradeId, fromDb.TradeId);
+
+        // JSONB assertions - entry
+        Assert.Equal(entryDistances.Count, fromDb.EntryMaDistances.Count);
+        foreach (var kvp in entryDistances)
+        {
+            Assert.True(fromDb.EntryMaDistances.TryGetValue(kvp.Key, out var value));
+            Assert.Equal(kvp.Value, value);
+        }
+
+        // JSONB assertions - exit
+        Assert.Equal(exitDistances.Count, fromDb.ExitMaDistances.Count);
+        foreach (var kvp in exitDistances)
+        {
+            Assert.True(fromDb.ExitMaDistances.TryGetValue(kvp.Key, out var value));
+            Assert.Equal(kvp.Value, value);
+        }
+
+        // DELETE
+        await cmdConn.ExecuteAsync($"DELETE FROM public.backtest_trades {WhereClause}",
+            new { dao.TradeId });
+
+        fromDb = await FetchFromDb<BacktestTrade>(
+            $"{SqlRepository.SelectBacktestTrades} {WhereClause}",
+            new { dao.TradeId });
+
+        Assert.Null(fromDb);
+    }
 }

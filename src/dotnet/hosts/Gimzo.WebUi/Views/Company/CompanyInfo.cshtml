@@ -1,7 +1,7 @@
 ﻿@model Gimzo.AppServices.Models.CompanyInfo
 
 @{
-    ViewData["Title"] = Model == null ? "Gimzo" : $"Gimzo - {Model!.Symbol}";
+    ViewData["Title"] = Model is null ? "Gimzo" : $"Gimzo - {Model!.Symbol}";
     Layout = "_Layout";
 }
 
@@ -22,7 +22,7 @@ else
 
     <article class="company-info">
         <h3>@Model.Symbol - @Model.Registrant</h3>
-        @if (Model.CurrentAverageTrueRange != null)
+        @if (Model.CurrentAverageTrueRange is not null)
         {
             <hr />
             <div class="info-columns">

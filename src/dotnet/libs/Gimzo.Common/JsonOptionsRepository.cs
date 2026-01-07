@@ -96,11 +96,11 @@ public sealed class NullableDateOnlyJsonConverter : JsonConverter<DateOnly?>
     {
         string? dateString = reader.GetString();
 
-        if (dateString == null)
+        if (dateString is null)
             return null;
         else
         {
-            if (dateString == null)
+            if (dateString is null)
                 return null;
             return DateOnly.ParseExact(dateString, Format, CultureInfo.InvariantCulture);
         }
@@ -121,7 +121,7 @@ public sealed class DateTimeJsonConverter : JsonConverter<DateTime>
     {
         string? dateString = reader.GetString();
 
-        if (dateString != null && DateTime.TryParse(dateString, out DateTime result))
+        if (dateString is not null && DateTime.TryParse(dateString, out DateTime result))
             return result;
 
         return DateTime.MinValue;

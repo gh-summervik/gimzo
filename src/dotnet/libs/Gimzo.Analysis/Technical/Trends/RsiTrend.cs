@@ -2,8 +2,8 @@
 
 namespace Gimzo.Analysis.Technical.Trends;
 
-public class RsiTrend(Ohlc[] prices, int period = 14, double[]? precomputedAvgVolumes = null) 
-    : PriceTrendBase(prices, precomputedAvgVolumes), ITrend
+public class RsiTrend(Ohlc[] prices, int period = 14, double[]? precomputedAvgVolumes = null)
+    : PriceTrendBase(prices, precomputedAvgVolumes ?? ComputeRollingAverageVolumes(prices, 20)), ITrend
 {
     private readonly int _period = period;
 
@@ -11,47 +11,90 @@ public class RsiTrend(Ohlc[] prices, int period = 14, double[]? precomputedAvgVo
     {
         var closes = _prices.Select(p => (double)p.Close).ToArray();
         var rsi = CalculateRsi(closes, _period);
+
         for (int i = 0; i < _prices.Length; i++)
         {
-            if (i < _period)
+            double rsiValue = rsi[i];
+            if (rsiValue == 0)
             {
                 TrendValues[i] = 0;
                 continue;
             }
-            // Normalize RSI to [-1,1]: >70 overbought (bearish), <30 oversold (bullish)
-            double baseScore = rsi[i] > 70 ? -(rsi[i] - 70) / 30 : rsi[i] < 30 ? (30 - rsi[i]) / 30 : 0;
+
+            double baseScore = rsiValue > 70 ? -(rsiValue - 70) / 30
+                             : rsiValue < 30 ? (30 - rsiValue) / 30
+                             : 0;
+
             double avgVolume = _precomputedAvgVolumes?[i] ?? 0;
             double currentVolume = (double)_prices[i].Volume;
             double volumeFactor = avgVolume > 0 ? currentVolume / avgVolume : 1.0;
             volumeFactor = Math.Max(0.5, Math.Min(2.0, volumeFactor));
+
             TrendValues[i] = Math.Max(-1.0, Math.Min(1.0, baseScore * volumeFactor));
         }
     }
 
     private static double[] CalculateRsi(double[] closes, int period)
     {
-        double[] rsi = new double[closes.Length];
-        double avgGain = 0, avgLoss = 0;
-        for (int i = 1; i < period; i++)
+        int length = closes.Length;
+        double[] rsi = new double[length];
+
+        if (length < period + 1)
+            return rsi;
+
+        double avgGain = 0;
+        double avgLoss = 0;
+
+        for (int i = 1; i <= period; i++)
         {
             double delta = closes[i] - closes[i - 1];
-            if (delta > 0)
-                avgGain += delta;
-            else
-                avgLoss -= delta;
+            avgGain += Math.Max(delta, 0);
+            avgLoss += Math.Abs(Math.Min(delta, 0));
         }
+
         avgGain /= period;
         avgLoss /= period;
-        rsi[period - 1] = avgLoss == 0 ? 100 : 100 - (100 / (1 + avgGain / avgLoss));
-        for (int i = period; i < closes.Length; i++)
+
+        rsi[period] = avgLoss == 0 ? 100 : 100 - 100 / (1 + avgGain / avgLoss);
+
+        for (int i = period + 1; i < length; i++)
         {
             double delta = closes[i] - closes[i - 1];
             double gain = Math.Max(delta, 0);
             double loss = Math.Abs(Math.Min(delta, 0));
+
             avgGain = (avgGain * (period - 1) + gain) / period;
             avgLoss = (avgLoss * (period - 1) + loss) / period;
-            rsi[i] = avgLoss == 0 ? 100 : 100 - (100 / (1 + avgGain / avgLoss));
+
+            rsi[i] = avgLoss == 0 ? 100 : 100 - 100 / (1 + avgGain / avgLoss);
         }
+
         return rsi;
+    }
+
+    private static double[] ComputeRollingAverageVolumes(Ohlc[] prices, int lookback)
+    {
+        int length = prices.Length;
+        if (length == 0)
+            return [];
+
+        double[] avgVolumes = new double[length];
+        double runningSum = 0.0;
+
+        for (int i = 0; i < length; i++)
+        {
+            if (i > 0)
+            {
+                int prevCount = Math.Min(i, lookback);
+                avgVolumes[i] = prevCount > 0 ? runningSum / prevCount : 0.0;
+            }
+
+            runningSum += (double)prices[i].Volume;
+
+            if (i >= lookback)
+                runningSum -= (double)prices[i - lookback].Volume;
+        }
+
+        return avgVolumes;
     }
 }

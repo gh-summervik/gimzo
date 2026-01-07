@@ -27,6 +27,45 @@ public static class EnumUtilities
     }
 }
 
+public static class Maths
+{
+    /// <summary>
+    /// Calculates the least-squares linear regression slope over the last <paramref name="period"/> values.
+    /// Values[0] = oldest, Values[^1] = newest.
+    /// Returns double.NaN if insufficient data or denominator zero.
+    /// </summary>
+    public static double CalculateSlope(IReadOnlyList<decimal> values, int period)
+    {
+        ArgumentNullException.ThrowIfNull(values);
+        if (period < 2 || period > values.Count)
+            return double.NaN;
+
+        int startIndex = values.Count - period;
+        double sumX = 0;
+        double sumY = 0;
+        double sumXY = 0;
+        double sumX2 = 0;
+
+        for (int i = 0; i < period; i++)
+        {
+            double x = i; // 0 = oldest in window, period-1 = newest
+            double y = (double)values[startIndex + i];
+
+            sumX += x;
+            sumY += y;
+            sumXY += x * y;
+            sumX2 += x * x;
+        }
+
+        double n = period;
+        double denominator = n * sumX2 - sumX * sumX;
+        if (denominator == 0)
+            return double.NaN;
+
+        return (n * sumXY - sumX * sumY) / denominator;
+    }
+}
+
 public static class OsHelper
 {
     public static bool IsWindows() => System.Runtime.InteropServices.RuntimeInformation.
@@ -45,31 +84,31 @@ public static class LogHelper
 {
     public static void LogDebug(ILogger? logger, string message, params object[] args)
     {
-        if ((logger?.IsEnabled(LogLevel.Debug) ?? false) && message != null)
+        if ((logger?.IsEnabled(LogLevel.Debug) ?? false) && message is not null)
             logger.LogDebug(message, args);
     }
 
     public static void LogInfo(ILogger? logger, string message, params object[] args)
     {
-        if ((logger?.IsEnabled(LogLevel.Information) ?? false) && message != null)
+        if ((logger?.IsEnabled(LogLevel.Information) ?? false) && message is not null)
             logger.LogInformation(message, args);
     }
 
     public static void LogWarning(ILogger? logger, string message, params object[] args)
     {
-        if ((logger?.IsEnabled(LogLevel.Warning) ?? false) && message != null)
+        if ((logger?.IsEnabled(LogLevel.Warning) ?? false) && message is not null)
             logger.LogWarning(message, args);
     }
 
     public static void LogError(ILogger? logger, string message, params object[] args)
     {
-        if ((logger?.IsEnabled(LogLevel.Error) ?? false) && message != null)
+        if ((logger?.IsEnabled(LogLevel.Error) ?? false) && message is not null)
             logger.LogError(message, args);
     }
 
     public static void LogError(ILogger? logger, Exception exc, string message, params object[] args)
     {
-        if ((logger?.IsEnabled(LogLevel.Error) ?? false) && exc != null && message != null)
+        if ((logger?.IsEnabled(LogLevel.Error) ?? false) && exc is not null && message is not null)
             logger.LogError(exc, message, args);
     }
 }

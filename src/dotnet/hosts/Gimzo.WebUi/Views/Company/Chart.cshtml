@@ -1,6 +1,6 @@
 ﻿@model Gimzo.AppServices.Models.ChartModel
 @{
-    ViewData["Title"] = Model == null ? "Gimzo" : $"Gimzo - {Model!.Symbol} Chart";
+    ViewData["Title"] = Model is null ? "Gimzo" : $"Gimzo - {Model!.Symbol} Chart";
     Layout = "_Layout";
 }
 

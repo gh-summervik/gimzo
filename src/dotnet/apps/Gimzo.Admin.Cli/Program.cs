@@ -22,7 +22,7 @@ int exitCode = -1;
 Stopwatch timer = Stopwatch.StartNew();
 
 var appName = Assembly.GetExecutingAssembly().GetName().Name;
-Debug.Assert(appName != null);
+Debug.Assert(appName is not null);
 
 Config? config = null;
 
@@ -48,7 +48,7 @@ try
 {
     ParseArguments(args, out string[] childArgs);
 
-    Debug.Assert(config != null);
+    Debug.Assert(config is not null);
 
     if (config.ShowHelp)
     {
@@ -63,7 +63,7 @@ try
         var process = Gimzo.AppServices.Process.Create("CLI", null, null, args);
 
         var fdnApiKey = configuration.GetSection("ApiKeys:financialdata.net").Value;
-        Debug.Assert(fdnApiKey != null);
+        Debug.Assert(fdnApiKey is not null);
 
         Debug.Assert((dbDefPairs?.Length ?? 0) > 0);
 
@@ -119,6 +119,7 @@ try
 
     if (config.Backtest)
     {
+        var process = Gimzo.AppServices.Process.Create("CLI", null, null, args);
         var reportService = new ReportService(dbDefPairs![0],
             serviceProvider.GetRequiredService<IMemoryCache>(),
             serviceProvider.GetRequiredService<ILogger<ReportService>>());
@@ -142,58 +143,65 @@ try
             foreach (var file in targetDirInfo.GetFiles("gimzo_ledger*.csv").Union(targetDirInfo.GetFiles("gimzo_ledger*.txt")))
                 file.Delete();
 
-        int i = 0;
-        int count = symbols.Length;
-        int tradesIn2025 = 0;
+        //int tradesIn2025 = 0;
 
-        foreach (var symbol in symbols)
-        {
-            i++;
+        CancellationTokenSource cts = new();
 
-            if (string.IsNullOrWhiteSpace(symbol))
-            {
-                LogHelper.LogWarning(logger, "Logic error - a blank symbol was found in the list of symbols. Do better.");
-                continue;
-            }
+        LogHelper.LogInfo(logger, "Running backtest.");
+        await backtestService.ExecuteAsync(config.Scenario!, symbols, process.ProcessId, cts.Token);
+        LogHelper.LogInfo(logger, "Creating output files.");
+        var outputFile = new FileInfo(Path.Combine(targetDirInfo.FullName, "trade_details.csv"));
 
-            Console.Write($"\rProcessing {symbol,-8}\t{i,4}/{count}");
+        //await ReportService.CreateTradeDetailsReportAsync(tradeDetails, outputFile.FullName);
 
-            var ledger = await backtestService.ExecuteAsync(config.Scenario!, symbol);
+        //foreach (var symbol in symbols)
+        //{
+        //    i++;
 
-            if (ledger != null)
-            {
-                var entries2025 = ledger.GetPairs().Where(k => k.Open.Date > new DateOnly(2024, 12, 31)).ToImmutableArray();
-                tradesIn2025 += entries2025.Length;
+        //    if (string.IsNullOrWhiteSpace(symbol))
+        //    {
+        //        LogHelper.LogWarning(logger, "Logic error - a blank symbol was found in the list of symbols. Do better.");
+        //        continue;
+        //    }
 
-                var ledgerFileName = $"gimzo_ledger_{symbol}_{DateTime.Now:yyyyMMddHHmm}.csv";
+        //    Console.Write($"\rProcessing {symbol,-8}\t{i,4}/{count}");
 
-                string fullPath = Path.Combine(targetDirInfo.FullName, ledgerFileName);
+        //    //var tradeDetails = await backtestService.ExecuteAsync(config.Scenario!, symbol);
 
-                await reportService.WriteLedgerAsync(ledger, new FileInfo(fullPath), true);
-                var perf = ledger.GetPerformance();
+        //    //if (ledger is not null)
+        //    //{
+        //    //    var entries2025 = ledger.GetPairs().Where(k => k.Open.Date > new DateOnly(2024, 12, 31)).ToImmutableArray();
+        //    //    tradesIn2025 += entries2025.Length;
 
-                if (perf != null)
-                    summaries.Add(perf);
-            }
-        }
+        //    //    var ledgerFileName = $"gimzo_ledger_{symbol}_{DateTime.Now:yyyyMMddHHmm}.csv";
 
-        Console.WriteLine($"\rNum Stocks Considered   : {symbols.Length:#,##0}              ");
-        Console.WriteLine($"Trades in 2025          : {tradesIn2025:#,##0}");
+        //    //    string fullPath = Path.Combine(targetDirInfo.FullName, ledgerFileName);
 
-        decimal totalProfit = summaries.Sum(s => s.TotalProfit);
-        long totalTrades = summaries.Sum(s => s.TotalTrades);
-        double totalWins = summaries.Sum(s => s.TotalTrades * s.WinRate);
-        decimal totalGrossWin = summaries.Sum(s => s.AverageWin * (decimal)(s.TotalTrades * s.WinRate));
-        decimal totalGrossLoss = summaries.Sum(s => s.AverageLoss * (decimal)(s.TotalTrades * (1 - s.WinRate)));
+        //    //    await reportService.WriteLedgerAsync(ledger, new FileInfo(fullPath), true);
+        //    //    var perf = ledger.GetPerformance();
 
-        Console.WriteLine();
-        Console.WriteLine($"Total profit      : {totalProfit:C2}");
-        Console.WriteLine($"Weighted win rate : {(totalTrades > 0 ? totalWins / totalTrades : 0):P2}");
-        Console.WriteLine($"Avg profit/trade  : {(totalTrades > 0 ? totalProfit / totalTrades : 0):C2}");
-        Console.WriteLine($"Overall avg win   : {(totalWins > 0 ? totalGrossWin / (decimal)totalWins : 0):C2}");
-        Console.WriteLine($"Overall avg loss  : {(totalTrades - totalWins > 0 ? totalGrossLoss / (decimal)(totalTrades - totalWins) : 0):C2}");
-        Console.WriteLine($"Overall PF        : {(totalGrossLoss > 0M ? totalGrossWin / totalGrossLoss : 999999M):F2}");
-        Console.WriteLine($"Total trades      : {totalTrades:#,##0}");
+        //    //    if (perf is not null)
+        //    //        summaries.Add(perf);
+        //    //}
+        //}
+
+        //Console.WriteLine($"\rNum Stocks Considered   : {symbols.Length:#,##0}              ");
+        //Console.WriteLine($"Trades in 2025          : {tradesIn2025:#,##0}");
+
+        //decimal totalProfit = summaries.Sum(s => s.TotalProfit);
+        //long totalTrades = summaries.Sum(s => s.TotalTrades);
+        //double totalWins = summaries.Sum(s => s.TotalTrades * s.WinRate);
+        //decimal totalGrossWin = summaries.Sum(s => s.AverageWin * (decimal)(s.TotalTrades * s.WinRate));
+        //decimal totalGrossLoss = summaries.Sum(s => s.AverageLoss * (decimal)(s.TotalTrades * (1 - s.WinRate)));
+
+        //Console.WriteLine();
+        //Console.WriteLine($"Total profit      : {totalProfit:C2}");
+        //Console.WriteLine($"Weighted win rate : {(totalTrades > 0 ? totalWins / totalTrades : 0):P2}");
+        //Console.WriteLine($"Avg profit/trade  : {(totalTrades > 0 ? totalProfit / totalTrades : 0):C2}");
+        //Console.WriteLine($"Overall avg win   : {(totalWins > 0 ? totalGrossWin / (decimal)totalWins : 0):C2}");
+        //Console.WriteLine($"Overall avg loss  : {(totalTrades - totalWins > 0 ? totalGrossLoss / (decimal)(totalTrades - totalWins) : 0):C2}");
+        //Console.WriteLine($"Overall PF        : {(totalGrossLoss > 0M ? totalGrossWin / totalGrossLoss : 999999M):F2}");
+        //Console.WriteLine($"Total trades      : {totalTrades:#,##0}");
     }
 
     if (config.Analyze)

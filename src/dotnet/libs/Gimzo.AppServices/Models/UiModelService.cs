@@ -15,7 +15,7 @@ public sealed class UiModelService(DbDefPair dbDefPair, IMemoryCache memoryCache
     public async Task<CompanyInfo?> GetCompanyInfoAsync(string symbol)
     {
         var coInfo = await GetCompanyInformationAsync(symbol);
-        if (coInfo == null)
+        if (coInfo is null)
             return null;
 
         Chart? chart = await GetChartAsync(symbol, Common.Constants.DefaultChartLookback, ChartInterval.Daily);
@@ -25,7 +25,7 @@ public sealed class UiModelService(DbDefPair dbDefPair, IMemoryCache memoryCache
         long? averageVolume = null;
         double? lastTrendValue = null;
 
-        if (chart != null && chart.PriceActions.Length > 0)
+        if (chart is not null && chart.PriceActions.Length > 0)
         {
             var lastDate = chart.PriceActions[^1].Date;
             var yearPrior = chart.GetNearestDate(lastDate.AddYears(-1)).GetValueOrDefault();
@@ -65,7 +65,7 @@ public sealed class UiModelService(DbDefPair dbDefPair, IMemoryCache memoryCache
             Registrant = info.Registrant,
             SharesIssued = info.SharesIssued,
             SharesOutstanding = info.SharesOutstanding,
-            Sic = info.SicCode == null ? null : $"{info.SicCode} ({info.SicDescription})",
+            Sic = info.SicCode is null ? null : $"{info.SicCode} ({info.SicDescription})",
             StateOfIncorporation = info.StateOfIncorporation,
             Symbol = info.Symbol,
             WebSite = info.WebSite,
@@ -85,7 +85,7 @@ public sealed class UiModelService(DbDefPair dbDefPair, IMemoryCache memoryCache
     {
         var chart = await GetChartAsync(symbol, lookback, interval);
 
-        if (chart == null || chart.PriceActions.Length == 0)
+        if (chart is null || chart.PriceActions.Length == 0)
             return null;
 
         if (start < chart.PriceActions[0].Date)

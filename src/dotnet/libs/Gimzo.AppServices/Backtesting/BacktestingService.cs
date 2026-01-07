@@ -4,6 +4,9 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Npgsql;
 using NpgsqlTypes;
+using System.Collections.Concurrent;
+using System.Collections.Immutable;
+using System.Data;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 
@@ -80,32 +83,74 @@ WHERE lc.absolute_value >= @AV AND lc.percentile_rank >= @PR AND ls.rank >= @R;"
         return [.. symbols];
     }
 
-    public async Task<Ledger?> ExecuteAsync(string scenario, string symbol)
+    public async Task ExecuteAsync(string scenario, IEnumerable<string> symbols, Guid userId,
+        CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(scenario, nameof(scenario));
-        ArgumentException.ThrowIfNullOrWhiteSpace(symbol, nameof(symbol));
+        ArgumentException.ThrowIfNullOrWhiteSpace(scenario);
+        ArgumentNullException.ThrowIfNull(symbols);
 
-        if (scenario.StartsWith(Keys.TrendDivergence, StringComparison.CurrentCultureIgnoreCase))
-        {
-            var pattern = $@"{Keys.TrendDivergence}\-(\d*)";
-            int period = Convert.ToInt32(Regex.Matches(scenario, pattern)[0].Groups[1].Value);
-            return await ExecuteGimzoTrendDivergenceAsync(symbol, period);
-        }
-        else if (scenario.StartsWith(Keys.TrendFollow, StringComparison.CurrentCultureIgnoreCase))
-        {
-            var pattern = $@"{Keys.TrendFollow}\-(\d*)";
-            int period = Convert.ToInt32(Regex.Matches(scenario, pattern)[0].Groups[1].Value);
-            return await ExecuteGimzoTrendFollowAsync(symbol, period);
-        }
-        else if (scenario.ToLowerInvariant().Equals(Keys.MovingAverageCrossover))
-            return await ExecuteMovingAverageCrossoverAsync(symbol);
-        else if (scenario.ToLowerInvariant().Equals(Keys.PriceMovingAverageCrossover))
-            return await ExecutePriceMovingAverageCrossoverAsync(symbol);
-        else if (scenario.ToLowerInvariant().Equals(Keys.PriceLongExtremeFollow))
-            return await ExecuteBullishPriceExtremeFollowAsync(symbol);
-
-        return null;
+        await Parallel.ForEachAsync(
+            symbols,
+            new ParallelOptions
+            {
+                CancellationToken = cancellationToken,
+                MaxDegreeOfParallelism = 10 // tune based on connection pool / API limits
+            },
+            async (symbol, token) =>
+            {
+                if (scenario.Equals(Keys.PriceLongExtremeFollow, StringComparison.OrdinalIgnoreCase))
+                    await ExecuteBullishPriceExtremeFollowAsync(symbol, userId, token);
+            });
     }
+
+    //public async Task<ImmutableArray<TradeDetails>> ExecuteAsync(string scenario, IEnumerable<string> symbols)
+    //{
+    //    ArgumentException.ThrowIfNullOrWhiteSpace(scenario, nameof(scenario));
+
+    //    ConcurrentBag<TradeDetails> details = new();
+
+    //    if (scenario.ToLowerInvariant().Equals(Keys.PriceLongExtremeFollow))
+    //    {
+    //        Parallel.ForEach(symbols, async (symbol) => {
+    //            await foreach (var d in ExecuteBullishPriceExtremeFollowAsync(symbol))
+    //            {
+    //                details.Add(d);
+    //            }
+    //        });
+
+    //    }
+    //    return [.. details];
+    //}
+
+    //public async Task<Ledger?> ExecuteAsync(string scenario, string symbol)
+    //{
+    //    ArgumentException.ThrowIfNullOrWhiteSpace(scenario, nameof(scenario));
+    //    ArgumentException.ThrowIfNullOrWhiteSpace(symbol, nameof(symbol));
+
+    //    if (scenario.StartsWith(Keys.TrendDivergence, StringComparison.CurrentCultureIgnoreCase))
+    //    {
+    //        var pattern = $@"{Keys.TrendDivergence}\-(\d*)";
+    //        int period = Convert.ToInt32(Regex.Matches(scenario, pattern)[0].Groups[1].Value);
+    //        return await ExecuteGimzoTrendDivergenceAsync(symbol, period);
+    //    }
+    //    else if (scenario.StartsWith(Keys.TrendFollow, StringComparison.CurrentCultureIgnoreCase))
+    //    {
+    //        var pattern = $@"{Keys.TrendFollow}\-(\d*)";
+    //        int period = Convert.ToInt32(Regex.Matches(scenario, pattern)[0].Groups[1].Value);
+    //        return await ExecuteGimzoTrendFollowAsync(symbol, period);
+    //    }
+    //    else if (scenario.ToLowerInvariant().Equals(Keys.MovingAverageCrossover))
+    //        return await ExecuteMovingAverageCrossoverAsync(symbol);
+    //    else if (scenario.ToLowerInvariant().Equals(Keys.PriceMovingAverageCrossover))
+    //        return await ExecutePriceMovingAverageCrossoverAsync(symbol);
+    //    else if (scenario.ToLowerInvariant().Equals(Keys.PriceLongExtremeFollow))
+    //    {
+    //        var result = await ExecuteBullishPriceExtremeFollowAsync(symbol);
+    //        return result.Ledger;
+    //    }
+
+    //    return null;
+    //}
 
     internal static double CalculateSlope(double[] values)
     {
@@ -134,7 +179,7 @@ WHERE lc.absolute_value >= @AV AND lc.percentile_rank >= @PR AND ls.rank >= @R;"
 
     private static CashLedgerEntry? FindExit(CashLedgerEntry? entry, Chart chart)
     {
-        if (entry == null || chart == null || chart.PriceActions.Length == 0)
+        if (entry is null || chart is null || chart.PriceActions.Length == 0)
             return null;
 
         const int MinHoldTime = 1;
@@ -188,7 +233,7 @@ WHERE lc.absolute_value >= @AV AND lc.percentile_rank >= @PR AND ls.rank >= @R;"
 
     private static CashLedgerEntry? FindExitOnLong(CashLedgerEntry? entry, Chart chart)
     {
-        if (entry == null || entry.IsShort || chart == null || chart.PriceActions.Length == 0)
+        if (entry is null || entry.IsShort || chart is null || chart.PriceActions.Length == 0)
             return null;
 
         var idx = chart.GetIndexOfDate(entry.Date);
@@ -232,10 +277,10 @@ WHERE lc.absolute_value >= @AV AND lc.percentile_rank >= @PR AND ls.rank >= @R;"
                 return new CashLedgerEntry(chart.PriceActions[i].Date,
                     entry.Symbol,
                     entry.Quantity * -1,
-                    chart.PriceActions[i].Contains(stopPrice) 
+                    chart.PriceActions[i].Contains(stopPrice)
                         ? stopPrice
-                        : chart.PriceActions[i].Open < stopPrice 
-                            ? chart.PriceActions[i].Open 
+                        : chart.PriceActions[i].Open < stopPrice
+                            ? chart.PriceActions[i].Open
                             : chart.PriceActions[i].MidPoint,
                     "Stop Loss",
                     relatesTo: entry.Id);
@@ -249,7 +294,7 @@ WHERE lc.absolute_value >= @AV AND lc.percentile_rank >= @PR AND ls.rank >= @R;"
                    $"Sold on weakness after target ({tgtIdx + 1}) reached",
                    relatesTo: entry.Id);
             }
-            
+
             if (targets.Count < 2)
             {
                 tgtPrice = targets.First();

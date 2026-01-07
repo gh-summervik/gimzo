@@ -19,6 +19,7 @@ public abstract class ServiceBase
         _memoryCache = memoryCache;
         SqlMapper.AddTypeHandler(new DateOnlyTypeHandler());
         SqlMapper.AddTypeHandler(new NullableDateOnlyTypeHandler());
+        SqlMapper.AddTypeHandler(new DictionaryIntDecimalJsonbHandler());
     }
 
     internal async Task SaveProcess(Infrastructure.Database.DataAccessObjects.Process process)
@@ -65,7 +66,7 @@ public abstract class ServiceBase
     {
         var cacheKey = GetChartCacheKey(symbol, lookback, interval);
         Chart? chart;
-        if (_memoryCache.TryGetValue(cacheKey, out var cachedValue) && cachedValue != null)
+        if (_memoryCache.TryGetValue(cacheKey, out var cachedValue) && cachedValue is not null)
             chart = cachedValue as Chart;
         else
         {
@@ -74,7 +75,8 @@ public abstract class ServiceBase
                 return null;
             chart = new Chart(symbol.ToUpperInvariant())
                 .WithCandles(ohlcs)
-                .WithTrend(new GimzoTrend(ohlcs))
+                //.WithTrend(new GimzoTrend(ohlcs))
+                .WithTrend(new RsiTrend(ohlcs))
                 .WithMovingAverage(21, MovingAverageType.Exponential)
                 .WithMovingAverage(50, MovingAverageType.Exponential)
                 .WithMovingAverage(200, MovingAverageType.Exponential)

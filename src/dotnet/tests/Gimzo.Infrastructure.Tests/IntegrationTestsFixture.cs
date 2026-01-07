@@ -30,6 +30,7 @@ public class IntegrationTestsFixture : IDisposable
 
         SqlMapper.AddTypeHandler(new DateOnlyTypeHandler());
         SqlMapper.AddTypeHandler(new NullableDateOnlyTypeHandler());
+        SqlMapper.AddTypeHandler(new DictionaryIntDecimalJsonbHandler());
 
         var dbDefs = DbDefPair.GetPairsFromConfiguration(configuration).ToArray();
 

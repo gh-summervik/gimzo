@@ -8,7 +8,7 @@ public sealed class Ledger
 
     public void Add(CashLedgerEntry? entry)
     {
-        if (entry != null)
+        if (entry is not null)
             _entries.Add(entry);
     }
 
@@ -54,7 +54,7 @@ public sealed class Ledger
         decimal grossLoss = 0M;
         decimal totalProfit = 0M;
         int trades = 0;
-        foreach (var pair in pairs.Where(k => k.Close != null))
+        foreach (var pair in pairs.Where(k => k.Close is not null))
         {
             trades++;
             decimal p = pair.Profit;

@@ -179,7 +179,7 @@ public class Chart : IEquatable<Chart?>
                 else
                     sentiment = lastHighSentiment;
 
-                highs.Add(new PriceExtreme(PriceActions[p].High, isHigh: true, isLow: false, sentiment, p));
+                highs.Add(new PriceExtreme(PriceActions[p].High, isHigh: true, isLow: false, sentiment, p, PriceActions[p].Date));
                 lastHigh = high;
                 lastHighSentiment = sentiment;
             }
@@ -187,7 +187,6 @@ public class Chart : IEquatable<Chart?>
 
         for (int p = 1; p < PriceActions.Length - 1; p++)
         {
-
             decimal low = PriceActions[p].Low;
 
             /* 
@@ -210,7 +209,7 @@ public class Chart : IEquatable<Chart?>
                 else
                     sentiment = lastLowSentiment;
 
-                lows.Add(new PriceExtreme(PriceActions[p].Low, isHigh: false, isLow: true, sentiment, p));
+                lows.Add(new PriceExtreme(PriceActions[p].Low, isHigh: false, isLow: true, sentiment, p, PriceActions[p].Date));
                 lastLow = low;
                 lastLowSentiment = sentiment;
             }
@@ -268,7 +267,7 @@ public class Chart : IEquatable<Chart?>
     public int GetIndexOfDate(DateOnly date)
     {
         var ohlc = PriceActions.FirstOrDefault(p => p.Date.Equals(date));
-        if (ohlc != null)
+        if (ohlc is not null)
             return Array.IndexOf(PriceActions, ohlc);
         return -1;
     }
@@ -305,9 +304,9 @@ public class Chart : IEquatable<Chart?>
         DateOnly? left = high >= 0 ? PriceActions[high].Date : null;
         DateOnly? right = low < PriceActions.Length ? PriceActions[low].Date : null;
 
-        if (left == null)
+        if (left is null)
             return right;
-        if (right == null)
+        if (right is null)
             return left;
 
         int distLeft = Math.Abs(date.DayNumber - left.Value.DayNumber);

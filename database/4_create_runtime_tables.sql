@@ -30,3 +30,4 @@ CREATE TABLE IF NOT EXISTS public.sic_money_flow(
     updated_at_unix_ms BIGINT NOT NULL,
     PRIMARY KEY (sic_code, date_eval)
 );
+

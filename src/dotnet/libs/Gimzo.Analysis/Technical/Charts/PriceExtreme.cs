@@ -1,12 +1,13 @@
 ﻿namespace Gimzo.Analysis.Technical.Charts;
 
-public readonly struct PriceExtreme(decimal price, bool isHigh, bool isLow, TrendSentiment sentiment, int index)
+public readonly struct PriceExtreme(decimal price, bool isHigh, bool isLow, TrendSentiment sentiment, int index, DateOnly date)
 {
     public decimal Price { get; } = price;
     public bool IsHigh { get; } = isHigh;
     public bool IsLow { get; } = isLow;
     public TrendSentiment Sentiment { get; } = sentiment;
     public int Index { get; } = index;
+    public DateOnly Date { get; } = date;
     public bool IsBullish => Sentiment == TrendSentiment.Bullish;
     public bool IsBearish => Sentiment == TrendSentiment.Bearish;
 

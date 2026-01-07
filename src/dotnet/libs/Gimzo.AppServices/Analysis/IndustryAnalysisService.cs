@@ -61,7 +61,7 @@ public class IndustryAnalysisService(
 
             var lastPrice = p.LastOrDefault()?.Close;
             var marketCap = m.MarketCap;
-            if (marketCap == null && m.SharesOutstanding != null)
+            if (marketCap is null && m.SharesOutstanding is not null)
                 marketCap = (decimal)m.SharesOutstanding * (p.LastOrDefault()?.Close ?? 0M);
 
             for (int i = p.Length - 1; i > 0; i--)
