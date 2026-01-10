@@ -29,27 +29,25 @@ public static class EnumUtilities
 
 public static class Maths
 {
-    /// <summary>
-    /// Calculates the least-squares linear regression slope over the last <paramref name="period"/> values.
-    /// Values[0] = oldest, Values[^1] = newest.
-    /// Returns double.NaN if insufficient data or denominator zero.
-    /// </summary>
-    public static double CalculateSlope(IReadOnlyList<decimal> values, int period)
+    public static double CalculateSlope(IReadOnlyList<decimal> values, int startIndex, int length)
     {
         ArgumentNullException.ThrowIfNull(values);
-        if (period < 2 || period > values.Count)
+
+        if (startIndex < 0 || length < 0 || startIndex + length > values.Count)
             return double.NaN;
 
-        int startIndex = values.Count - period;
-        double sumX = 0;
-        double sumY = 0;
-        double sumXY = 0;
-        double sumX2 = 0;
+        if (length < 2)
+            return 0.0;
 
-        for (int i = 0; i < period; i++)
+        decimal sumX = 0m;
+        decimal sumY = 0m;
+        decimal sumXY = 0m;
+        decimal sumX2 = 0m;
+
+        for (int i = 0; i < length; i++)
         {
-            double x = i; // 0 = oldest in window, period-1 = newest
-            double y = (double)values[startIndex + i];
+            decimal x = i;
+            decimal y = values[startIndex + i];
 
             sumX += x;
             sumY += y;
@@ -57,14 +55,105 @@ public static class Maths
             sumX2 += x * x;
         }
 
-        double n = period;
-        double denominator = n * sumX2 - sumX * sumX;
-        if (denominator == 0)
+        decimal n = length;
+        decimal denominator = n * sumX2 - sumX * sumX;
+
+        // Denominator is always positive for sequential integer x and length >= 2
+        decimal slope = (n * sumXY - sumX * sumY) / denominator;
+        return (double)slope;
+    }
+
+    public static double CalculateStandardDeviation(IReadOnlyList<decimal> values, int startIndex, int length)
+    {
+        ArgumentNullException.ThrowIfNull(values);
+
+        if (startIndex < 0 || length < 0 || startIndex + length > values.Count)
             return double.NaN;
 
-        return (n * sumXY - sumX * sumY) / denominator;
+        if (length <= 1)
+            return 0.0;
+
+        decimal sum = 0m;
+        for (int i = 0; i < length; i++)
+            sum += values[startIndex + i];
+
+        decimal mean = sum / length;
+
+        decimal sumSquaredDeviations = 0m;
+        for (int i = 0; i < length; i++)
+        {
+            decimal deviation = values[startIndex + i] - mean;
+            sumSquaredDeviations += deviation * deviation;
+        }
+
+        decimal variance = sumSquaredDeviations / length;
+        return Math.Sqrt((double)variance);
     }
 }
+
+//public static class Maths
+//{
+//    /// <summary>
+//    /// Calculates the least-squares linear regression slope over the last <paramref name="period"/> values.
+//    /// Values[0] = oldest, Values[^1] = newest.
+//    /// Returns double.NaN if insufficient data or denominator zero.
+//    /// </summary>
+//    public static double CalculateSlope(IReadOnlyList<decimal> values, int period)
+//    {
+//        ArgumentNullException.ThrowIfNull(values);
+//        if (period < 2 || period > values.Count)
+//            return double.NaN;
+
+//        int startIndex = values.Count - period;
+//        double sumX = 0;
+//        double sumY = 0;
+//        double sumXY = 0;
+//        double sumX2 = 0;
+
+//        for (int i = 0; i < period; i++)
+//        {
+//            double x = i; // 0 = oldest in window, period-1 = newest
+//            double y = (double)values[startIndex + i];
+
+//            sumX += x;
+//            sumY += y;
+//            sumXY += x * y;
+//            sumX2 += x * x;
+//        }
+
+//        double n = period;
+//        double denominator = n * sumX2 - sumX * sumX;
+//        if (denominator == 0)
+//            return double.NaN;
+
+//        return (n * sumXY - sumX * sumY) / denominator;
+//    }
+
+//    public static double CalculateStandardDeviation(IReadOnlyList<decimal> values, int period)
+//    {
+//        ArgumentNullException.ThrowIfNull(values);
+//        if (period < 1 || period > values.Count)
+//            return double.NaN;
+
+//        int startIndex = values.Count - period;
+
+//        double sum = 0;
+//        for (int i = 0; i < period; i++)
+//            sum += (double)values[startIndex + i];
+
+//        double mean = sum / period;
+
+//        double sumSquaredDeviations = 0;
+//        for (int i = 0; i < period; i++)
+//        {
+//            double deviation = (double)values[startIndex + i] - mean;
+//            sumSquaredDeviations += deviation * deviation;
+//        }
+
+//        double variance = sumSquaredDeviations / period; 
+//        return Math.Sqrt(variance);
+//    }
+//}
 
 public static class OsHelper
 {

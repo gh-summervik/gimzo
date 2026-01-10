@@ -1,6 +1,6 @@
 ﻿using Gimzo.Analysis.Technical.Charts;
 
-namespace Gimzo.AppServices.Backtesting;
+namespace Gimzo.AppServices.Backtests;
 
 public class TradeDetails
 {

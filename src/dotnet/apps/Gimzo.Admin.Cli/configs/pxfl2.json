@@ -1,0 +1,34 @@
+{
+  "Name": "pxfl",
+  "Chart": {
+    "MovingAverages": [ "S21C", "S50C", "S200C" ],
+    "BollingerBand": {
+      "MovingAverageCode": "S21C",
+      "StdDevMultipler": 2
+    },
+    "AverageTrueRangePeriod": 14,
+    "RelativeStrengthPeriod": 14
+  },
+  "SymbolCriteria": {
+    "MinAbsoluteScore": 40,
+    "MaxAbsoluteScore": 100,
+    "MinCompanyPercentileRank": 50,
+    "MaxCompanyPercentileRank": 100,
+    "MinIndustryRank": 0,
+    "MaxIndustryRank": 150
+  },
+  "PriceExtremeFollow": {
+    "LookbackPeriod": 14,
+    "EntryCriteria": {
+      "MinPercentFromPrevHigh": -25,
+      "MaxPercentFromPrevHigh": -5,
+      "MinRsi": -5,
+      "MaxRsi": 5,
+      "MinRelativeVolume": 1.5,
+      "MinPriorSlope": 0.05,
+      "MinPercentFromMovingAverage": 3.5,
+      "MinAverageTrueRange": 2
+    },
+    "MovingAveragePeriod": 21
+  }
+}

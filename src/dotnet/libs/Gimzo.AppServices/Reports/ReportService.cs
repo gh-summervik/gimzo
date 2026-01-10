@@ -1,4 +1,4 @@
-﻿using Gimzo.AppServices.Backtesting;
+﻿using Gimzo.AppServices.Backtests;
 using Gimzo.Common;
 using Gimzo.Infrastructure.Database;
 using Microsoft.Extensions.Caching.Memory;
@@ -77,7 +77,7 @@ public sealed class ReportService(DbDefPair dbDefPair, IMemoryCache memoryCache,
                     pa.Low.ToString("#0.00"),
                     pa.Close.ToString("#0.00"),
                     pa.Volume.ToString("#0.00"),
-                    chart.TrendValues[i].ToString("#0.00")
+                    chart.RelativeStrengthIndex == null ? "" : chart.RelativeStrengthIndex!.Values[i].ToString("#0.00")
                 ];
                 lines.Add(string.Join(',', row));
             }

@@ -19,7 +19,8 @@ public readonly struct ChartSpan
         ChartInfo = chart.Info;
         PriceActions = new ArraySegment<Ohlc>(chart.PriceActions, start, Length);
         Candlesticks = new ArraySegment<Candlestick>(chart.Candlesticks, start, Length);
-        TrendValues = new ArraySegment<double>(chart.TrendValues, start, Length);
+        //RelativeStrengthIndices = new ArraySegment<double>(chart.RelativeStrengthIndex.TrendValues, start, Length);
+        //TrendValues = new ArraySegment<double>(chart.RelativeStrengthValues, start, Length);
         MovingAverages = new(chart.MovingAverages.Length);
         foreach (var ma in chart.MovingAverages)
         {
@@ -32,7 +33,8 @@ public readonly struct ChartSpan
     public int Offset { get; }
     public ArraySegment<Ohlc> PriceActions { get; }
     public ArraySegment<Candlestick> Candlesticks { get; }
-    public ArraySegment<double> TrendValues { get; }
+    //public ArraySegment<double> RelativeStrengthIndices { get; }
+    //public ArraySegment<double> TrendValues { get; }
     public Dictionary<MovingAverageKey, decimal[]> MovingAverages { get; }
     public int Length { get; }
     public PriceRange GetPriceRange() =>

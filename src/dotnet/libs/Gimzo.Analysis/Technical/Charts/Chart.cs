@@ -1,4 +1,4 @@
-﻿using Gimzo.Analysis.Technical.Trends;
+﻿using System.Collections.Immutable;
 
 namespace Gimzo.Analysis.Technical.Charts;
 
@@ -6,40 +6,61 @@ public class Chart : IEquatable<Chart?>
 {
     private readonly List<MovingAverage> _movingaverages = new(3);
     private readonly HashSet<MovingAverageKey> _movingAverageKeys = new(3);
+    private BollingerBandConfiguration? _bollingerBandConfig;
+    private readonly ChartInterval _interval = ChartInterval.Daily;
+    private readonly string _symbol = "None";
+
     private decimal[] _averageHeights = [];
     private decimal[] _averageBodyHeights = [];
     private double[] _averageVolumes = [];
-    private readonly List<AverageTrueRange> _atrs = [];
-    private readonly HashSet<int> _atrPeriods = [];
 
-    public ChartInfo Info { get; init; }
-    public Chart(string name, ChartInterval interval = ChartInterval.Daily)
-    {
-        Info = new()
-        {
-            Symbol = name,
-            Interval = interval
-        };
-    }
+    private int? _averageTrueRangePeriod;
+    private int? _relativeStrengthPeriod;
 
-    private ITrend? Trend { get; set; } = null;
-    public double[] TrendValues => Trend?.TrendValues ??
-        [.. Enumerable.Repeat(0D, PriceActions.Length)];
+    public ChartInfo Info { get; private set; }
+    //public double[] RelativeStrengthValues { get; private set; } = [];
     public Ohlc[] PriceActions { get; private set; } = [];
     public Candlestick[] Candlesticks { get; private set; } = [];
     public int Length => PriceActions.Length;
-    public int Duration => End.DayNumber - Start.DayNumber;
     public DateOnly Start => PriceActions[0].Date;
     public DateOnly End => PriceActions[^1].Date;
     public MovingAverage[] MovingAverages => [.. _movingaverages];
     public MovingAverageKey[] MovingAverageKeys => [.. _movingaverages.Select(k => k.Key)];
-    public MovingAverage? GetMovingAverage(MovingAverageKey key) =>
-        _movingaverages.FirstOrDefault(k => k.Key.Equals(key));
-
+    public MovingAverage? GetMovingAverage(MovingAverageKey key) => _movingaverages.FirstOrDefault(k => k.Key.Equals(key));
     public PriceExtreme[] Extremes { get; private set; } = [];
-    public AverageTrueRange[] ATRs => [.. _atrs];
+    public AverageTrueRange? AverageTrueRange { get; private set; }
     public double[] AverageVolumes => _averageVolumes;
-    public BollingerBand? BollingerBand { get; private set; }    
+    public BollingerBand? BollingerBand { get; private set; }
+    public RelativeStrengthIndex? RelativeStrengthIndex { get; private set; }
+
+    public Chart(string symbol, ChartInterval interval = ChartInterval.Daily)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(symbol);
+        _symbol = symbol;
+        _interval = interval;
+    }
+
+    public Chart WithConfiguration(ChartConfiguration config)
+    {
+        if ((config.MovingAverages?.Length ?? 0) > 0)
+            foreach (var code in config.MovingAverages!.Distinct())
+            {
+                var key = MovingAverageKey.Create(code) ?? throw new ArgumentException($"Invalid moving average shorthand: {code}");
+                _movingAverageKeys.Add(key);
+            }
+
+        if (config.BollingerBand.HasValue)
+            _bollingerBandConfig = config.BollingerBand.Value;
+
+        if (config.AverageTrueRangePeriod.HasValue)
+            _averageTrueRangePeriod = config.AverageTrueRangePeriod.Value;
+
+        if (config.RelativeStrengthPeriod.HasValue)
+            _relativeStrengthPeriod = config.RelativeStrengthPeriod.Value;
+
+        return this;
+    }
+
     public Chart WithMovingAverage(MovingAverageKey key)
     {
         _movingAverageKeys.Add(key);
@@ -48,6 +69,9 @@ public class Chart : IEquatable<Chart?>
 
     public Chart WithMovingAverage(int period, MovingAverageType type, PricePoint pricePoint = PricePoint.Close)
     {
+        if (period < 1)
+            throw new ArgumentException($"{nameof(period)} must be greater than zero.");
+
         var key = new MovingAverageKey(period, pricePoint, type);
         return WithMovingAverage(key);
     }
@@ -55,39 +79,23 @@ public class Chart : IEquatable<Chart?>
     public Chart WithMovingAverages(params MovingAverageKey[] keys)
     {
         foreach (var key in keys)
-        {
             _movingAverageKeys.Add(key);
-        }
         return this;
     }
 
     public Chart WithPriceActions(IEnumerable<Ohlc> priceActions)
     {
         PriceActions = [.. priceActions];
+        if (PriceActions.Length < 1)
+            throw new ArgumentException($"{nameof(priceActions)} must have at least one {nameof(Ohlc)}");
         return this;
     }
 
-    public Chart WithCandles(IEnumerable<Ohlc> priceActions)
+    public Chart WithAverageTrueRangePeriod(int period = 14)
     {
-        return WithPriceActions(priceActions);
-    }
-
-    public Chart WithTrend(ITrend trend)
-    {
-        Trend = trend;
-        return this;
-    }
-
-    public Chart WithAverageTrueRange(int period = 14)
-    {
-        _atrPeriods.Add(period);
-        return this;
-    }
-
-    public Chart WithAverageTrueRanges(params int[] periods)
-    {
-        foreach (var period in periods)
-            _atrPeriods.Add(period);
+        if (period < 1)
+            throw new ArgumentException($"Average True Range requires a period of ast least 1.");
+        _averageTrueRangePeriod = period;
         return this;
     }
 
@@ -95,13 +103,40 @@ public class Chart : IEquatable<Chart?>
         MovingAverageType movingAverageType = MovingAverageType.Simple,
         PricePoint pricePoint = PricePoint.Close, double stdDevMultiplier = 2.0)
     {
+        if (period < 1)
+            throw new ArgumentException("Bollinger bands require a period of at least 1.");
+        if (stdDevMultiplier < 1D || stdDevMultiplier > 3D)
+            throw new ArgumentException("Standard deviation multipler requires a value between 1 and 3");
+
         var key = new MovingAverageKey(period, pricePoint, movingAverageType);
-        return WithBollingerBand(key, stdDevMultiplier);
+        _bollingerBandConfig = new()
+        {
+            MovingAverageCode = key.CreateShorthand(),
+            StdDevMultipler = stdDevMultiplier,
+        };
+
+        return this;
     }
 
     public Chart WithBollingerBand(MovingAverageKey key, double stdDevMultiplier = 2.0)
     {
-        BollingerBand = new BollingerBand(key, stdDevMultiplier, [.. PriceActions.Select(p => p.Close)]);
+        if (key.Period < 1)
+            throw new ArgumentException("Moving average key requires a period of at least 1.");
+
+        _bollingerBandConfig = new()
+        {
+            MovingAverageCode = key.CreateShorthand(),
+            StdDevMultipler = stdDevMultiplier,
+        };
+        return this;
+    }
+
+    public Chart WithRelativeStrengthPeriod(int period = 14)
+    {
+        if (period < 1)
+            throw new ArgumentException("Relative strength index requires a period of at least 1.");
+
+        _relativeStrengthPeriod = period;
         return this;
     }
 
@@ -115,8 +150,6 @@ public class Chart : IEquatable<Chart?>
         _movingaverages.Clear();
         foreach (var key in _movingAverageKeys)
             _movingaverages.Add(new MovingAverage(key, PriceActions));
-
-        Trend?.Calculate();
 
         _averageHeights = new decimal[PriceActions.Length];
         _averageBodyHeights = new decimal[PriceActions.Length];
@@ -138,9 +171,8 @@ public class Chart : IEquatable<Chart?>
             }
         }
 
-        _atrs.Clear();
-        foreach (var period in _atrPeriods)
-            _atrs.Add(new AverageTrueRange(PriceActions, period));
+        if (_averageTrueRangePeriod.HasValue)
+            AverageTrueRange = new(PriceActions, _averageTrueRangePeriod.Value);
 
         List<PriceExtreme> highs = new(100);
         List<PriceExtreme> lows = new(100);
@@ -217,6 +249,27 @@ public class Chart : IEquatable<Chart?>
 
         Extremes = [.. highs.Union(lows).OrderBy(k => k.Index)];
 
+        if (_bollingerBandConfig.HasValue)
+        {
+            var bb = _bollingerBandConfig.Value;
+            var key = MovingAverageKey.Create(bb.MovingAverageCode).GetValueOrDefault();
+            var values = PriceActions.Select(p => p.GetPricePoint(key.PricePoint)).ToArray();
+            BollingerBand = new BollingerBand(bb, values);
+        }
+
+        if (_relativeStrengthPeriod.HasValue && _relativeStrengthPeriod.Value > 0)
+            RelativeStrengthIndex = new(PriceActions, _relativeStrengthPeriod.Value,
+                [.. PriceActions.Select(k => k.Volume)]);
+
+        Info = new ChartInfo()
+        {
+            Symbol = _symbol,
+            Interval = _interval,
+            Start = PriceActions[0].Date,
+            Finish = PriceActions[^1].Date,
+            Length = PriceActions.Length
+        };
+
         return this;
     }
 
@@ -259,10 +312,6 @@ public class Chart : IEquatable<Chart?>
         }
         return null;
     }
-
-    public AverageTrueRange? GetAverageTrueRangeForPeriod(int period) => _atrs.FirstOrDefault(k => k.Period == period);
-
-    public int[] GetAverageTrueRangePeriods() => [.. _atrs.Select(k => k.Period)];
 
     public int GetIndexOfDate(DateOnly date)
     {
@@ -315,50 +364,6 @@ public class Chart : IEquatable<Chart?>
         return distLeft <= distRight ? left : right;
     }
 
-    public bool IsTall(int position, int lookbackPeriod = 0, decimal tolerance = 1M)
-    {
-        if (position < 10)
-        {
-            return false;
-        }
-
-        tolerance = Math.Max(1M, tolerance);
-
-        var lookbackPosition = lookbackPeriod == 0 ? 0 : Math.Max(position - lookbackPeriod, 0);
-
-        if (lookbackPosition == 0)
-        {
-            return Candlesticks[position].Body.Length > tolerance * _averageBodyHeights[position - 1];
-        }
-        else
-        {
-            var avg = Candlesticks[lookbackPosition..(position - 1)].Average(c => c.Body.Length);
-            return Candlesticks[position].Body.Length > tolerance * avg;
-        }
-    }
-
-    public bool IsShort(int position, int lookbackPeriod = 0, decimal tolerance = 1M)
-    {
-        if (position < 10)
-        {
-            return false;
-        }
-
-        tolerance = Math.Min(1M, tolerance);
-
-        var lookbackPosition = lookbackPeriod == 0 ? 0 : Math.Max(position - lookbackPeriod, 0);
-
-        if (lookbackPeriod == 0)
-        {
-            return Candlesticks[position].Body.Length < tolerance * _averageBodyHeights[position - 1];
-        }
-        else
-        {
-            var avg = Candlesticks[lookbackPosition..(position - 1)].Select(c => c.Body.Length).Average();
-            return Candlesticks[position].Body.Length < tolerance * avg;
-        }
-    }
-
     public ChartSpan GetSpan(int start, int finish)
     {
         if (start > finish)
@@ -373,29 +378,13 @@ public class Chart : IEquatable<Chart?>
         return new ChartSpan(this, start, finish);
     }
 
-    public override bool Equals(object? obj)
-    {
-        return Equals(obj as Chart);
-    }
+    public override bool Equals(object? obj) => Equals(obj as Chart);
 
-    public bool Equals(Chart? other)
-    {
-        return other is not null &&
-               Info.Interval == other.Info.Interval &&
-               Info.Symbol == other.Info.Symbol &&
-               Length == other.Length &&
-               Start.Equals(other.Start) &&
-               End.Equals(other.End);
-    }
+    public bool Equals(Chart? other) => other is not null &&
+        Info.Equals(other.Info) &&
+        Length == other.Length &&
+        Start.Equals(other.Start) &&
+        End.Equals(other.End);
 
-    public static int GetCacheKey(ChartInfo chartInfo,
-        string? trend = null, int lookbackLength = 15)
-    {
-        return HashCode.Combine(chartInfo, trend, lookbackLength);
-    }
-
-    public override int GetHashCode()
-    {
-        return GetCacheKey(Info, Trend?.Name);
-    }
+    public override int GetHashCode() => Info.GetHashCode();
 }

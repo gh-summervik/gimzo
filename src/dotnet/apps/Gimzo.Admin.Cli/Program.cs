@@ -1,6 +1,8 @@
-﻿using Gimzo.AppServices;
+﻿using Gimzo.Analysis.Technical;
+using Gimzo.Analysis.Technical.Charts;
+using Gimzo.AppServices;
 using Gimzo.AppServices.Analysis;
-using Gimzo.AppServices.Backtesting;
+using Gimzo.AppServices.Backtests;
 using Gimzo.AppServices.Data;
 using Gimzo.AppServices.Reports;
 using Gimzo.Common;
@@ -14,6 +16,8 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text.Json;
+using System.Xml.Schema;
 
 IConfiguration? configuration;
 
@@ -82,20 +86,24 @@ try
         await importer.ImportAsync();
         importer.Dispose();
 
-        LogHelper.LogInfo(logger, "Capturing company valuations.");
-        var coAnalysisService = new CompanyAnalysisService(dbDefPairs![0],
-            serviceProvider.GetRequiredService<IMemoryCache>(),
-            serviceProvider.GetRequiredService<ILogger<CompanyAnalysisService>>());
+        var metaInfo = await importer.GetDbMetaInfoAsync();
+        if (metaInfo.TableCounts["public.company_valuations"] > 0)
+        {
+            LogHelper.LogInfo(logger, "Capturing company valuations.");
+            var coAnalysisService = new CompanyAnalysisService(dbDefPairs![0],
+                serviceProvider.GetRequiredService<IMemoryCache>(),
+                serviceProvider.GetRequiredService<ILogger<CompanyAnalysisService>>());
 
-        LogHelper.LogInfo(logger, "Capturing industry valuations.");
-        var indAnalysisService = new IndustryAnalysisService(dbDefPairs![0],
-            serviceProvider.GetRequiredService<IMemoryCache>(),
-            serviceProvider.GetRequiredService<ILogger<IndustryAnalysisService>>());
+            LogHelper.LogInfo(logger, "Capturing industry valuations.");
+            var indAnalysisService = new IndustryAnalysisService(dbDefPairs![0],
+                serviceProvider.GetRequiredService<IMemoryCache>(),
+                serviceProvider.GetRequiredService<ILogger<IndustryAnalysisService>>());
 
-        var t1 = coAnalysisService.SaveAllSiloScoresAsync(process.ProcessId);
-        var t2 = indAnalysisService.SaveAllIndustryScoresAsync(process.ProcessId);
+            var t1 = coAnalysisService.SaveAllSiloScoresAsync(process.ProcessId);
+            var t2 = indAnalysisService.SaveAllIndustryScoresAsync(process.ProcessId);
 
-        await Task.WhenAll(t1, t2);
+            await Task.WhenAll(t1, t2);
+        }
     }
 
     if (config.Csv)
@@ -120,88 +128,29 @@ try
     if (config.Backtest)
     {
         var process = Gimzo.AppServices.Process.Create("CLI", null, null, args);
-        var reportService = new ReportService(dbDefPairs![0],
-            serviceProvider.GetRequiredService<IMemoryCache>(),
-            serviceProvider.GetRequiredService<ILogger<ReportService>>());
+
+        var json = await File.ReadAllTextAsync(config.InputFileInfo!.FullName);
+        var options = JsonOptionsRepository.Gimzo;
+        options.Converters.Add(new EnumDescriptionConverter<PricePoint>());
+        options.Converters.Add(new EnumDescriptionConverter<MovingAverageType>());
+        options.Converters.Add(new EnumDescriptionConverter<ChartInterval>());
+        var backtestConfig = JsonSerializer.Deserialize<BacktestConfiguration>(json, options);
+
         var backtestService = new BacktestingService(dbDefPairs![0],
             serviceProvider.GetRequiredService<IMemoryCache>(),
             serviceProvider.GetRequiredService<ILogger<BacktestingService>>());
 
-        var symbols = (await backtestService.GetSymbolsToTest(minAbsoluteScore: 40,
-            minCompanyPercentileRank: 50,
-            minIndustryRank: 0)).ToImmutableArray();
-
-        List<Ledger.PerformanceSummary> summaries = new(symbols.Length);
-
-        DirectoryInfo targetDirInfo = new(RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-            ? Path.Combine("C:", "temp", "gimzo")
-            : Path.Combine("/", "c", "temp", "gimzo"));
-
-        if (!targetDirInfo.Exists)
-            targetDirInfo.Create();
-        else
-            foreach (var file in targetDirInfo.GetFiles("gimzo_ledger*.csv").Union(targetDirInfo.GetFiles("gimzo_ledger*.txt")))
-                file.Delete();
-
-        //int tradesIn2025 = 0;
-
-        CancellationTokenSource cts = new();
+        var symbols = (await backtestService.GetSymbolsToTest(
+            minAbsoluteScore: backtestConfig.SymbolCriteria.MinAbsoluteScore,
+            maxAbsoluteScore: backtestConfig.SymbolCriteria.MaxAbsoluteScore,
+            minCompanyPercentileRank: backtestConfig.SymbolCriteria.MinCompanyPercentileRank,
+            maxCompanyPercentileRank: backtestConfig.SymbolCriteria.MaxCompanyPercentileRank,
+            minIndustryRank: backtestConfig.SymbolCriteria.MinIndustryRank,
+            maxIndustryRank: backtestConfig.SymbolCriteria.MaxIndustryRank)).ToImmutableArray();
 
         LogHelper.LogInfo(logger, "Running backtest.");
-        await backtestService.ExecuteAsync(config.Scenario!, symbols, process.ProcessId, cts.Token);
-        LogHelper.LogInfo(logger, "Creating output files.");
-        var outputFile = new FileInfo(Path.Combine(targetDirInfo.FullName, "trade_details.csv"));
-
-        //await ReportService.CreateTradeDetailsReportAsync(tradeDetails, outputFile.FullName);
-
-        //foreach (var symbol in symbols)
-        //{
-        //    i++;
-
-        //    if (string.IsNullOrWhiteSpace(symbol))
-        //    {
-        //        LogHelper.LogWarning(logger, "Logic error - a blank symbol was found in the list of symbols. Do better.");
-        //        continue;
-        //    }
-
-        //    Console.Write($"\rProcessing {symbol,-8}\t{i,4}/{count}");
-
-        //    //var tradeDetails = await backtestService.ExecuteAsync(config.Scenario!, symbol);
-
-        //    //if (ledger is not null)
-        //    //{
-        //    //    var entries2025 = ledger.GetPairs().Where(k => k.Open.Date > new DateOnly(2024, 12, 31)).ToImmutableArray();
-        //    //    tradesIn2025 += entries2025.Length;
-
-        //    //    var ledgerFileName = $"gimzo_ledger_{symbol}_{DateTime.Now:yyyyMMddHHmm}.csv";
-
-        //    //    string fullPath = Path.Combine(targetDirInfo.FullName, ledgerFileName);
-
-        //    //    await reportService.WriteLedgerAsync(ledger, new FileInfo(fullPath), true);
-        //    //    var perf = ledger.GetPerformance();
-
-        //    //    if (perf is not null)
-        //    //        summaries.Add(perf);
-        //    //}
-        //}
-
-        //Console.WriteLine($"\rNum Stocks Considered   : {symbols.Length:#,##0}              ");
-        //Console.WriteLine($"Trades in 2025          : {tradesIn2025:#,##0}");
-
-        //decimal totalProfit = summaries.Sum(s => s.TotalProfit);
-        //long totalTrades = summaries.Sum(s => s.TotalTrades);
-        //double totalWins = summaries.Sum(s => s.TotalTrades * s.WinRate);
-        //decimal totalGrossWin = summaries.Sum(s => s.AverageWin * (decimal)(s.TotalTrades * s.WinRate));
-        //decimal totalGrossLoss = summaries.Sum(s => s.AverageLoss * (decimal)(s.TotalTrades * (1 - s.WinRate)));
-
-        //Console.WriteLine();
-        //Console.WriteLine($"Total profit      : {totalProfit:C2}");
-        //Console.WriteLine($"Weighted win rate : {(totalTrades > 0 ? totalWins / totalTrades : 0):P2}");
-        //Console.WriteLine($"Avg profit/trade  : {(totalTrades > 0 ? totalProfit / totalTrades : 0):C2}");
-        //Console.WriteLine($"Overall avg win   : {(totalWins > 0 ? totalGrossWin / (decimal)totalWins : 0):C2}");
-        //Console.WriteLine($"Overall avg loss  : {(totalTrades - totalWins > 0 ? totalGrossLoss / (decimal)(totalTrades - totalWins) : 0):C2}");
-        //Console.WriteLine($"Overall PF        : {(totalGrossLoss > 0M ? totalGrossWin / totalGrossLoss : 999999M):F2}");
-        //Console.WriteLine($"Total trades      : {totalTrades:#,##0}");
+        CancellationTokenSource cts = new();
+        await backtestService.ExecuteAsync(backtestConfig, symbols, process.ProcessId, cts.Token);
     }
 
     if (config.Analyze)
@@ -346,10 +295,12 @@ void ParseArguments(string[] args, out string[] childArgs)
                 if (a < args.Length - 1)
                 {
                     config.Backtest = true;
-                    config.Scenario = args[++a].ToLowerInvariant();
+                    config.InputFileInfo = new FileInfo(args[++a]);
+                    if (!config.InputFileInfo.Exists)
+                        throw new ArgumentException($"Could not locate {config.InputFileInfo.FullName}");
                 }
                 else
-                    throw new ArgumentException($"{args[a]} must be followed by a scenario name.");
+                    throw new ArgumentException($"{args[a]} must be followed by a path to a backtest config json file.");
                 break;
             case "-a":
             case "--analyze":
@@ -378,7 +329,7 @@ void ShowHelp()
         new CliArg(["-sun", "--sunday"], [], false, "Force the Sunday import workflow."),
         new CliArg(["--weekday"], [], false, "Force the Weekday import workflow."),
         new CliArg(["-r", "--csv", "--report"], ["symbol","report name", "output file name"], false, "Produce CSV file with specified report."),
-        new CliArg(["-b", "--backtest"],["scenario name"], false, "Runs a backtesting scenario."),
+        new CliArg(["-b", "--backtest"],["path to backtest config"], false, "Runs a backtesting scenario."),
         new CliArg(["-a", "--analyze"],["symbol (optional)"], false, "Get fundamental scores."),
         new CliArg(["-?", "?", "-h", "--help", "help"], [], false, "Show this help.")
     ];
@@ -399,9 +350,9 @@ void ShowHelp()
     Console.WriteLine($"\tYou can run them all, as in `{config.AppName} --import --weekday --sat --sun`");
     Console.WriteLine("\tbut this is not recommended on a first run because you'll process more data than necessary.");
     Console.WriteLine();
-    Console.WriteLine("Backtesting Notes");
-    foreach (var kvp in BacktestingService.Scenarios)
-        Console.WriteLine($"\t{kvp.Key,-16}\t{kvp.Value}");
+    //Console.WriteLine("Backtesting Notes");
+    //foreach (var kvp in BacktestingService.Scenarios)
+    //    Console.WriteLine($"\t{kvp.Key,-16}\t{kvp.Value}");
 }
 
 class Config(string appName, string appVersion, string? description)
@@ -417,6 +368,7 @@ class Config(string appName, string appVersion, string? description)
     public bool Weekday { get; set; }
     public bool Saturday { get; set; }
     public bool Sunday { get; set; }
+    public FileInfo? InputFileInfo { get; set;  }
     public string? OutputFileName { get; set; }
     public string? Symbol { get; set; }
     public bool Backtest { get; set; }
@@ -442,8 +394,6 @@ class Config(string appName, string appVersion, string? description)
                 message = "The output file must be of type csv.";
         }
 
-        if (Backtest && string.IsNullOrWhiteSpace(Scenario))
-            message = "Scenario must be specified when backtest is chosen.";
         if (ImportCleanupOnly && !Import)
             message = "Cleanup is not valid without import.";
 

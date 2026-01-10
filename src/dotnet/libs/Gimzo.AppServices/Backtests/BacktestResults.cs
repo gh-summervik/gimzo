@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Gimzo.AppServices.Backtesting;
+namespace Gimzo.AppServices.Backtests;
 
 public class BacktestResults
 {

@@ -1,6 +1,6 @@
 ﻿using System.Text;
 
-namespace Gimzo.AppServices.Backtesting;
+namespace Gimzo.AppServices.Backtests;
 
 public sealed class Ledger
 {

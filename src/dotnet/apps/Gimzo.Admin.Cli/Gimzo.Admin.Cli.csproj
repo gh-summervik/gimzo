@@ -26,6 +26,12 @@
 		<None Update="appsettings.json">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
+		<None Update="configs\pxfl2.json">
+		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+		<None Update="configs\pxfl.json">
+		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
 		<None Update="data\winners.txt">
 		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>

@@ -1,5 +1,6 @@
 ﻿using Gimzo.Common;
 using System.ComponentModel;
+using System.Text.RegularExpressions;
 
 namespace Gimzo.Analysis.Technical.Charts;
 
@@ -41,6 +42,57 @@ public readonly struct MovingAverageKey : IEquatable<MovingAverageKey>
     public static bool operator ==(MovingAverageKey left, MovingAverageKey right) => left.Equals(right);
 
     public static bool operator !=(MovingAverageKey left, MovingAverageKey right) => !(left == right);
+
+    public string CreateShorthand()
+    {
+        string type = Type switch
+        {
+            MovingAverageType.Simple => "S",
+            MovingAverageType.Exponential => "E",
+            _ => throw new Exception($"Logic error: Unknown moving average type: {Type.GetEnumDescription()}")
+        };
+        string pp = PricePoint switch
+        {
+            PricePoint.Open => "O",
+            PricePoint.Close => "C",
+            PricePoint.High => "H",
+            PricePoint.Low => "L",
+            PricePoint.MidPoint => "M",
+            _ => throw new Exception($"Logic error: Unknown moving average type: {PricePoint.GetEnumDescription()}")
+        };
+
+        return $"{type}{Period}{pp}";
+    }
+
+    public static MovingAverageKey? Create(string shorthand)
+    {
+        string pattern = @"([SE])(\d+)([OHLCM])";
+
+        MatchCollection matches = Regex.Matches(shorthand, pattern);
+        if (matches.Count > 0)
+        {
+            var match = matches[0];
+            var pricePoint = match.Groups[3].Value.ToUpperInvariant() switch
+            {
+                "O" => PricePoint.Open,
+                "H" => PricePoint.High,
+                "L" => PricePoint.Low,
+                "C" => PricePoint.Close,
+                "M" => PricePoint.MidPoint,
+                _ => throw new Exception($"Could not parse '{match.Groups[3].Value}' into a price point.")
+            };
+
+            var type = match.Groups[1].Value.ToUpperInvariant() switch
+            {
+                "S" => MovingAverageType.Simple,
+                "E" => MovingAverageType.Exponential,
+                _ => throw new Exception($"Could not parse '{match.Groups[1].Value}' into a moving average type.")
+            };
+
+            return new MovingAverageKey(Convert.ToInt32(match.Groups[2].Value), pricePoint, type);
+        }
+        return null;
+    }
 }
 
 public readonly struct MovingAverage
@@ -82,7 +134,7 @@ public readonly struct MovingAverage
         decimal sum = 0M;
         for (int i = 0; i < period; i++)
             sum += values[i];
-        
+
         Values[period - 1] = sum / period;
 
         for (int i = period; i < values.Length; i++)
@@ -98,13 +150,13 @@ public readonly struct MovingAverage
         decimal sum = 0M;
         for (int i = 0; i < period; i++)
             sum += values[i];
-        
+
         Values[period - 1] = sum / period; // Initial SMA
 
         for (int i = period; i < values.Length; i++)
             Values[i] = (values[i] - Values[i - 1]) * factor + Values[i - 1];
     }
-    
+
     public KeyValuePair<MovingAverageKey, decimal[]> GetSpan(int start, int finish)
     {
         if (start > finish)

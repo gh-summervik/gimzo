@@ -1,18 +1,48 @@
 ﻿namespace Gimzo.Analysis.Technical.Charts;
 
-public class BollingerBand
+public readonly struct BollingerBandConfiguration
 {
+    public BollingerBandConfiguration()
+    {
+        MovingAverageCode = "S21C";
+        StdDevMultipler = 2;
+    }
+    public string MovingAverageCode { get; init; }
+    public double StdDevMultipler { get; init; }
+}
+
+public struct BollingerBand
+{
+    public BollingerBand(BollingerBandConfiguration configuration, decimal[] values)
+    {
+        MovingAverageKey = MovingAverageKey.Create(configuration.MovingAverageCode)
+            ?? throw new ArgumentException($"Could not parse '{configuration.MovingAverageCode}' as moving average.");
+        StdDevMultiplier = configuration.StdDevMultipler;
+        Calculate(values);
+    }
+
     public BollingerBand(MovingAverageKey maKey, double stdDevMultiplier, decimal[] closes)
     {
         MovingAverageKey = maKey;
         StdDevMultiplier = stdDevMultiplier;
-        int period = maKey.Period;
+        Calculate(closes);
+    }
+
+    public MovingAverageKey MovingAverageKey { get; }
+    public double StdDevMultiplier { get; } = 2;
+    public decimal[] Middle { get; private set; } = [];
+    public decimal[] Upper { get; private set; } = [];
+    public decimal[] Lower { get; private set; } = [];
+
+    private void Calculate(decimal[] closes)
+    {
+        int period = MovingAverageKey.Period;
         int length = closes.Length;
         Middle = new decimal[length];
         Upper = new decimal[length];
         Lower = new decimal[length];
 
-        var ma = new MovingAverage(maKey, closes);
+        var ma = new MovingAverage(MovingAverageKey, closes);
 
         for (int i = 0; i < length; i++)
         {
@@ -30,15 +60,8 @@ public class BollingerBand
             decimal stdDev = (decimal)Math.Sqrt((double)variance);
 
             Middle[i] = mean;
-            Upper[i] = mean + (decimal)stdDevMultiplier * stdDev;
-            Lower[i] = mean - (decimal)stdDevMultiplier * stdDev;
+            Upper[i] = mean + (decimal)StdDevMultiplier * stdDev;
+            Lower[i] = mean - (decimal)StdDevMultiplier * stdDev;
         }
     }
-
-    public MovingAverageKey MovingAverageKey { get; }
-    public double StdDevMultiplier { get; }
-    public decimal[] Middle { get; }
-    public decimal[] Upper { get; }
-    public decimal[] Lower { get; }
-
 }

@@ -322,40 +322,6 @@ public sealed class FinancialDataImporter(FinancialDataApiClient apiClient,
         }
     }
 
-    internal async Task<DbMetaInfo> GetDbMetaInfoAsync(IReadOnlyCollection<string>? schemas = null)
-    {
-        if ((schemas?.Count ?? 0) == 0)
-            schemas = ["public"];
-
-        const string TcSql = @"
-SELECT
-table_name as Table,
-(xpath('/row/count/text()', query_to_xml(format('SELECT COUNT(*) FROM ONLY %I.%I', table_schema, table_name), TRUE, TRUE, '')))[1]::text::bigint AS count
-FROM
-information_schema.tables
-WHERE
-table_schema = @schema
-AND table_type = 'BASE TABLE'";
-        const string IgSql = "SELECT symbol FROM public.ignored_symbols";
-
-        using var queryCtx = _dbDefPair.GetQueryConnection();
-        var ignoredSymbols = (await queryCtx.QueryAsync<string>(IgSql)).ToArray();
-
-        var tableCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        foreach (var schema in schemas!.Distinct(StringComparer.OrdinalIgnoreCase))
-        {
-            var tableResults = await queryCtx.QueryAsync<(string Table, long Count)>(TcSql, new { schema = schema.ToLowerInvariant() });
-            foreach (var (Table, Count) in tableResults)
-                tableCounts[$"{schema}.{Table}"] = (int)Count;
-        }
-
-        return new DbMetaInfo
-        {
-            TableCounts = tableCounts,
-            IgnoredSymbols = ignoredSymbols
-        };
-    }
-
     internal async Task SaveStockSymbolsAsync(IReadOnlyCollection<Security> securities, Guid processId)
     {
         if (processId.Equals(Guid.Empty))

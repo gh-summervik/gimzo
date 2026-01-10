@@ -1,23 +1,26 @@
-﻿using Gimzo.Analysis.Technical.Charts;
+﻿namespace Gimzo.Analysis.Technical.Charts;
 
-namespace Gimzo.Analysis.Technical.Trends;
-
-public class RsiTrend(Ohlc[] prices, int period = 14, double[]? precomputedAvgVolumes = null)
-    : PriceTrendBase(prices, precomputedAvgVolumes ?? ComputeRollingAverageVolumes(prices, 20)), ITrend
+public sealed class RelativeStrengthIndex(Ohlc[] prices, int period = 14, double[]? precomputedAvgVolumes = null)
 {
+    private readonly Ohlc[] _prices = prices;
+    private readonly double[]? _precomputedAvgVolumes = precomputedAvgVolumes;
     private readonly int _period = period;
+
+    public double[] Values { get; private set; } = [];
+    public string Name => GetType().Name;
 
     public void Calculate()
     {
         var closes = _prices.Select(p => (double)p.Close).ToArray();
         var rsi = CalculateRsi(closes, _period);
+        Values = new double[closes.Length];
 
         for (int i = 0; i < _prices.Length; i++)
         {
             double rsiValue = rsi[i];
             if (rsiValue == 0)
             {
-                TrendValues[i] = 0;
+                Values[i] = 0;
                 continue;
             }
 
@@ -30,7 +33,7 @@ public class RsiTrend(Ohlc[] prices, int period = 14, double[]? precomputedAvgVo
             double volumeFactor = avgVolume > 0 ? currentVolume / avgVolume : 1.0;
             volumeFactor = Math.Max(0.5, Math.Min(2.0, volumeFactor));
 
-            TrendValues[i] = Math.Max(-1.0, Math.Min(1.0, baseScore * volumeFactor));
+            Values[i] = Math.Max(-1.0, Math.Min(1.0, baseScore * volumeFactor));
         }
     }
 

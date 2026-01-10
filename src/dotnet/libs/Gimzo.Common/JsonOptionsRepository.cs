@@ -7,7 +7,7 @@ namespace Gimzo.Common;
 
 public static class JsonOptionsRepository
 {
-    public static JsonSerializerOptions CustomSerializer
+    public static JsonSerializerOptions Gimzo
     {
         get
         {

@@ -1,4 +1,4 @@
-﻿namespace Gimzo.AppServices.Backtesting;
+﻿namespace Gimzo.AppServices.Backtests;
 
 public readonly struct LedgerEntryPair(CashLedgerEntry open, CashLedgerEntry? close)
 {

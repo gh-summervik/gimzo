@@ -18,7 +18,7 @@ public sealed class UiModelService(DbDefPair dbDefPair, IMemoryCache memoryCache
         if (coInfo is null)
             return null;
 
-        Chart? chart = await GetChartAsync(symbol, Common.Constants.DefaultChartLookback, ChartInterval.Daily);
+        Chart? chart = await GetChartAsync(symbol, ChartInterval.Daily);
 
         decimal? fiftyTwoWeekLow = null;
         decimal? fiftyTwoWeekHigh = null;
@@ -39,7 +39,7 @@ public sealed class UiModelService(DbDefPair dbDefPair, IMemoryCache memoryCache
             start = Math.Max(0, chart.GetIndexOfDate(monthPrior));
             var x = chart.GetSpan(start, chart.Length - 1);
             averageVolume = Convert.ToInt64(x.PriceActions.Average(k => k.Volume));
-            lastTrendValue = chart.TrendValues[^1];
+            lastTrendValue = chart.RelativeStrengthIndex == null ? 0 : chart.RelativeStrengthIndex.Values[^1];
         }
 
         var info = coInfo.Value;
@@ -70,7 +70,7 @@ public sealed class UiModelService(DbDefPair dbDefPair, IMemoryCache memoryCache
             Symbol = info.Symbol,
             WebSite = info.WebSite,
             LastOhlc = chart?.Candlesticks.LastOrDefault(),
-            CurrentAverageTrueRange = chart?.GetAverageTrueRangeForPeriod(Common.Constants.DefaultAverageTrueRangePeriod),
+            CurrentAverageTrueRange = chart?.AverageTrueRange,
             FiftyTwoWeekLow = fiftyTwoWeekLow,
             FiftyTwoWeekHigh = fiftyTwoWeekHigh,
             TwentyDayAverageVolume = averageVolume,
@@ -80,10 +80,9 @@ public sealed class UiModelService(DbDefPair dbDefPair, IMemoryCache memoryCache
 
     public async Task<ChartModel?> GetChartModelAsync(string symbol,
         DateOnly start, DateOnly? finish = null,
-        int lookback = Common.Constants.DefaultChartLookback,
         ChartInterval interval = ChartInterval.Daily)
     {
-        var chart = await GetChartAsync(symbol, lookback, interval);
+        var chart = await GetChartAsync(symbol, interval);
 
         if (chart is null || chart.PriceActions.Length == 0)
             return null;
@@ -133,16 +132,16 @@ public sealed class UiModelService(DbDefPair dbDefPair, IMemoryCache memoryCache
         var serializedData = JsonSerializer.Serialize(series);
 
         // Serialize trend as separate line series
-        var trendData = timestamps.Select((ts, i) => new { x = ts, y = span.TrendValues[i] }).ToArray();
-        var trendSeries = new[] { new { name = "Trend", type = "line", data = trendData, color = "#FFA500" } };  // Orange example
-        var serializedTrend = JsonSerializer.Serialize(trendSeries);
+        //var trendData = timestamps.Select((ts, i) => new { x = ts, y = span.Values[i] }).ToArray();
+        //var trendSeries = new[] { new { name = "Trend", type = "line", data = trendData, color = "#FFA500" } };  // Orange example
+        //var serializedTrend = JsonSerializer.Serialize(trendSeries);
 
         return new ChartModel
         {
             Symbol = symbol.ToUpperInvariant(),
             Prices = [.. prices],
             SerializedData = serializedData,
-            SerializedTrend = serializedTrend
+            //SerializedTrend = serializedTrend
         };
     }
 }

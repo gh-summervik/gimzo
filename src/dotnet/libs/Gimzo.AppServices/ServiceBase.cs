@@ -2,7 +2,8 @@
 using Gimzo.Analysis.Fundamental;
 using Gimzo.Analysis.Technical;
 using Gimzo.Analysis.Technical.Charts;
-using Gimzo.Analysis.Technical.Trends;
+using Gimzo.AppServices.Backtests;
+using Gimzo.Infrastructure;
 using Gimzo.Infrastructure.Database;
 using Microsoft.Extensions.Caching.Memory;
 
@@ -20,6 +21,40 @@ public abstract class ServiceBase
         SqlMapper.AddTypeHandler(new DateOnlyTypeHandler());
         SqlMapper.AddTypeHandler(new NullableDateOnlyTypeHandler());
         SqlMapper.AddTypeHandler(new DictionaryIntDecimalJsonbHandler());
+    }
+
+    public async Task<DbMetaInfo> GetDbMetaInfoAsync(IReadOnlyCollection<string>? schemas = null)
+    {
+        if ((schemas?.Count ?? 0) == 0)
+            schemas = ["public"];
+
+        const string TcSql = @"
+SELECT
+table_name as Table,
+(xpath('/row/count/text()', query_to_xml(format('SELECT COUNT(*) FROM ONLY %I.%I', table_schema, table_name), TRUE, TRUE, '')))[1]::text::bigint AS count
+FROM
+information_schema.tables
+WHERE
+table_schema = @schema
+AND table_type = 'BASE TABLE'";
+        const string IgSql = "SELECT symbol FROM public.ignored_symbols";
+
+        using var queryCtx = _dbDefPair.GetQueryConnection();
+        var ignoredSymbols = (await queryCtx.QueryAsync<string>(IgSql)).ToArray();
+
+        var tableCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        foreach (var schema in schemas!.Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            var tableResults = await queryCtx.QueryAsync<(string Table, long Count)>(TcSql, new { schema = schema.ToLowerInvariant() });
+            foreach (var (Table, Count) in tableResults)
+                tableCounts[$"{schema}.{Table}"] = (int)Count;
+        }
+
+        return new DbMetaInfo
+        {
+            TableCounts = tableCounts,
+            IgnoredSymbols = ignoredSymbols
+        };
     }
 
     internal async Task SaveProcess(Infrastructure.Database.DataAccessObjects.Process process)
@@ -56,15 +91,12 @@ public abstract class ServiceBase
     }
 
     private static int GetChartCacheKey(string symbol,
-        int lookback = Common.Constants.DefaultChartLookback,
         ChartInterval interval = ChartInterval.Daily) =>
-            HashCode.Combine(symbol.ToUpperInvariant(), lookback, interval);
+            HashCode.Combine(symbol.ToUpperInvariant(), interval);
 
-    internal async Task<Chart?> GetChartAsync(string symbol,
-        int lookback = Common.Constants.DefaultChartLookback,
-        ChartInterval interval = ChartInterval.Daily)
+    internal async Task<Chart?> GetChartAsync(string symbol, ChartConfiguration config)
     {
-        var cacheKey = GetChartCacheKey(symbol, lookback, interval);
+        var cacheKey = GetChartCacheKey(symbol, config.Interval);
         Chart? chart;
         if (_memoryCache.TryGetValue(cacheKey, out var cachedValue) && cachedValue is not null)
             chart = cachedValue as Chart;
@@ -74,13 +106,33 @@ public abstract class ServiceBase
             if (ohlcs.Length == 0)
                 return null;
             chart = new Chart(symbol.ToUpperInvariant())
-                .WithCandles(ohlcs)
-                //.WithTrend(new GimzoTrend(ohlcs))
-                .WithTrend(new RsiTrend(ohlcs))
+                .WithPriceActions(ohlcs)
+                .WithConfiguration(config)
+                .Build();
+            _memoryCache.Set(cacheKey, chart);
+        }
+        return chart;
+    }
+
+    internal async Task<Chart?> GetChartAsync(string symbol,
+        ChartInterval interval = ChartInterval.Daily)
+    {
+        var cacheKey = GetChartCacheKey(symbol, interval);
+        Chart? chart;
+        if (_memoryCache.TryGetValue(cacheKey, out var cachedValue) && cachedValue is not null)
+            chart = cachedValue as Chart;
+        else
+        {
+            var ohlcs = (await GetOhlcAsync(symbol)).ToArray();
+            if (ohlcs.Length == 0)
+                return null;
+            chart = new Chart(symbol.ToUpperInvariant())
+                .WithPriceActions(ohlcs)
+                //.WithTrend(new RelativeStrengthIndex(ohlcs))
                 .WithMovingAverage(21, MovingAverageType.Exponential)
                 .WithMovingAverage(50, MovingAverageType.Exponential)
                 .WithMovingAverage(200, MovingAverageType.Exponential)
-                .WithAverageTrueRange(Common.Constants.DefaultAverageTrueRangePeriod)
+                .WithAverageTrueRangePeriod(Common.Constants.DefaultAverageTrueRangePeriod)
                 .WithBollingerBand(21, MovingAverageType.Exponential)
                 .Build();
             _memoryCache.Set(cacheKey, chart);
