@@ -2,7 +2,6 @@
   "profiles": {
     "Gimzo.Admin.Cli": {
       "commandName": "Project",
-      "commandLineArgs": "-b configs\\pxfl2.json"
-    }
+      "commandLineArgs": "-i"
   }
 }

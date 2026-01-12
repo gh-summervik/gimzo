@@ -1,5 +1,5 @@
 {
-  "Name": "pxfl",
+  "Name": "pxfl2",
   "Chart": {
     "MovingAverages": [ "S21C", "S50C", "S200C" ],
     "BollingerBand": {
@@ -10,12 +10,12 @@
     "RelativeStrengthPeriod": 14
   },
   "SymbolCriteria": {
-    "MinAbsoluteScore": 40,
+    "MinAbsoluteScore": 30,
     "MaxAbsoluteScore": 100,
-    "MinCompanyPercentileRank": 50,
+    "MinCompanyPercentileRank": 40,
     "MaxCompanyPercentileRank": 100,
     "MinIndustryRank": 0,
-    "MaxIndustryRank": 150
+    "MaxIndustryRank": 200
   },
   "PriceExtremeFollow": {
     "LookbackPeriod": 14,

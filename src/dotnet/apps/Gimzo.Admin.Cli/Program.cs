@@ -1,4 +1,5 @@
-﻿using Gimzo.Analysis.Technical;
+﻿using Gimzo.Admin.Cli;
+using Gimzo.Analysis.Technical;
 using Gimzo.Analysis.Technical.Charts;
 using Gimzo.AppServices;
 using Gimzo.AppServices.Analysis;
@@ -17,7 +18,6 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text.Json;
-using System.Xml.Schema;
 
 IConfiguration? configuration;
 
@@ -57,11 +57,22 @@ try
     if (config.ShowHelp)
     {
         ShowHelp();
-        Environment.Exit(0);
+        goto Finish;
     }
 
     var dbDefPairs = DbDefPair.GetPairsFromConfiguration(configuration).ToArray();
 
+    if (config.Interactive)
+    {
+        var backtestService = new BacktestingService(dbDefPairs![0],
+            serviceProvider.GetRequiredService<IMemoryCache>(),
+            serviceProvider.GetRequiredService<ILogger<BacktestingService>>());
+        var cliInteractive = new CliInteractive(config, backtestService,
+            serviceProvider.GetRequiredService<ILogger<CliInteractive>>());
+        cliInteractive.Start();
+
+        goto Finish;
+    }
     if (config.Import)
     {
         var process = Gimzo.AppServices.Process.Create("CLI", null, null, args);
@@ -140,6 +151,8 @@ try
             serviceProvider.GetRequiredService<IMemoryCache>(),
             serviceProvider.GetRequiredService<ILogger<BacktestingService>>());
 
+        LogHelper.LogInfo(logger, "Fetching symbols to test.");
+
         var symbols = (await backtestService.GetSymbolsToTest(
             minAbsoluteScore: backtestConfig.SymbolCriteria.MinAbsoluteScore,
             maxAbsoluteScore: backtestConfig.SymbolCriteria.MaxAbsoluteScore,
@@ -147,6 +160,7 @@ try
             maxCompanyPercentileRank: backtestConfig.SymbolCriteria.MaxCompanyPercentileRank,
             minIndustryRank: backtestConfig.SymbolCriteria.MinIndustryRank,
             maxIndustryRank: backtestConfig.SymbolCriteria.MaxIndustryRank)).ToImmutableArray();
+        LogHelper.LogInfo(logger, "{count} symbols found", symbols.Length.ToString("#,##0"));
 
         LogHelper.LogInfo(logger, "Running backtest.");
         CancellationTokenSource cts = new();
@@ -215,6 +229,7 @@ try
         }
     }
 
+Finish:
     exitCode = 0;
 }
 catch (ArgumentException exc)
@@ -254,8 +269,11 @@ void ParseArguments(string[] args, out string[] childArgs)
             case "?":
                 config.ShowHelp = true;
                 break;
-            case "--import":
             case "-i":
+            case "--interactive":
+                config.Interactive = true;
+                break;
+            case "--import":
                 config.Import = true;
                 break;
             case "--cleanup":
@@ -324,10 +342,11 @@ void ShowHelp()
 {
     CliArg[] args =
     [
-        new CliArg(["-i","--import"], [], false, "Import from financialdata.net."),
+        new CliArg(["-i","--interactive"], [], false, "Interact with menu system."),
+        new CliArg(["--import"], [], false, "Import from financialdata.net."),
+        new CliArg(["--weekday"], [], false, "Force the Weekday import workflow."),
         new CliArg(["-sat","--saturday"], [], false, "Force the Saturday import workflow."),
         new CliArg(["-sun", "--sunday"], [], false, "Force the Sunday import workflow."),
-        new CliArg(["--weekday"], [], false, "Force the Weekday import workflow."),
         new CliArg(["-r", "--csv", "--report"], ["symbol","report name", "output file name"], false, "Produce CSV file with specified report."),
         new CliArg(["-b", "--backtest"],["path to backtest config"], false, "Runs a backtesting scenario."),
         new CliArg(["-a", "--analyze"],["symbol (optional)"], false, "Get fundamental scores."),
@@ -342,8 +361,8 @@ void ShowHelp()
         Console.WriteLine();
     }
     Console.WriteLine(CliHelper.FormatArguments(args));
-    Console.WriteLine("Importing Notes");
-    Console.WriteLine($"\tWhen choosing '-i', {config.AppName} will perform the workflow according to the current day of week,");
+    Console.WriteLine("Import Notes");
+    Console.WriteLine($"\tWhen choosing '--import', {config.AppName} will perform the workflow according to the current day of week,");
     Console.WriteLine("\tbut you can override this behavior with the --[weekday|sat|sun] options.");
     Console.WriteLine();
     Console.WriteLine("\tOn a first run, use the `--weekday` argument to ensure best behavior.");
@@ -362,13 +381,14 @@ class Config(string appName, string appVersion, string? description)
     public string? Description { get; } = description;
     public bool Verbose { get; set; }
     public bool ShowHelp { get; set; }
+    public bool Interactive { get; set; }
     public bool Import { get; set; }
     public bool Csv { get; set; }
     public bool ImportCleanupOnly { get; set; }
     public bool Weekday { get; set; }
     public bool Saturday { get; set; }
     public bool Sunday { get; set; }
-    public FileInfo? InputFileInfo { get; set;  }
+    public FileInfo? InputFileInfo { get; set; }
     public string? OutputFileName { get; set; }
     public string? Symbol { get; set; }
     public bool Backtest { get; set; }
@@ -380,8 +400,8 @@ class Config(string appName, string appVersion, string? description)
     public bool IsValid(out string message)
     {
         message = "";
-        if (!ShowHelp && !Csv && !Import && !Backtest && !Analyze && !ImportCleanupOnly)
-            message = "Either csv, import, backtest, analyze, or cleanup must be specified.";
+        if (!ShowHelp && !Csv && !Import && !Backtest && !Analyze && !ImportCleanupOnly && !Interactive)
+            message = "Either csv, import, backtest, analyze, interactive, or cleanup must be specified.";
         else if ((Weekday || Saturday || Sunday) && !Import)
             message = "When specifying a day of the week, the import flag (--import) is required.";
         else if (Csv && (string.IsNullOrWhiteSpace(Symbol) || string.IsNullOrWhiteSpace(OutputFileName)))

@@ -1,4 +1,5 @@
-﻿using Gimzo.Analysis.Technical.Charts;
+﻿using Dapper;
+using Gimzo.Analysis.Technical.Charts;
 using Gimzo.Infrastructure.Database;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
@@ -93,23 +94,62 @@ AND ls.rank >= @MinR AND ls.rank <= @MaxR;";
         cancellationToken.ThrowIfCancellationRequested();
         ArgumentNullException.ThrowIfNull(symbols);
 
-        foreach (var symbol in symbols)
-        {
-            await ExecuteBullishPriceExtremeFollowAsync(config, symbol, userId, cancellationToken);
-        }
+        // use for easier debugging.
+        //foreach (var symbol in symbols)
+        //{
+        //    await ExecuteBullishPriceExtremeFollowAsync(config, symbol, userId, cancellationToken);
+        //}
 
-        //await Parallel.ForEachAsync(
-        //    symbols,
-        //    new ParallelOptions
-        //    {
-        //        CancellationToken = cancellationToken,
-        //        MaxDegreeOfParallelism = 10 
-        //    },
-        //    async (symbol, token) =>
-        //    {
-        //        if (config.Name.Equals(Keys.PriceLongExtremeFollow, StringComparison.OrdinalIgnoreCase))
-        //            await ExecuteBullishPriceExtremeFollowAsync(config, symbol, userId, token);
-        //    });
+        await Parallel.ForEachAsync(
+            symbols,
+            new ParallelOptions
+            {
+                CancellationToken = cancellationToken,
+                MaxDegreeOfParallelism = 10
+            },
+            async (symbol, token) =>
+            {
+                if (config.Name.StartsWith(Keys.PriceLongExtremeFollow, StringComparison.OrdinalIgnoreCase))
+                    await ExecuteBullishPriceExtremeFollowAsync(config, symbol, userId, token);
+            });
+    }
+
+    public async Task<IEnumerable<Models.BacktestResult>> GetBacktestResultsAsync()
+    {
+        const string Sql = @"
+SELECT 
+    created_by AS ProcessId,
+    COUNT(*) AS Trades,
+    ROUND(AVG(pnl_percent)::numeric, 2) AS AveragePnlPercent,
+    ROUND(AVG(CASE WHEN is_winner THEN 1.0 ELSE 0 END)::numeric, 3) AS WinRate,
+    ROUND(
+        (AVG(CASE WHEN is_winner THEN 1.0 ELSE 0 END)::numeric * 
+         AVG(CASE WHEN is_winner THEN pnl_percent END)::numeric) -
+        ((1 - AVG(CASE WHEN is_winner THEN 1.0 ELSE 0 END)::numeric) * 
+         AVG(CASE WHEN NOT is_winner THEN -pnl_percent END)::numeric),
+        2
+    ) AS expectancy,
+    ROUND(AVG(CASE WHEN is_winner THEN pnl_percent END)::numeric, 2) AS AverageWin,
+    ROUND(AVG(CASE WHEN NOT is_winner THEN -pnl_percent END)::numeric, 2) AS AverageLoss,
+    backtest_type AS BacktestType
+FROM public.backtest_trades
+GROUP BY created_by, backtest_type
+ORDER BY MAX(created_at) DESC";
+
+        using var conn = _dbDefPair.GetQueryConnection();
+        return await conn.QueryAsync<Models.BacktestResult>(Sql);
+    }
+
+    public async Task DeleteAllBacktestsAsync()
+    {
+        using var conn = _dbDefPair.GetCommandConnection();
+        await conn.ExecuteAsync("DELETE FROM public.backtest_trades");
+    }
+
+    public async Task DeleteBacktestAsync(Guid processId)
+    {
+        using var conn = _dbDefPair.GetCommandConnection();
+        await conn.ExecuteAsync("DELETE FROM public.backtest_trades WHERE created_by = @ProcessId", new {processId});
     }
 
     private static CashLedgerEntry? FindExit(CashLedgerEntry? entry, Chart chart)

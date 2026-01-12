@@ -110,7 +110,7 @@ public partial class BacktestingService
             var bt = new BacktestTrade(userId)
             {
                 TradeId = Guid.NewGuid(),
-                BacktestType = Keys.PriceLongExtremeFollow,
+                BacktestType = config.Name,
                 Symbol = symbol,
                 EntryDate = entryDate,
                 ExitDate = exitLedger.Date,

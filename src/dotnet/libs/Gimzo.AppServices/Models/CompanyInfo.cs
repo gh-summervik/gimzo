@@ -2,7 +2,7 @@
 
 namespace Gimzo.AppServices.Models;
 
-public class CompanyInfo
+public record CompanyInfo
 {
     private string? _fiscalYearEnd;
 

@@ -2,7 +2,7 @@
 
 namespace Gimzo.AppServices.Models;
 
-public class ChartModel
+public record ChartModel
 {
     public string? Symbol { get; set; }
     public Ohlc[]? Prices { get; set; }
